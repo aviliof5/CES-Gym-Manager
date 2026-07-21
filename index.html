@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CES Gym Manager · Gestión para gimnasios</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="stage">
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen" id="app"></div>
+  </div>
+</div>
+<input type="file" id="filePicker" accept="image/*" hidden>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<!-- test-harness.html reemplaza este script por mock-client.js para poder
+     verificar app.js sin un backend real levantado. -->
+<script src="supabase-client.js?v=2"></script>
+<script src="app.js"></script>
+</body>
+</html>

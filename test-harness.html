@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CES Gym Manager · arnés de pruebas (mock)</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="stage">
+  <div class="device">
+    <div class="device-notch"></div>
+    <div class="screen" id="app"></div>
+  </div>
+</div>
+<input type="file" id="filePicker" accept="image/*" hidden>
+<!-- Reemplaza supabase-js + config.js + supabase-client.js por el mock:
+     app.js llama a window.BolaAPI exactamente igual en ambos casos. -->
+<script src="mock-client.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+/* Bolá — design tokens ported from "Bolá App.dc.html" */
+:root{
+  --bg:#0B0D10;
+  --surface:#15181C;
+  --surface-2:#20242a;
+  --surface-dim:#0F1215;
+  --line:rgba(255,255,255,0.08);
+  --text:#F5F6F7;
+  --text-soft:#c7ccd1;
+  --muted:#9AA3AC;
+  --muted-dim:#5b626a;
+  --lime:#D7FF3E;
+  --mint:#34D399;
+  --amber:#FBBF24;
+  --red:#F87171;
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:radial-gradient(circle at 30% 20%,#12151a,#0B0D10 60%);
+  font-family:system-ui,'Roboto',sans-serif;
+  color:var(--text);
+}
+::-webkit-scrollbar{width:0;height:0}
+input,textarea,select,button{font-family:inherit}
+
+/* ---------- Android device frame ---------- */
+.stage{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:48px 20px;
+}
+.device{
+  position:relative;
+  width:412px;
+  height:892px;
+  max-height:calc(100vh - 96px);
+  border-radius:44px;
+  padding:10px;
+  background:#1c1f24;
+  box-shadow:0 0 0 2px #2b2f36, 0 30px 70px rgba(0,0,0,0.6);
+}
+.device-notch{
+  position:absolute;
+  top:20px;left:50%;
+  width:10px;height:10px;
+  margin-left:-5px;
+  border-radius:50%;
+  background:#0B0D10;
+  z-index:2;
+}
+.screen{
+  width:100%;height:100%;
+  border-radius:36px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 88% -8%, rgba(215,255,62,0.05), transparent 42%),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.012) 0, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 13px),
+    var(--bg);
+  display:flex;
+  flex-direction:column;
+  position:relative;
+}
+@media (max-width:520px){
+  .stage{padding:0}
+  .device{width:100vw;height:100vh;max-height:none;border-radius:0;padding:0;box-shadow:none}
+  .screen{border-radius:0}
+  .device-notch{display:none}
+}
+
+/* ---------- primitives ---------- */
+.col{flex:1;display:flex;flex-direction:column;overflow:auto}
+.pane{flex:1;overflow:auto;padding:0 22px 16px}
+
+.field{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px 16px;
+  color:var(--text);
+  font-size:14px;
+  width:100%;
+}
+.field:focus{outline:none;border-color:rgba(255,255,255,0.22)}
+.field::placeholder{color:var(--muted)}
+.field--sm{border-radius:10px;padding:12px 14px;font-size:13.5px}
+
+.btn{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:16px;
+  font-weight:700;
+  font-size:15px;
+  cursor:pointer;
+}
+.btn:disabled{background:var(--surface-2);color:var(--muted-dim);cursor:not-allowed}
+.btn--lime{background:var(--lime);color:var(--bg)}
+.btn--mint{background:var(--mint);color:var(--bg);font-weight:800}
+.btn--amber{background:var(--amber);color:var(--bg)}
+.btn--ghost{background:var(--surface);border:1px solid rgba(255,255,255,0.1);color:var(--muted);font-weight:700}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:14px;
+}
+.card--dashed{
+  background:var(--surface-dim);
+  border:1px dashed rgba(255,255,255,0.15);
+  border-radius:14px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.chip{
+  padding:9px 14px;
+  border-radius:100px;
+  font-size:12.5px;
+  font-weight:600;
+  cursor:pointer;
+  background:var(--surface);
+  color:var(--muted);
+  border:1px solid var(--line);
+}
+.chip.is-active{font-weight:700;border-color:transparent}
+.chip--lime.is-active{background:var(--lime);color:var(--bg)}
+.chip--mint.is-active{background:var(--mint);color:var(--bg)}
+.chip--amber.is-active{background:var(--amber);color:var(--bg)}
+
+.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px}
+.badge--al_dia{background:rgba(52,211,153,0.15);color:var(--mint)}
+.badge--pendiente{background:rgba(251,191,36,0.15);color:var(--amber)}
+.badge--vencido{background:rgba(248,113,113,0.15);color:var(--red)}
+
+.back{
+  width:32px;height:32px;
+  border-radius:10px;
+  background:var(--surface);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;
+}
+
+/* ---------- step header ---------- */
+.step-head{display:flex;align-items:center;gap:14px;padding:20px 20px 8px}
+.step-label{font-size:13px;color:var(--muted)}
+.step-bars{display:flex;gap:6px;padding:0 20px 20px}
+.step-bars i{height:4px;flex:1;border-radius:2px;background:var(--surface-2)}
+.step-bars i.on{background:var(--lime)}
+.step-bars.mint i.on{background:var(--mint)}
+
+.form-body{padding:0 24px;flex:1}
+.form-foot{padding:16px 24px 28px}
+.title{font-size:22px;font-weight:700;margin-bottom:6px}
+.subtitle{font-size:13px;color:var(--muted);margin-bottom:24px}
+.stack{display:flex;flex-direction:column;gap:14px}
+
+/* ---------- tab bar ---------- */
+.tabbar{display:flex;border-top:1px solid var(--line);padding:10px 4px}
+.tabbar--client{padding:10px 2px}
+.tab{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 2px;border-radius:10px;cursor:pointer;background:transparent;
+  color:var(--muted);
+}
+.tab .icon{width:16px;height:16px}
+.tab.is-active{background:rgba(215,255,62,0.12);color:var(--lime)}
+.tab span{font-size:10.5px;font-weight:700;color:inherit}
+.tabbar--client .tab{padding:6px 1px}
+.tabbar--client .tab.is-active{background:rgba(52,211,153,0.12);color:var(--mint)}
+.tabbar--client .tab span{font-size:9.5px}
+.tabbar--trainer .tab.is-active{background:rgba(251,191,36,0.12);color:var(--amber)}
+
+/* ---------- app header ---------- */
+.app-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px}
+.app-title{font-size:18px;font-weight:900}
+.app-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.link-muted{font-size:12px;color:var(--muted);cursor:pointer}
+
+/* ---------- misc ---------- */
+.avatar{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--surface-2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;font-weight:800;color:var(--muted);flex-shrink:0;
+}
+.avatar--sq{width:42px;height:42px;border-radius:12px;font-size:15px}
+.avatar--lime{background:rgba(215,255,62,0.15);color:var(--lime)}
+.avatar--mint{background:rgba(52,211,153,0.15);color:var(--mint)}
+.avatar--amber{background:rgba(251,191,36,0.15);color:var(--amber)}
+
+.pill{background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:7px 14px;font-size:12px}
+.pill--flat{background:var(--surface-2);border:none;border-radius:100px;padding:5px 12px;font-size:11.5px}
+
+.qr{
+  background-color:#fff;
+  background-image:
+    linear-gradient(45deg,#000 25%,transparent 25%),
+    linear-gradient(-45deg,#000 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#000 75%),
+    linear-gradient(-45deg,transparent 75%,#000 75%);
+}
+.qr--sm{
+  width:64px;height:64px;border-radius:8px;flex-shrink:0;
+  background-size:14px 14px;
+  background-position:0 0,0 7px,7px -7px,-7px 0;
+}
+.qr--lg{
+  width:180px;height:180px;border-radius:14px;margin-top:16px;
+  background-size:20px 20px;
+  background-position:0 0,0 10px,10px -10px,-10px 0;
+}
+
+.chart{
+  display:flex;align-items:flex-end;gap:4px;height:110px;
+  background:var(--surface);border:1px solid var(--line);
+  border-radius:14px;padding:12px;
+}
+.chart-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.chart-col i{width:100%;border-radius:3px 3px 0 0;display:block}
+.chart-axis{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-top:4px;padding:0 12px}
+
+/* ---------- photo slot ---------- */
+.slot{
+  background:var(--surface);
+  border:1px dashed rgba(255,255,255,0.18);
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  font-size:10.5px;color:var(--muted);
+  cursor:pointer;
+  overflow:hidden;
+  padding:8px;
+}
+.slot--circle{border-radius:50%}
+.slot img{width:100%;height:100%;object-fit:cover;display:block}
+
+.section-title{font-size:13px;font-weight:700;margin-bottom:10px}
+.hint{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+/* ---------- icon system (hand-rolled, no external assets) ---------- */
+.icon{display:inline-flex;flex-shrink:0}
+.icon svg{width:100%;height:100%;display:block}
+.icon--14{width:14px;height:14px}
+.icon--16{width:16px;height:16px}
+.icon--22{width:22px;height:22px}
+.icon--28{width:28px;height:28px}
+
+/* Faint gym-motif decoration behind the role/trainer-auth/pending screens.
+   Needs an ancestor with z-index:0 (own stacking context) so the negative
+   z-index stays contained instead of escaping to the page root. */
+.gym-watermark{
+  position:absolute;
+  z-index:-1;
+  top:-40px;right:-56px;
+  width:230px;height:230px;
+  opacity:0.055;
+  color:var(--lime);
+  pointer-events:none;
+}
+.gym-watermark--amber{color:var(--amber)}
+.gym-watermark svg{width:100%;height:100%;display:block}
