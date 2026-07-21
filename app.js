@@ -763,6 +763,37 @@ function viewClientReg1() {
   </div>`;
 }
 
+// Se muestra al iniciar sesión (o reanudar) cuando la cuenta no tiene
+// foto de rostro guardada — pasa si el alta original quedó interrumpida
+// por la confirmación de correo: el archivo elegido en clientReg1 solo
+// vive en memoria del navegador y se pierde junto con esa pantalla.
+function viewClientPhotoRequired() {
+  const c = state.clientReg;
+  const photo = c.photoPreviewUrl
+    ? `<img src="${esc(c.photoPreviewUrl)}" alt="Foto de rostro"/>`
+    : 'Foto de rostro *';
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('signOut')}>&lsaquo;</div>
+      <div class="step-label">Completá tu perfil</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="form-body">
+      <div class="title">Falta tu foto de rostro</div>
+      <div class="subtitle" style="margin-bottom:20px">Es obligatoria para identificarte en el acceso al gimnasio</div>
+      ${errorBanner()}
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
+        <div class="slot slot--circle" style="width:110px;height:110px" ${act('pickPhoto', 'face')}>${photo}</div>
+        ${c.photoFile ? `<div class="chip chip--mint is-active" style="margin-top:12px;padding:8px 16px;font-size:12px">✓ Foto lista</div>` : ''}
+      </div>
+    </div>
+    <div class="form-foot">
+      <button class="btn btn--mint" ${act('confirmRequiredFacePhoto')} ${(!c.photoFile || state.busy) ? 'disabled' : ''}>${state.busy ? 'Subiendo…' : 'Continuar'}</button>
+    </div>
+  </div>`;
+}
+
 function viewClientReg2() {
   const p = state.clientPhysicalReg;
   const levels = LEVELS.map(lv =>
@@ -1475,6 +1506,21 @@ const ACTIONS = {
     }
   },
 
+  confirmRequiredFacePhoto: async () => {
+    const file = state.clientReg.photoFile;
+    if (!file) return;
+    setState({ busy: true, error: '' });
+    try {
+      const path = BolaAPI.photos.facePath(state.gym.id, state.myProfile.id);
+      await BolaAPI.photos.upload(path, file);
+      await BolaAPI.clients.setFacePhotoKey(state.myProfile.id, path);
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    await continueAfterFacePhoto();
+  },
+
   /* ---- client registration ---- */
   clientSignUp: async () => {
     setState({ busy: true, error: '' });
@@ -1655,7 +1701,22 @@ async function resumeClientSession(profile) {
 async function continueClientResume(profile) {
   state.gym = await BolaAPI.gyms.get(profile.gym_id);
   const client = await BolaAPI.clients.getSelf(profile.id);
-  if (!client.planId) {
+  if (!client.facePhotoKey) {
+    // El alta original quedó interrumpida antes de subir la foto (ver
+    // ACTIONS.confirmRequiredFacePhoto) — es obligatoria, así que se pide
+    // acá antes de seguir, sin importar en qué paso haya quedado el resto.
+    setState({
+      screen: 'clientPhotoRequired', busy: false,
+      clientReg: { ...state.clientReg, photoFile: null, photoPreviewUrl: null },
+    });
+    return;
+  }
+  await continueAfterFacePhoto(client);
+}
+
+async function continueAfterFacePhoto(client) {
+  const c = client || await BolaAPI.clients.getSelf(state.myProfile.id);
+  if (!c.planId) {
     const plans = await BolaAPI.plans.list(state.gym.id);
     setState({ screen: 'clientReg3', busy: false, plans });
     return;
@@ -1829,6 +1890,7 @@ const SCREENS = {
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,
+  clientPhotoRequired: viewClientPhotoRequired,
 };
 
 /** Write a possibly-dotted state path, cloning the parent object. */
