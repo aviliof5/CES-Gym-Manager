@@ -110,7 +110,9 @@ create index client_profiles_trainer_idx on public.client_profiles(trainer_user_
 create table public.progress_photos (
   id uuid primary key default gen_random_uuid(),
   client_user_id uuid not null references public.client_profiles(user_id) on delete cascade,
-  storage_key text not null,
+  -- nullable: el cliente registra el check-in del día primero (ensureToday)
+  -- y sube la foto después, en un segundo paso (setPhoto).
+  storage_key text,
   taken_at date not null default current_date,
   created_at timestamptz not null default now(),
   unique (client_user_id, taken_at)
