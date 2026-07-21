@@ -1333,6 +1333,7 @@ const ACTIONS = {
 
   signOut: async () => {
     await BolaAPI.auth.signOut();
+    if (window.CesAds) window.CesAds.hideBanner();
     Object.assign(state, {
       screen: 'role', session: null, myProfile: null, gym: null, error: '',
       myClient: null, myClientPlan: null, myClientTrainer: null, myTrainer: null,
@@ -1776,6 +1777,7 @@ async function enterAdminDash() {
     BolaAPI.reviews.listForGym(state.gym.id),
   ]);
   Object.assign(state, { screen: 'adminDash', adminTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, busy: false });
+  if (window.CesAds) window.CesAds.hideBanner();
   render();
 }
 
@@ -1801,6 +1803,7 @@ async function enterClientHome() {
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
     pendingPayment: null, busy: false,
   });
+  if (window.CesAds) window.CesAds.showBanner();
   render();
 }
 
@@ -1816,6 +1819,7 @@ async function enterTrainerDash(profile, gym, myTrainer) {
     trainerProfileDraft: { specialty: myTrainer.specialty, price: String(myTrainer.price) },
     trainerSelectedClientId: null, trainerSelectedClientDetail: null, busy: false,
   });
+  if (window.CesAds) window.CesAds.hideBanner();
   render();
 }
 

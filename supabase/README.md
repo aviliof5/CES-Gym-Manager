@@ -100,6 +100,3 @@ verdad corriendo) es posible que aparezca algún error puntual de sintaxis o
 de orden — son 4 archivos y ~500 líneas de SQL sin haber tocado una base de
 datos real. Si pasa, decime el mensaje de error exacto y lo arreglamos.
 
-## Lo que falta después de esto
-
-- Integrar AdMob en el cliente Android (no es un servicio de este backend — corre directo en la app, ver el plano de arquitectura).

@@ -2,3 +2,16 @@ config.js
 .claude/settings.local.json
 Thumbs.db
 .DS_Store
+git push -u origin main
+
+# Capacitor / Android
+node_modules/
+www/
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/captures/
+android/app/release/
+*.keystore
+*.jks

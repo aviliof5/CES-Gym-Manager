@@ -1,0 +1,20 @@
+{
+  "name": "ces-gym-manager",
+  "version": "1.0.0",
+  "description": "CES Gym Manager — app de gestión de gimnasios (Cuban Enterprise Solution)",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve -l 4173 .",
+    "build:www": "node scripts/build-www.js",
+    "cap:sync": "npm run build:www && npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor-community/admob": "^8.0.0",
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  }
+}
