@@ -102,6 +102,4 @@ datos real. Si pasa, decime el mensaje de error exacto y lo arreglamos.
 
 ## Lo que falta después de esto
 
-- Conectar `app.js` al backend real (hoy sigue siendo un prototipo 100% en memoria — este backend todavía no está enchufado al frontend).
-- Pantalla de selección/unión de gimnasio para entrenador y cliente (`join_gym()` ya existe en el backend; falta el UI, porque el prototipo asume un solo gimnasio).
 - Integrar AdMob en el cliente Android (no es un servicio de este backend — corre directo en la app, ver el plano de arquitectura).

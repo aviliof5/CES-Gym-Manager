@@ -121,6 +121,7 @@ const state = {
   clientPhysicalReg: { weight: '', height: '', age: '', level: 'principiante', goal: 'perder_peso' },
   approvedTrainersForReg: [],
   selectedPlanId: null, wantsTrainer: null, selectedTrainerId: null,
+  gymList: [], selectedGymId: null, gymPickerNext: null,
 
   myClient: null,
   myClientPlan: null,
@@ -1136,6 +1137,45 @@ function viewTrainerAuth() {
   </div>`;
 }
 
+// Pantalla compartida por cliente y entrenador: se muestra después del alta
+// de cuenta (o al reanudar sesión) cuando todavía no están unidos a ningún
+// gimnasio. `state.gymPickerNext` guarda qué flujo retomar después de unirse
+// — ver confirmGymAndJoin.
+function viewGymPicker() {
+  const isTrainer = (state.gymPickerNext || '').startsWith('trainer');
+  const accentVar = isTrainer ? 'var(--amber)' : 'var(--mint)';
+  const btnClass = isTrainer ? 'btn--amber' : 'btn--mint';
+  const gyms = state.gymList;
+
+  const cards = gyms.map(g => `
+    <div ${act('selectGym', g.id)} style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-radius:14px;cursor:pointer;margin-bottom:10px;background:${state.selectedGymId === g.id ? 'rgba(52,211,153,0.1)' : 'var(--surface)'};border:1px solid ${state.selectedGymId === g.id ? accentVar : 'var(--line)'}">
+      <div>
+        <div style="font-size:15px;font-weight:700">${esc(g.name)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(g.address)} · ${esc(g.hours)}</div>
+      </div>
+      ${state.selectedGymId === g.id ? `<div style="width:20px;height:20px;border-radius:50%;background:${accentVar};display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:12px;font-weight:900">✓</div>` : ''}
+    </div>`).join('');
+
+  const empty = `<div style="text-align:center;color:var(--muted);font-size:12.5px;padding:40px 20px;line-height:1.6">Todavía no hay ningún gimnasio registrado en CES Gym Manager. Pedile a tu administrador que cree uno primero, y volvé a esta pantalla para unirte.</div>`;
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('signOut')}>&lsaquo;</div>
+      <div class="step-label">Elegí tu gimnasio</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="form-body">
+      ${errorBanner()}
+      <div class="title">¿A qué gimnasio te vas a unir?</div>
+      <div class="subtitle" style="margin-bottom:20px">Tu cuenta ya está creada — elegí el gimnasio donde entrenás para continuar</div>
+      ${gyms.length ? cards : empty}
+    </div>
+    ${gyms.length ? `<div class="form-foot">
+      <button class="btn ${btnClass}" ${act('confirmGymAndJoin')} ${(!state.selectedGymId || state.busy) ? 'disabled' : ''}>${state.busy ? 'Un momento…' : 'Continuar'}</button>
+    </div>` : ''}
+  </div>`;
+}
+
 function viewTrainerPending() {
   return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;position:relative;z-index:0">
     <div class="gym-watermark gym-watermark--amber">${iconSpan('clipboard')}</div>
@@ -1408,6 +1448,33 @@ const ACTIONS = {
     setState({ clientsForGym, activeCharge: null });
   },
 
+  /* ---- selección de gimnasio (cliente y entrenador) ---- */
+  selectGym: v => setState({ selectedGymId: v }),
+  confirmGymAndJoin: async () => {
+    if (!state.selectedGymId) return;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.gyms.join(state.selectedGymId);
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    const gym = await BolaAPI.gyms.get(state.selectedGymId);
+    const next = state.gymPickerNext;
+    if (next === 'clientSignUp') {
+      await continueClientSignUpAfterGym(gym);
+    } else if (next === 'trainerSignUp') {
+      continueTrainerSignUpAfterGym();
+    } else if (next === 'clientResume') {
+      const profile = await BolaAPI.auth.getMyProfile();
+      state.myProfile = profile;
+      await continueClientResume(profile);
+    } else if (next === 'trainerResume') {
+      const profile = await BolaAPI.auth.getMyProfile();
+      await continueTrainerSignIn(profile);
+    }
+  },
+
   /* ---- client registration ---- */
   clientSignUp: async () => {
     setState({ busy: true, error: '' });
@@ -1417,15 +1484,7 @@ const ACTIONS = {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
     }
-    const gym = await BolaAPI.gyms.browseFirst();
-    if (!gym) throw new Error('Todavía no hay ningún gimnasio registrado en CES Gym Manager.');
-    await BolaAPI.gyms.join(gym.id);
-    const profile = await BolaAPI.auth.getMyProfile();
-    const path = BolaAPI.photos.facePath(gym.id, profile.id);
-    await BolaAPI.photos.upload(path, c.photoFile);
-    await BolaAPI.clients.setFacePhotoKey(profile.id, path);
-    const plans = await BolaAPI.plans.list(gym.id);
-    setState({ busy: false, myProfile: profile, gym, plans, screen: 'clientReg2' });
+    await loadGymPicker('clientSignUp');
   },
   setLevel: v => setState({ clientPhysicalReg: { ...state.clientPhysicalReg, level: v } }),
   setRegGoal: v => setState({ clientPhysicalReg: { ...state.clientPhysicalReg, goal: v }, aiGoal: v }),
@@ -1504,16 +1563,7 @@ const ACTIONS = {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
     }
-    // Sin esto, approve_trainer() nunca encuentra la fila: su WHERE exige
-    // gym_id = app_gym_id(), y gym_id sigue en null hasta unirse.
-    const gym = await BolaAPI.gyms.browseFirst();
-    if (!gym) throw new Error('Todavía no hay ningún gimnasio registrado en CES Gym Manager.');
-    await BolaAPI.gyms.join(gym.id);
-    setState({
-      busy: false, screen: 'trainerPending', pendingTrainerName: r.name,
-      trainerReg: { name: '', email: '', phone: '', password: '', specialty: '', price: '' },
-      trainerAuthMode: 'login',
-    });
+    await loadGymPicker('trainerSignUp');
   },
   trainerSignIn: async () => {
     setState({ busy: true, trainerLoginError: '' });
@@ -1523,7 +1573,7 @@ const ACTIONS = {
       setState({ busy: false, trainerLoginError: friendlyError(err) });
       return;
     }
-    let profile = await BolaAPI.auth.getMyProfile();
+    const profile = await BolaAPI.auth.getMyProfile();
     if (profile.role !== 'trainer') {
       await BolaAPI.auth.signOut();
       setState({ busy: false, trainerLoginError: 'Esta cuenta no es de entrenador.' });
@@ -1532,24 +1582,10 @@ const ACTIONS = {
     // Igual que el cliente: si el signUp quedó interrumpido por la
     // confirmación de correo, el join al gimnasio nunca se ejecutó.
     if (!profile.gym_id) {
-      const gymToJoin = await BolaAPI.gyms.browseFirst();
-      if (!gymToJoin) throw new Error('Todavía no hay ningún gimnasio registrado en CES Gym Manager.');
-      await BolaAPI.gyms.join(gymToJoin.id);
-      profile = await BolaAPI.auth.getMyProfile();
-    }
-    const gym = profile.gym_id ? await BolaAPI.gyms.get(profile.gym_id) : null;
-    const trainersForGym = gym ? await BolaAPI.trainers.listForGym(gym.id) : [];
-    const myTrainer = trainersForGym.find(t => t.id === profile.id);
-    if (!myTrainer || myTrainer.status === 'pending') {
-      setState({ busy: false, screen: 'trainerPending', pendingTrainerName: profile.name, myProfile: profile });
+      await loadGymPicker('trainerResume');
       return;
     }
-    if (myTrainer.status === 'rejected') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, trainerLoginError: 'Tu solicitud fue rechazada. Contacta al administrador.' });
-      return;
-    }
-    await enterTrainerDash(profile, gym, myTrainer);
+    await continueTrainerSignIn(profile);
   },
 
   /* ---- trainer dashboard ---- */
@@ -1606,16 +1642,17 @@ async function resumeAdminSession(profile) {
 // Igual que arriba pero para cliente. gym_id normalmente ya está seteado
 // (se une al gimnasio justo después de crear la cuenta, ver clientSignUp),
 // salvo que el signUp haya quedado interrumpido por la confirmación de
-// correo — ahí el join nunca se ejecutó, así que hay que resolverlo acá.
+// correo — ahí el join nunca se ejecutó, y hay que elegir gimnasio acá.
 // plan_id puede faltar si no llegó al paso 3.
 async function resumeClientSession(profile) {
   if (!profile.gym_id) {
-    const gym = await BolaAPI.gyms.browseFirst();
-    if (!gym) throw new Error('Todavía no hay ningún gimnasio registrado en CES Gym Manager.');
-    await BolaAPI.gyms.join(gym.id);
-    profile = await BolaAPI.auth.getMyProfile();
-    state.myProfile = profile;
+    await loadGymPicker('clientResume');
+    return;
   }
+  await continueClientResume(profile);
+}
+
+async function continueClientResume(profile) {
   state.gym = await BolaAPI.gyms.get(profile.gym_id);
   const client = await BolaAPI.clients.getSelf(profile.id);
   if (!client.planId) {
@@ -1624,6 +1661,49 @@ async function resumeClientSession(profile) {
     return;
   }
   await enterClientHome();
+}
+
+// Trae la lista de gimnasios y muestra la pantalla de selección. `next`
+// identifica qué flujo retomar una vez que el usuario elija uno y confirme
+// — ver ACTIONS.confirmGymAndJoin.
+async function loadGymPicker(next) {
+  const gymList = await BolaAPI.gyms.listAll();
+  setState({ gymList, selectedGymId: null, gymPickerNext: next, screen: 'gymPicker', busy: false, error: '' });
+}
+
+async function continueClientSignUpAfterGym(gym) {
+  const c = state.clientReg;
+  const profile = await BolaAPI.auth.getMyProfile();
+  const path = BolaAPI.photos.facePath(gym.id, profile.id);
+  await BolaAPI.photos.upload(path, c.photoFile);
+  await BolaAPI.clients.setFacePhotoKey(profile.id, path);
+  const plans = await BolaAPI.plans.list(gym.id);
+  setState({ busy: false, myProfile: profile, gym, plans, screen: 'clientReg2' });
+}
+
+function continueTrainerSignUpAfterGym() {
+  const r = state.trainerReg;
+  setState({
+    busy: false, screen: 'trainerPending', pendingTrainerName: r.name,
+    trainerReg: { name: '', email: '', phone: '', password: '', specialty: '', price: '' },
+    trainerAuthMode: 'login',
+  });
+}
+
+async function continueTrainerSignIn(profile) {
+  const gym = await BolaAPI.gyms.get(profile.gym_id);
+  const trainersForGym = await BolaAPI.trainers.listForGym(gym.id);
+  const myTrainer = trainersForGym.find(t => t.id === profile.id);
+  if (!myTrainer || myTrainer.status === 'pending') {
+    setState({ busy: false, screen: 'trainerPending', pendingTrainerName: profile.name, myProfile: profile });
+    return;
+  }
+  if (myTrainer.status === 'rejected') {
+    await BolaAPI.auth.signOut();
+    setState({ busy: false, trainerLoginError: 'Tu solicitud fue rechazada. Contacta al administrador.' });
+    return;
+  }
+  await enterTrainerDash(profile, gym, myTrainer);
 }
 
 async function enterAdminDash() {
@@ -1748,6 +1828,7 @@ const SCREENS = {
   trainerAuth: viewTrainerAuth,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
+  gymPicker: viewGymPicker,
 };
 
 /** Write a possibly-dotted state path, cloning the parent object. */
@@ -1842,6 +1923,14 @@ async function boot() {
 
   try {
     const profile = await BolaAPI.auth.getMyProfile();
+    if (!profile) {
+      // getSession() lee la sesión guardada localmente sin validarla;
+      // getMyProfile() sí valida contra el servidor y puede devolver null
+      // si el token quedó vencido/inválido — ahí no hay nada que resumir.
+      await BolaAPI.auth.signOut();
+      setState({ screen: 'role' });
+      return;
+    }
     state.session = session;
     state.myProfile = profile;
 

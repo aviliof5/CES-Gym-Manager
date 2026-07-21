@@ -139,7 +139,7 @@
   /* ---------------- gimnasio ---------------- */
 
   const gyms = {
-    async browseFirst() { await wait(); return db.gyms[0] || null; },
+    async listAll() { await wait(); return [...db.gyms]; },
     async get(gymId) { await wait(); return db.gyms.find(g => g.id === gymId) || null; },
     async create({ name, address, hours }) {
       await wait();

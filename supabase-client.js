@@ -72,11 +72,8 @@
   /* ---------------- gimnasio ---------------- */
 
   const gyms = {
-    // Single-gym: la UI actual no tiene selector de gimnasio, así que se une
-    // siempre al primero que exista. Ver README para la limitación.
-    async browseFirst() {
-      const rows = unwrap(await client.from('gyms').select('id, name, address, hours').order('created_at', { ascending: true }).limit(1));
-      return rows[0] || null;
+    async listAll() {
+      return unwrap(await client.from('gyms').select('id, name, address, hours').order('name', { ascending: true }));
     },
 
     async get(gymId) {
