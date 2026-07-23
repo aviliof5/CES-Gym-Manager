@@ -12,11 +12,23 @@
 'use strict';
 
 window.CesAds = (function () {
-  const TEST_BANNER_ID = 'ca-app-pub-3940256099942544/6300978111';
+  // Ad units de PRUEBA oficiales de Google — uno por plataforma (el de
+  // Android no sirve en iOS y viceversa). Se elige según la plataforma real
+  // en la que corre la app empaquetada.
+  const TEST_BANNER_ANDROID = 'ca-app-pub-3940256099942544/6300978111';
+  const TEST_BANNER_IOS = 'ca-app-pub-3940256099942544/2934735716';
   let initPromise = null;
 
   function isNative() {
     return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
+  function platform() {
+    return (window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()) || 'web';
+  }
+
+  function testBannerId() {
+    return platform() === 'ios' ? TEST_BANNER_IOS : TEST_BANNER_ANDROID;
   }
 
   function plugin() {
@@ -39,7 +51,7 @@ window.CesAds = (function () {
     const cfg = window.BOLA_CONFIG || {};
     try {
       await AdMob.showBanner({
-        adId: cfg.admobBannerId || TEST_BANNER_ID,
+        adId: cfg.admobBannerId || testBannerId(),
         adSize: 'ADAPTIVE_BANNER',
         position: 'BOTTOM_CENTER',
         isTesting: !cfg.admobBannerId,
