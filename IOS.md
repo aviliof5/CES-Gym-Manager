@@ -70,19 +70,87 @@ npm install
 
 # 3. Regenerar www/ y crear el proyecto iOS nativo
 npm run build:www
-npx cap add ios          # crea ios/ y corre `pod install`
-npx cap sync ios         # copia www/ y los plugins al proyecto iOS
+npx cap add ios          # crea ios/ y corre un primer `pod install`
+```
+
+⚠️ **Antes de sincronizar, aplicar el fix de CocoaPods de la sección
+siguiente** — si no, `pod install` va a fallar con un conflicto de versiones
+en `GoogleUserMessagingPlatform`. Después de aplicarlo:
+
+```bash
+npx cap copy ios         # copia www/ y los plugins al proyecto iOS
+                          # (no "cap sync" — reinstalaría los pods y
+                          #  perdería el pin de UMP que acabás de fijar)
 
 # 4. Abrir en Xcode
 npx cap open ios
 ```
 
-Antes de compilar, configurar AdMob en el `Info.plist` (ver siguiente
-sección). Después, en Xcode: seleccionar un simulador o un iPhone conectado,
-elegir el *Team* de firma en **Signing & Capabilities**, y darle a ▶ (Run).
+Antes de compilar, configurar AdMob en el `Info.plist` (ver más abajo).
+Después, en Xcode: seleccionar un simulador o un iPhone conectado, elegir el
+*Team* de firma en **Signing & Capabilities**, y darle a ▶ (Run).
 
 Cuando cambies algo del cliente web (en `bola gym`), volvés a copiar los
-archivos a esta carpeta y corrés `npm run cap:sync` — igual que en Android.
+archivos a esta carpeta y corrés `npm run cap:sync` — pero si eso vuelve a
+correr `pod install` sin el pin (por ejemplo porque se agregó/actualizó un
+plugin nuevo), repetí el fix de la sección siguiente antes de compilar.
+
+## Fix necesario: conflicto de CocoaPods con `GoogleUserMessagingPlatform`
+
+Esto **ya se probó y se verificó** compilando en la nube (ver
+[CLOUD-BUILD.md](CLOUD-BUILD.md)), así que es un paso confirmado, no
+teórico. Sin él, `pod install` falla así:
+
+```
+[!] CocoaPods could not find compatible versions for pod "GoogleUserMessagingPlatform":
+  In snapshot (Podfile.lock):
+    GoogleUserMessagingPlatform (= 3.1.0, >= 1.1)
+  In Podfile:
+    GoogleUserMessagingPlatform (~> 2.3)
+```
+
+**Por qué pasa:** el plugin `@capacitor-community/admob@6.2.0` está escrito
+contra la API vieja de consentimiento (`UMPConsentStatus`), que la versión
+3.0 de Google User Messaging Platform renombró a `ConsentStatus`. El
+podspec del plugin fija `Google-Mobile-Ads-SDK` en `11.3.0`, pero esa
+versión arrastra `GoogleUserMessagingPlatform` **sin tope de versión** como
+dependencia transitiva — así que CocoaPods trae la última (3.x) por
+defecto, y el código Swift del plugin no compila contra ella.
+
+**La solución, en 3 pasos** (en `ios/App/`, después de `npx cap add ios`):
+
+1. **Borrar el lock y los pods ya instalados** — el primer `pod install`
+   (el que corre `cap add ios` solo) ya dejó un `Podfile.lock` fijado en la
+   3.x. Si no se borra, CocoaPods intenta cumplir a la vez el Podfile nuevo
+   y ese snapshot viejo, y es un conflicto imposible de resolver:
+   ```bash
+   rm -f ios/App/Podfile.lock
+   rm -rf ios/App/Pods
+   ```
+
+2. **Fijar `GoogleUserMessagingPlatform` a la última línea 2.x** (todavía
+   tiene `UMPConsentStatus`) agregando esta línea dentro del `target 'App'
+   do ... end` de `ios/App/Podfile`:
+   ```ruby
+   pod 'GoogleUserMessagingPlatform', '~> 2.3'
+   ```
+
+3. **Subir el deployment target del Podfile a iOS 14.0** — las versiones
+   2.x de ese pod que sí son compatibles piden un mínimo más alto que el
+   `13.0` que pone Capacitor por defecto. En la primera línea de
+   `ios/App/Podfile`:
+   ```ruby
+   platform :ios, '14.0'
+   ```
+
+4. Reinstalar:
+   ```bash
+   cd ios/App && pod install
+   ```
+
+Este es exactamente el fix que aplica
+[`.github/workflows/ios-build.yml`](.github/workflows/ios-build.yml) antes
+de compilar en la nube — se puede copiar de ahí si hace falta.
 
 ## AdMob en iOS: configuración obligatoria del `Info.plist`
 
