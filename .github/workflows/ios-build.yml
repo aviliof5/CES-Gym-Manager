@@ -1,0 +1,90 @@
+name: iOS build (nube)
+
+# Compila la app de iPhone en un runner macOS de GitHub — sin necesidad de
+# tener una Mac. Este workflow hace un build SIN FIRMAR para el simulador de
+# iOS: sirve para verificar que la app compila y para descargar el .app.
+#
+# Para generar un .ipa instalable en un iPhone real hace falta firma de
+# código (cuenta de Apple Developer + certificados subidos como secrets).
+# Ese paso está documentado en CLOUD-BUILD.md.
+
+on:
+  # Botón "Run workflow" en la pestaña Actions de GitHub.
+  workflow_dispatch:
+  # Y automáticamente al pushear cambios que afecten la app o este workflow.
+  push:
+    branches: [main]
+    paths:
+      - 'app.js'
+      - 'index.html'
+      - 'styles.css'
+      - 'supabase-client.js'
+      - 'ads.js'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'scripts/build-www.js'
+      - '.github/workflows/ios-build.yml'
+
+jobs:
+  build-ios:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Instalar dependencias (Capacitor + AdMob)
+        run: npm install
+
+      - name: Preparar config.js
+        # Si guardaste tu config real como secret BOLA_CONFIG_JS, se usa ese;
+        # si no, se usa la plantilla (la app compila igual, solo que sin
+        # conexión real a Supabase — suficiente para verificar el build).
+        env:
+          BOLA_CONFIG_JS: ${{ secrets.BOLA_CONFIG_JS }}
+        run: |
+          if [ -n "$BOLA_CONFIG_JS" ]; then
+            printf '%s' "$BOLA_CONFIG_JS" > config.js
+            echo "Usando config.js desde el secret BOLA_CONFIG_JS."
+          else
+            cp config.example.js config.js
+            echo "Sin secret: usando config.example.js como placeholder."
+          fi
+
+      - name: Armar www/ (web app de producción)
+        run: npm run build:www
+
+      - name: Crear el proyecto iOS nativo (npx cap add ios + pod install)
+        run: npx cap add ios
+
+      - name: Sincronizar web + plugins al proyecto iOS
+        run: npx cap sync ios
+
+      - name: Compilar para el simulador (sin firmar)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ios/build \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Empaquetar el .app compilado
+        run: |
+          cd ios/build/Build/Products/Debug-iphonesimulator
+          zip -ryq "$GITHUB_WORKSPACE/CES-Gym-Manager-simulator.zip" App.app
+
+      - name: Subir el build como artifact descargable
+        uses: actions/upload-artifact@v4
+        with:
+          name: CES-Gym-Manager-ios-simulator
+          path: CES-Gym-Manager-simulator.zip
+          if-no-files-found: error
