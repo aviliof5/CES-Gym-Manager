@@ -74,11 +74,21 @@ jobs:
         # 3.0 renombró a ConsentStatus. Google-Mobile-Ads-SDK 11.3.0 arrastra
         # UMP como dependencia transitiva sin tope, así que CocoaPods trae la
         # 3.x y el plugin no compila. Lo fijamos a la última 2.x compatible.
+        #
+        # El "npx cap add ios" del paso anterior ya corrió un pod install sin
+        # este pin, dejando un Podfile.lock fijado en 3.1.0. Si no lo
+        # borramos, CocoaPods intenta cumplir a la vez el Podfile (~> 2.3) y
+        # el snapshot del lock (= 3.1.0) — imposible, choque de versiones.
+        # También subimos el deployment target: el error real reportó que
+        # las specs 2.x que sí calzan piden un mínimo más alto que 13.0.
         run: |
           set -eo pipefail
+          rm -f ios/App/Podfile.lock
+          rm -rf ios/App/Pods
           if ! grep -q "GoogleUserMessagingPlatform" ios/App/Podfile; then
             perl -0pi -e "s/(target 'App' do\n\s*capacitor_pods\n)/\$1  pod 'GoogleUserMessagingPlatform', '~> 2.3'\n/" ios/App/Podfile
           fi
+          perl -pi -e "s/platform :ios, '[0-9.]+'/platform :ios, '14.0'/" ios/App/Podfile
           echo "----- Podfile resultante -----"; cat ios/App/Podfile
           grep -q "GoogleUserMessagingPlatform" ios/App/Podfile || { echo "::error::no se pudo inyectar el pin de UMP en el Podfile"; exit 1; }
           cd ios/App && pod install 2>&1 | tee ../../podinstall.log
