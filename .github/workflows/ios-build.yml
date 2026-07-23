@@ -69,8 +69,22 @@ jobs:
       - name: Crear el proyecto iOS nativo (npx cap add ios + pod install)
         run: npx cap add ios
 
-      - name: Sincronizar web + plugins al proyecto iOS
-        run: npx cap sync ios
+      - name: Fijar GoogleUserMessagingPlatform 2.x y reinstalar pods
+        # El plugin AdMob 6.2.0 usa la API vieja (UMPConsentStatus), que UMP
+        # 3.0 renombró a ConsentStatus. Google-Mobile-Ads-SDK 11.3.0 arrastra
+        # UMP como dependencia transitiva sin tope, así que CocoaPods trae la
+        # 3.x y el plugin no compila. Lo fijamos a la última 2.x compatible.
+        run: |
+          set -e
+          if ! grep -q "GoogleUserMessagingPlatform" ios/App/Podfile; then
+            perl -0pi -e "s/(target 'App' do\n\s*capacitor_pods\n)/\$1  pod 'GoogleUserMessagingPlatform', '~> 2.3'\n/" ios/App/Podfile
+          fi
+          echo "----- Podfile resultante -----"; cat ios/App/Podfile
+          grep -q "GoogleUserMessagingPlatform" ios/App/Podfile || { echo "::error::no se pudo inyectar el pin de UMP en el Podfile"; exit 1; }
+          cd ios/App && pod install --repo-update
+
+      - name: Sincronizar web al proyecto iOS
+        run: npx cap copy ios
 
       - name: Diagnóstico del entorno
         run: |
