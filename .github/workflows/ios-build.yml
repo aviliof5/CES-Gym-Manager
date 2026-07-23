@@ -27,16 +27,23 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
 
+      - name: Seleccionar Xcode estable más reciente
+        # El AdMob pod arrastra el Google Mobile Ads SDK, que necesita un
+        # Xcode moderno; el default del runner puede ser viejo.
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
       - name: Instalar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Instalar dependencias (Capacitor + AdMob)
         run: npm install
@@ -65,8 +72,15 @@ jobs:
       - name: Sincronizar web + plugins al proyecto iOS
         run: npx cap sync ios
 
+      - name: Diagnóstico del entorno
+        run: |
+          echo "== Xcode =="; xcodebuild -version
+          echo "== Schemes / targets =="
+          xcodebuild -workspace ios/App/App.xcworkspace -list || true
+
       - name: Compilar para el simulador (sin firmar)
         run: |
+          set -o pipefail
           xcodebuild \
             -workspace ios/App/App.xcworkspace \
             -scheme App \
@@ -75,7 +89,25 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath ios/build \
             CODE_SIGNING_ALLOWED=NO \
-            clean build
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            clean build 2>&1 | tee xcodebuild.log
+
+      - name: Diagnóstico si falló el build
+        if: failure()
+        # Publica las líneas de error reales como annotations del run, que se
+        # pueden leer por la API pública aunque los logs pidan login.
+        run: |
+          echo "===== Errores de xcodebuild (tail) ====="
+          if [ -f xcodebuild.log ]; then
+            grep -E "error:|fatal error|The following build commands failed|ld: |No such file|not found|Unable to" xcodebuild.log \
+              | tail -30 \
+              | while IFS= read -r line; do echo "::error::$line"; done
+            echo "----- últimas 25 líneas crudas -----"
+            tail -25 xcodebuild.log
+          else
+            echo "::error::no se generó xcodebuild.log"
+          fi
 
       - name: Empaquetar el .app compilado
         run: |
