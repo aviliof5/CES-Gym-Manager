@@ -75,13 +75,13 @@ jobs:
         # UMP como dependencia transitiva sin tope, así que CocoaPods trae la
         # 3.x y el plugin no compila. Lo fijamos a la última 2.x compatible.
         run: |
-          set -e
+          set -eo pipefail
           if ! grep -q "GoogleUserMessagingPlatform" ios/App/Podfile; then
             perl -0pi -e "s/(target 'App' do\n\s*capacitor_pods\n)/\$1  pod 'GoogleUserMessagingPlatform', '~> 2.3'\n/" ios/App/Podfile
           fi
           echo "----- Podfile resultante -----"; cat ios/App/Podfile
           grep -q "GoogleUserMessagingPlatform" ios/App/Podfile || { echo "::error::no se pudo inyectar el pin de UMP en el Podfile"; exit 1; }
-          cd ios/App && pod install --repo-update
+          cd ios/App && pod install 2>&1 | tee ../../podinstall.log
 
       - name: Sincronizar web al proyecto iOS
         run: npx cap copy ios
@@ -110,17 +110,24 @@ jobs:
       - name: Diagnóstico si falló el build
         if: failure()
         # Publica las líneas de error reales como annotations del run, que se
-        # pueden leer por la API pública aunque los logs pidan login.
+        # pueden leer por la API pública aunque los logs pidan login. Revisa
+        # cualquiera de los logs que se haya llegado a generar.
         run: |
-          echo "===== Errores de xcodebuild (tail) ====="
-          if [ -f xcodebuild.log ]; then
-            grep -E "error:|fatal error|The following build commands failed|ld: |No such file|not found|Unable to" xcodebuild.log \
-              | tail -30 \
-              | while IFS= read -r line; do echo "::error::$line"; done
-            echo "----- últimas 25 líneas crudas -----"
-            tail -25 xcodebuild.log
-          else
-            echo "::error::no se generó xcodebuild.log"
+          report() {
+            local label="$1" file="$2"
+            if [ -f "$file" ]; then
+              echo "===== Errores de $label (tail) ====="
+              grep -iE "error|fatal|failed|not found|unable to|no such file|couldn't|conflict" "$file" \
+                | tail -30 \
+                | while IFS= read -r line; do echo "::error::[$label] $line"; done
+              echo "----- $label: últimas 25 líneas crudas -----"
+              tail -25 "$file"
+            fi
+          }
+          report "pod install" podinstall.log
+          report "xcodebuild" xcodebuild.log
+          if [ ! -f podinstall.log ] && [ ! -f xcodebuild.log ]; then
+            echo "::error::ningún log conocido se generó — falló un paso anterior sin log capturado"
           fi
 
       - name: Empaquetar el .app compilado
