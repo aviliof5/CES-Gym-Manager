@@ -89,6 +89,22 @@ input,textarea,select,button{font-family:inherit}
 .field::placeholder{color:var(--muted)}
 .field--sm{border-radius:10px;padding:12px 14px;font-size:13.5px}
 
+/* Wrapper compartido por el sufijo @gmail.com y el botón de mostrar/ocultar
+   contraseña — ambos son un input .field con algo posicionado encima. */
+.field-suffix{position:relative}
+.field-suffix .field{padding-right:44px}
+.field-suffix--email .field{padding-right:96px}
+.field-suffix__label{
+  position:absolute;right:16px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:13px;pointer-events:none;user-select:none;
+}
+.field-eye{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;
+  color:var(--muted);cursor:pointer;border-radius:8px;
+}
+.field-eye:hover{color:var(--text)}
+
 .btn{
   width:100%;
   border:none;

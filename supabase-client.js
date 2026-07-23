@@ -26,6 +26,15 @@
     return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   }
 
+  // Los campos de correo en la UI solo capturan la parte local (el sufijo
+  // @gmail.com se muestra fijo al lado, ver emailField() en app.js) — acá
+  // se completa antes de mandarlo a Supabase. Si ya viene con "@" (valor
+  // legado, o alguien lo pasó completo) se respeta tal cual.
+  function normalizeEmail(raw) {
+    const v = (raw || '').trim();
+    return v.includes('@') ? v : `${v}@gmail.com`;
+  }
+
   function unwrap({ data, error }) {
     if (error) throw error;
     return data;
@@ -36,27 +45,27 @@
   const auth = {
     async signUpAdmin({ name, email, phone, password }) {
       return unwrap(await client.auth.signUp({
-        email, password,
+        email: normalizeEmail(email), password,
         options: { data: { role: 'admin', name, phone }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
       }));
     },
 
     async signUpTrainer({ name, email, phone, password, specialty, price }) {
       return unwrap(await client.auth.signUp({
-        email, password,
+        email: normalizeEmail(email), password,
         options: { data: { role: 'trainer', name, phone, specialty, price }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
       }));
     },
 
     async signUpClient({ name, email, phone, password }) {
       return unwrap(await client.auth.signUp({
-        email, password,
+        email: normalizeEmail(email), password,
         options: { data: { role: 'client', name, phone }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
       }));
     },
 
     async signIn({ email, password }) {
-      return unwrap(await client.auth.signInWithPassword({ email, password }));
+      return unwrap(await client.auth.signInWithPassword({ email: normalizeEmail(email), password }));
     },
 
     async signOut() {

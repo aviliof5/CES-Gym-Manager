@@ -28,6 +28,13 @@
 
   let session = null; // {id, role}
 
+  // Igual que normalizeEmail() en supabase-client.js — el mock recibe lo
+  // mismo que mandaría la app real (ver emailField() en app.js).
+  function normalizeEmail(raw) {
+    const v = (raw || '').trim();
+    return v.includes('@') ? v : `${v}@gmail.com`;
+  }
+
   function requireAuth() {
     if (!session) throw new Error('No autenticado.');
     return session;
@@ -95,6 +102,7 @@
     // correo (el caso "hay que confirmar" se probó a mano contra Supabase
     // real, ver conversación; acá solo se cubre el camino feliz).
     async signUpAdmin({ name, email, phone, password }) {
+      email = normalizeEmail(email);
       await wait();
       if (db.profiles.some(p => p.email === email)) throw new Error('Ya existe una cuenta con ese correo.');
       const id = uid('admin');
@@ -103,6 +111,7 @@
       return { user: { id }, session };
     },
     async signUpTrainer({ name, email, phone, password, specialty, price }) {
+      email = normalizeEmail(email);
       await wait();
       if (db.profiles.some(p => p.email === email)) throw new Error('Ya existe una cuenta con ese correo.');
       const id = uid('trainer');
@@ -112,6 +121,7 @@
       return { user: { id }, session };
     },
     async signUpClient({ name, email, phone, password }) {
+      email = normalizeEmail(email);
       await wait();
       if (db.profiles.some(p => p.email === email)) throw new Error('Ya existe una cuenta con ese correo.');
       const id = uid('client');
@@ -121,6 +131,7 @@
       return { user: { id }, session };
     },
     async signIn({ email, password }) {
+      email = normalizeEmail(email);
       await wait();
       const p = db.profiles.find(x => x.email === email && x.password === password);
       if (!p) throw new Error('Correo o contraseña incorrectos.');

@@ -75,7 +75,62 @@ const ICON_PATHS = {
   clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 12l2 2 4-4"/>',
   idcard: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 16c.5-1.8 2-2.5 2.5-2.5S11 14.2 11.5 16M14 9h4M14 13h4"/>',
   run: '<circle cx="14" cy="5" r="2"/><path d="M9 20l2-5 2 1 2 5M8 13l3-3 2 2 3-1M6 9l3-2"/>',
+  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6 0 10 7 10 7a17.6 17.6 0 0 1-3.1 3.9M6.3 6.3A17.9 17.9 0 0 0 2 12s4 7 10 7a10.5 10.5 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
+  wifiOff: '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 3.5-2.3M19 12.5a10 10 0 0 0-3-2.1M2 8.5a15 15 0 0 1 4.5-2.8M22 8.5a15 15 0 0 0-6-3.4"/><circle cx="12" cy="20" r="1"/>',
 };
+
+// Prefijos de país para el campo de teléfono (nombre en español + código de
+// marcación E.164). Cuba primero porque es el país por defecto del gym; el
+// resto ordenado alfabéticamente.
+const COUNTRY_CODES = [
+  ['Cuba', '+53'],
+  ['Afganistán', '+93'], ['Albania', '+355'], ['Alemania', '+49'], ['Andorra', '+376'],
+  ['Angola', '+244'], ['Arabia Saudita', '+966'], ['Argelia', '+213'], ['Argentina', '+54'],
+  ['Armenia', '+374'], ['Australia', '+61'], ['Austria', '+43'], ['Azerbaiyán', '+994'],
+  ['Bahamas', '+1242'], ['Bahréin', '+973'], ['Bangladés', '+880'], ['Barbados', '+1246'],
+  ['Bélgica', '+32'], ['Belice', '+501'], ['Benín', '+229'], ['Bielorrusia', '+375'],
+  ['Bolivia', '+591'], ['Bosnia y Herzegovina', '+387'], ['Botsuana', '+267'], ['Brasil', '+55'],
+  ['Brunéi', '+673'], ['Bulgaria', '+359'], ['Burkina Faso', '+226'], ['Burundi', '+257'],
+  ['Bután', '+975'], ['Cabo Verde', '+238'], ['Camboya', '+855'], ['Camerún', '+237'],
+  ['Canadá', '+1'], ['Catar', '+974'], ['Chad', '+235'], ['Chile', '+56'], ['China', '+86'],
+  ['Chipre', '+357'], ['Colombia', '+57'], ['Comoras', '+269'], ['Corea del Norte', '+850'],
+  ['Corea del Sur', '+82'], ['Costa de Marfil', '+225'], ['Costa Rica', '+506'], ['Croacia', '+385'],
+  ['Dinamarca', '+45'], ['Ecuador', '+593'], ['Egipto', '+20'], ['El Salvador', '+503'],
+  ['Emiratos Árabes Unidos', '+971'], ['Eritrea', '+291'], ['Eslovaquia', '+421'], ['Eslovenia', '+386'],
+  ['España', '+34'], ['Estados Unidos', '+1'], ['Estonia', '+372'], ['Etiopía', '+251'],
+  ['Filipinas', '+63'], ['Finlandia', '+358'], ['Fiyi', '+679'], ['Francia', '+33'],
+  ['Gabón', '+241'], ['Gambia', '+220'], ['Georgia', '+995'], ['Ghana', '+233'], ['Grecia', '+30'],
+  ['Guatemala', '+502'], ['Guinea', '+224'], ['Guinea-Bisáu', '+245'], ['Guinea Ecuatorial', '+240'],
+  ['Guyana', '+592'], ['Haití', '+509'], ['Honduras', '+504'], ['Hungría', '+36'], ['India', '+91'],
+  ['Indonesia', '+62'], ['Irak', '+964'], ['Irán', '+98'], ['Irlanda', '+353'], ['Islandia', '+354'],
+  ['Israel', '+972'], ['Italia', '+39'], ['Jamaica', '+1876'], ['Japón', '+81'], ['Jordania', '+962'],
+  ['Kazajistán', '+7'], ['Kenia', '+254'], ['Kirguistán', '+996'], ['Kiribati', '+686'],
+  ['Kuwait', '+965'], ['Laos', '+856'], ['Lesoto', '+266'], ['Letonia', '+371'], ['Líbano', '+961'],
+  ['Liberia', '+231'], ['Libia', '+218'], ['Liechtenstein', '+423'], ['Lituania', '+370'],
+  ['Luxemburgo', '+352'], ['Madagascar', '+261'], ['Malasia', '+60'], ['Malaui', '+265'],
+  ['Maldivas', '+960'], ['Malí', '+223'], ['Malta', '+356'], ['Marruecos', '+212'],
+  ['Mauricio', '+230'], ['Mauritania', '+222'], ['México', '+52'], ['Moldavia', '+373'],
+  ['Mónaco', '+377'], ['Mongolia', '+976'], ['Montenegro', '+382'], ['Mozambique', '+258'],
+  ['Namibia', '+264'], ['Nauru', '+674'], ['Nepal', '+977'], ['Nicaragua', '+505'], ['Níger', '+227'],
+  ['Nigeria', '+234'], ['Noruega', '+47'], ['Nueva Zelanda', '+64'], ['Omán', '+968'],
+  ['Países Bajos', '+31'], ['Pakistán', '+92'], ['Palaos', '+680'], ['Panamá', '+507'],
+  ['Papúa Nueva Guinea', '+675'], ['Paraguay', '+595'], ['Perú', '+51'], ['Polonia', '+48'],
+  ['Portugal', '+351'], ['Puerto Rico', '+1787'], ['Reino Unido', '+44'],
+  ['República Centroafricana', '+236'], ['República Checa', '+420'],
+  ['República Democrática del Congo', '+243'], ['República del Congo', '+242'],
+  ['República Dominicana', '+1809'], ['Ruanda', '+250'], ['Rumanía', '+40'], ['Rusia', '+7'],
+  ['Samoa', '+685'], ['San Marino', '+378'], ['Senegal', '+221'], ['Serbia', '+381'],
+  ['Seychelles', '+248'], ['Sierra Leona', '+232'], ['Singapur', '+65'], ['Siria', '+963'],
+  ['Somalia', '+252'], ['Sri Lanka', '+94'], ['Suazilandia', '+268'], ['Sudáfrica', '+27'],
+  ['Sudán', '+249'], ['Sudán del Sur', '+211'], ['Suecia', '+46'], ['Suiza', '+41'],
+  ['Surinam', '+597'], ['Tailandia', '+66'], ['Taiwán', '+886'], ['Tanzania', '+255'],
+  ['Tayikistán', '+992'], ['Timor Oriental', '+670'], ['Togo', '+228'], ['Tonga', '+676'],
+  ['Trinidad y Tobago', '+1868'], ['Túnez', '+216'], ['Turkmenistán', '+993'], ['Turquía', '+90'],
+  ['Tuvalu', '+688'], ['Ucrania', '+380'], ['Uganda', '+256'], ['Uruguay', '+598'],
+  ['Uzbekistán', '+998'], ['Vanuatu', '+678'], ['Vaticano', '+379'], ['Venezuela', '+58'],
+  ['Vietnam', '+84'], ['Yemen', '+967'], ['Yibuti', '+253'], ['Zambia', '+260'], ['Zimbabue', '+263'],
+];
 
 function iconSpan(name, size) {
   const paths = ICON_PATHS[name] || '';
@@ -91,6 +146,8 @@ const state = {
   gym: null,          // {id, name, address, hours}
   busy: false,
   error: '',
+  offline: !navigator.onLine,
+  showPassword: false,
 
   adminTab: 'clientes',
   clientTab: 'inicio',
@@ -98,7 +155,7 @@ const state = {
 
   adminAuthMode: 'login',
   adminLoginEmail: '', adminLoginPassword: '', adminLoginError: '',
-  adminReg: { name: '', email: '', phone: '', password: '' },
+  adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   gymReg: { name: '', address: '', hours: '' },
 
   equipment: [],
@@ -117,7 +174,7 @@ const state = {
 
   clientAuthMode: 'login',
   clientLoginEmail: '', clientLoginPassword: '', clientLoginError: '',
-  clientReg: { name: '', email: '', phone: '', password: '', photoFile: null, photoPreviewUrl: null },
+  clientReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', photoFile: null, photoPreviewUrl: null },
   clientPhysicalReg: { weight: '', height: '', age: '', level: 'principiante', goal: 'perder_peso' },
   approvedTrainersForReg: [],
   selectedPlanId: null, wantsTrainer: null, selectedTrainerId: null,
@@ -136,7 +193,7 @@ const state = {
 
   trainerAuthMode: 'login',
   trainerLoginEmail: '', trainerLoginPassword: '', trainerLoginError: '',
-  trainerReg: { name: '', email: '', phone: '', password: '', specialty: '', price: '' },
+  trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
 
   myTrainer: null,
@@ -178,7 +235,14 @@ function statusMeta(st) {
 }
 
 function friendlyError(err) {
-  return (err && err.message) || 'Ocurrió un error inesperado. Intenta de nuevo.';
+  const msg = (err && err.message) || '';
+  // fetch() falla con estos mensajes técnicos ("Failed to fetch", etc.)
+  // tanto sin conexión como con el servidor inalcanzable — junto con
+  // navigator.onLine cubre el caso real sin depender de un solo mensaje.
+  if (!navigator.onLine || /Failed to fetch|NetworkError|Load failed|network request failed|ERR_INTERNET_DISCONNECTED/i.test(msg)) {
+    return 'Sin conexión a internet. Revisá tu conexión e intentá de nuevo.';
+  }
+  return msg || 'Ocurrió un error inesperado. Intenta de nuevo.';
 }
 
 function daysUntil(dateStr) {
@@ -270,6 +334,97 @@ function errorBanner() {
   return `<div style="margin:0 22px 12px;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.4);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--red)">${esc(state.error)}</div>`;
 }
 
+// Banner persistente que se prepende a cualquier pantalla mientras el
+// navegador no tiene conexión (ver listeners online/offline al final del
+// archivo) — así el usuario lo ve apenas se corta, sin necesidad de tocar
+// nada primero.
+function offlineBanner() {
+  return `<div style="background:var(--red);color:var(--bg);font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 14)}<span>Sin conexión a internet</span></div>`;
+}
+
+// Input de correo que solo captura la parte local — el sufijo @gmail.com se
+// muestra fijo al lado y se agrega en supabase-client.js al enviar. Evita
+// que el usuario tenga que escribirlo (y typos tipo @gmial.com).
+function emailField(field, placeholder, value) {
+  return `<div class="field-suffix field-suffix--email">
+    <input class="field" type="text" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"
+      placeholder="${esc(placeholder)}" value="${esc(value)}" data-f="${field}"/>
+    <span class="field-suffix__label">@gmail.com</span>
+  </div>`;
+}
+
+// 1 = débil, 2 = media, 3 = fuerte. "Media" pide 8+ caracteres combinando
+// letras y números — es el mínimo que se exige para poder continuar en los
+// registros (no en login, ahí la contraseña ya existe).
+function passwordStrength(pw) {
+  if (!pw) return 0;
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  if (pw.length >= 12) score++;
+  if (score <= 1) return 1;
+  if (score <= 3) return 2;
+  return 3;
+}
+
+function passwordStrengthMeter(pw) {
+  const level = passwordStrength(pw);
+  const labels = ['', 'Débil', 'Media', 'Fuerte'];
+  const colors = ['var(--surface-2)', 'var(--red)', 'var(--amber)', 'var(--mint)'];
+  const barColor = colors[level] || colors[0];
+  const bars = [1, 2, 3].map(i => `<div style="flex:1;height:4px;border-radius:2px;background:${i <= level ? barColor : 'var(--surface-2)'}"></div>`).join('');
+  const hint = pw
+    ? (level < 2 ? `Débil — falta llegar a "Media": 8+ caracteres con letras y números` : `Seguridad: ${labels[level]}`)
+    : 'Mínimo 8 caracteres, combinando letras y números';
+  return `<div style="margin-top:-6px">
+    <div style="display:flex;gap:4px;margin-bottom:4px">${bars}</div>
+    <div style="font-size:11px;color:${pw ? barColor : 'var(--muted)'}">${hint}</div>
+  </div>`;
+}
+
+// Contraseña con botón de ojo para mostrar/ocultar (state.showPassword es
+// compartido: nunca hay dos campos de contraseña visibles a la vez en una
+// misma pantalla). `opts.strength` agrega el medidor debajo — solo en los
+// formularios de registro, donde se está eligiendo una contraseña nueva.
+function passwordField(field, placeholder, value, opts) {
+  const o = opts || {};
+  const visible = state.showPassword;
+  return `<div class="field-suffix">
+    <input class="field" type="${visible ? 'text' : 'password'}" autocapitalize="none" autocorrect="off"
+      placeholder="${esc(placeholder)}" value="${esc(value)}" data-f="${field}"/>
+    <div class="field-eye" ${act('togglePasswordVisibility')}>${iconSpan(visible ? 'eyeOff' : 'eye', 16)}</div>
+  </div>${o.strength ? passwordStrengthMeter(value) : ''}`;
+}
+
+// Selector de prefijo de país + input numérico. El prefijo se guarda en su
+// propio campo de estado (ver `phonePrefix` en adminReg/clientReg/trainerReg)
+// y se combina con el número recién en el momento de mandar el registro.
+function phoneField(prefixPath, phonePath, prefixValue, phoneValue, placeholder) {
+  const options = COUNTRY_CODES.map(([name, code]) =>
+    `<option value="${esc(code)}"${code === prefixValue ? ' selected' : ''}>${esc(name)} (${code})</option>`).join('');
+  return `<div style="display:flex;gap:8px">
+    <select class="field" data-f="${prefixPath}" style="flex:0 0 92px;padding:14px 6px">${options}</select>
+    <input class="field" type="text" inputmode="numeric" pattern="[0-9]*"
+      placeholder="${esc(placeholder)}" value="${esc(phoneValue)}" data-f="${phonePath}" data-numeric="true" style="flex:1"/>
+  </div>`;
+}
+
+// Separa un teléfono guardado como "+53512345678" en { prefix, phone } para
+// precargar el formulario (ver resumeAdminSession). Prueba el prefijo más
+// largo primero porque varios países comparten los primeros dígitos
+// (+1 Canadá/EE.UU. vs +1876 Jamaica, etc.) — no es infalible, pero alcanza
+// para reabrir un registro que la propia app generó.
+function splitPhone(full) {
+  const v = (full || '').trim();
+  if (!v.startsWith('+')) return { phonePrefix: '+53', phone: v.replace(/\D/g, '') };
+  const byLength = [...COUNTRY_CODES].sort((x, y) => y[1].length - x[1].length);
+  const match = byLength.find(([, code]) => v.startsWith(code));
+  if (!match) return { phonePrefix: '+53', phone: v.replace(/\D/g, '') };
+  return { phonePrefix: match[1], phone: v.slice(match[1].length).replace(/\D/g, '') };
+}
+
 // Crédito de marca — solo en las pantallas principales (selector de rol y
 // los tres paneles de inicio), no en cada paso de los asistentes.
 function devCredit() {
@@ -339,8 +494,8 @@ function viewAdminAuth() {
   const invalid = state.busy || !(state.adminLoginEmail.trim() && state.adminLoginPassword.trim());
   const inner = `${toggle}
     <div class="stack">
-      ${textField('adminLoginEmail', 'Correo electrónico', state.adminLoginEmail)}
-      ${textField('adminLoginPassword', 'Contraseña', state.adminLoginPassword, { type: 'password' })}
+      ${emailField('adminLoginEmail', 'usuario', state.adminLoginEmail)}
+      ${passwordField('adminLoginPassword', 'Contraseña', state.adminLoginPassword)}
     </div>
     ${state.adminLoginError ? `<div style="font-size:12px;color:var(--red);margin-top:10px">${esc(state.adminLoginError)}</div>` : ''}`;
 
@@ -371,8 +526,8 @@ function viewClientAuth() {
   const invalid = state.busy || !(state.clientLoginEmail.trim() && state.clientLoginPassword.trim());
   const inner = `${toggle}
     <div class="stack">
-      ${textField('clientLoginEmail', 'Correo electrónico', state.clientLoginEmail)}
-      ${textField('clientLoginPassword', 'Contraseña', state.clientLoginPassword, { type: 'password' })}
+      ${emailField('clientLoginEmail', 'usuario', state.clientLoginEmail)}
+      ${passwordField('clientLoginPassword', 'Contraseña', state.clientLoginPassword)}
     </div>
     ${state.clientLoginError ? `<div style="font-size:12px;color:var(--red);margin-top:10px">${esc(state.clientLoginError)}</div>` : ''}`;
 
@@ -388,7 +543,7 @@ function viewClientAuth() {
 
 function viewAdminReg1() {
   const a = state.adminReg;
-  const invalid = !(a.name.trim() && a.email.trim() && a.phone.trim() && a.password.trim()) || state.busy;
+  const invalid = !(a.name.trim() && a.email.trim() && a.phone.trim() && passwordStrength(a.password) >= 2) || state.busy;
   return `<div class="col">
     ${stepHead('Paso 1 de 4 · Registro Administrador', 'goto:adminAuth')}
     ${stepBars(1, 4, 'lime')}
@@ -398,9 +553,9 @@ function viewAdminReg1() {
       ${errorBanner()}
       <div class="stack">
         ${textField('adminReg.name', 'Nombre completo *', a.name)}
-        ${textField('adminReg.email', 'Correo electrónico *', a.email)}
-        ${textField('adminReg.phone', 'Teléfono *', a.phone)}
-        ${textField('adminReg.password', 'Contraseña *', a.password, { type: 'password' })}
+        ${emailField('adminReg.email', 'usuario *', a.email)}
+        ${phoneField('adminReg.phonePrefix', 'adminReg.phone', a.phonePrefix, a.phone, 'Teléfono *')}
+        ${passwordField('adminReg.password', 'Contraseña *', a.password, { strength: true })}
       </div>
     </div>
     <div class="form-foot">
@@ -733,7 +888,7 @@ function viewAdminDash() {
 
 function viewClientReg1() {
   const c = state.clientReg;
-  const invalid = !(c.name.trim() && c.email.trim() && c.phone.trim() && c.password.trim() && c.photoFile) || state.busy;
+  const invalid = !(c.name.trim() && c.email.trim() && c.phone.trim() && passwordStrength(c.password) >= 2 && c.photoFile) || state.busy;
   const photo = c.photoPreviewUrl
     ? `<img src="${esc(c.photoPreviewUrl)}" alt="Foto de rostro"/>`
     : 'Foto de rostro *';
@@ -752,9 +907,9 @@ function viewClientReg1() {
       </div>
       <div class="stack">
         ${textField('clientReg.name', 'Nombre completo *', c.name)}
-        ${textField('clientReg.email', 'Correo electrónico *', c.email)}
-        ${textField('clientReg.phone', 'Teléfono *', c.phone)}
-        ${textField('clientReg.password', 'Contraseña *', c.password, { type: 'password' })}
+        ${emailField('clientReg.email', 'usuario *', c.email)}
+        ${phoneField('clientReg.phonePrefix', 'clientReg.phone', c.phonePrefix, c.phone, 'Teléfono *')}
+        ${passwordField('clientReg.password', 'Contraseña *', c.password, { strength: true })}
       </div>
     </div>
     <div class="form-foot">
@@ -1126,19 +1281,19 @@ function viewTrainerAuth() {
   const mode = state.trainerAuthMode;
   const invalid = state.busy || (mode === 'login'
     ? !(state.trainerLoginEmail.trim() && state.trainerLoginPassword.trim())
-    : !(state.trainerReg.name.trim() && state.trainerReg.email.trim() && state.trainerReg.phone.trim() && state.trainerReg.password.trim()));
+    : !(state.trainerReg.name.trim() && state.trainerReg.email.trim() && state.trainerReg.phone.trim() && passwordStrength(state.trainerReg.password) >= 2));
 
   const loginForm = `<div class="stack">
-      ${textField('trainerLoginEmail', 'Correo electrónico', state.trainerLoginEmail)}
-      ${textField('trainerLoginPassword', 'Contraseña', state.trainerLoginPassword, { type: 'password' })}
+      ${emailField('trainerLoginEmail', 'usuario', state.trainerLoginEmail)}
+      ${passwordField('trainerLoginPassword', 'Contraseña', state.trainerLoginPassword)}
     </div>
     ${state.trainerLoginError ? `<div style="font-size:12px;color:var(--red);margin-top:10px">${esc(state.trainerLoginError)}</div>` : ''}`;
 
   const registerForm = `<div class="stack">
       ${textField('trainerReg.name', 'Nombre completo *', state.trainerReg.name)}
-      ${textField('trainerReg.email', 'Correo electrónico *', state.trainerReg.email)}
-      ${textField('trainerReg.phone', 'Teléfono *', state.trainerReg.phone)}
-      ${textField('trainerReg.password', 'Contraseña *', state.trainerReg.password, { type: 'password' })}
+      ${emailField('trainerReg.email', 'usuario *', state.trainerReg.email)}
+      ${phoneField('trainerReg.phonePrefix', 'trainerReg.phone', state.trainerReg.phonePrefix, state.trainerReg.phone, 'Teléfono *')}
+      ${passwordField('trainerReg.password', 'Contraseña *', state.trainerReg.password, { strength: true })}
       ${textField('trainerReg.specialty', 'Especialidad (ej. Fuerza, Cardio)', state.trainerReg.specialty)}
       ${textField('trainerReg.price', 'Precio del servicio (USD/mes)', state.trainerReg.price)}
     </div>
@@ -1330,6 +1485,7 @@ function viewTrainerDash() {
 
 const ACTIONS = {
   goto: v => setState({ screen: v, error: '' }),
+  togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
 
   signOut: async () => {
     await BolaAPI.auth.signOut();
@@ -1387,7 +1543,7 @@ const ACTIONS = {
   /* ---- admin registration ---- */
   adminSignUp: async () => {
     setState({ busy: true, error: '' });
-    const result = await BolaAPI.auth.signUpAdmin(state.adminReg);
+    const result = await BolaAPI.auth.signUpAdmin({ ...state.adminReg, phone: state.adminReg.phonePrefix + state.adminReg.phone });
     if (!result || !result.session) {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
@@ -1526,7 +1682,7 @@ const ACTIONS = {
   clientSignUp: async () => {
     setState({ busy: true, error: '' });
     const c = state.clientReg;
-    const result = await BolaAPI.auth.signUpClient({ name: c.name, email: c.email, phone: c.phone, password: c.password });
+    const result = await BolaAPI.auth.signUpClient({ name: c.name, email: c.email, phone: c.phonePrefix + c.phone, password: c.password });
     if (!result || !result.session) {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
@@ -1605,7 +1761,7 @@ const ACTIONS = {
   trainerSignUp: async () => {
     setState({ busy: true, error: '' });
     const r = state.trainerReg;
-    const result = await BolaAPI.auth.signUpTrainer(r);
+    const result = await BolaAPI.auth.signUpTrainer({ ...r, phone: r.phonePrefix + r.phone });
     if (!result || !result.session) {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
@@ -1678,7 +1834,7 @@ async function resumeAdminSession(profile) {
   if (!profile.gym_id) {
     setState({
       screen: 'adminReg2', busy: false,
-      adminReg: { name: profile.name, email: profile.email, phone: profile.phone, password: '' },
+      adminReg: { name: profile.name, email: (profile.email || '').replace(/@gmail\.com$/i, ''), ...splitPhone(profile.phone), password: '' },
     });
     return;
   }
@@ -1747,7 +1903,7 @@ function continueTrainerSignUpAfterGym() {
   const r = state.trainerReg;
   setState({
     busy: false, screen: 'trainerPending', pendingTrainerName: r.name,
-    trainerReg: { name: '', email: '', phone: '', password: '', specialty: '', price: '' },
+    trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
     trainerAuthMode: 'login',
   });
 }
@@ -1934,13 +2090,23 @@ root.addEventListener('input', e => {
   // <select> is driven by its own change handler below; an `input` event here
   // would re-render first and swallow it.
   if (el.tagName === 'SELECT' || !el.dataset || !el.dataset.f) return;
+  if (el.dataset.numeric === 'true') {
+    const digits = el.value.replace(/\D/g, '');
+    if (digits !== el.value) el.value = digits; // no re-render acá, solo corrige lo tipeado
+    setPath(el.dataset.f, digits);
+    return;
+  }
   setPath(el.dataset.f, el.value);
 });
 
 root.addEventListener('change', e => {
   const el = e.target;
-  if (el.dataset.f !== 'clientVisitHour') return;
-  setState({ clientVisitHour: el.value === '' ? null : Number(el.value) });
+  if (!el.dataset || !el.dataset.f) return;
+  if (el.dataset.f === 'clientVisitHour') {
+    setState({ clientVisitHour: el.value === '' ? null : Number(el.value) });
+    return;
+  }
+  if (el.tagName === 'SELECT') setPath(el.dataset.f, el.value);
 });
 
 /* Re-rendering replaces the DOM, so restore focus and caret on the field the
@@ -1963,9 +2129,14 @@ function restoreFocus(snapshot) {
 
 function render() {
   const snapshot = captureFocus();
-  root.innerHTML = (SCREENS[state.screen] || viewRole)();
+  root.innerHTML = (state.offline ? offlineBanner() : '') + (SCREENS[state.screen] || viewRole)();
   restoreFocus(snapshot);
 }
+
+// Se actualiza apenas cambia la conexión (no hace falta que el usuario
+// intente hacer algo primero para enterarse de que no tiene internet).
+window.addEventListener('offline', () => setState({ offline: true }));
+window.addEventListener('online', () => setState({ offline: false }));
 
 /* ============================ boot ============================ */
 // Al cargar: si hay sesión guardada, saltar directo al panel que
