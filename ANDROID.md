@@ -48,16 +48,23 @@ instalación tardó 20 segundos sin un solo error.
 
 ## Ya está hecho
 
-- `npm install` + `npx cap add android` corridos en `ces-android-build` —
-  el proyecto Android existe y compila (Gradle sync ok).
-- Plugin `@capacitor-community/admob@8.0.0` instalado y detectado por
-  Capacitor.
+- `npm install` + `npx cap add android` corridos en `ces-android-build`, y el
+  **APK debug compilado con éxito** (`app-debug.apk`, ~7.6 MB, en
+  `ces-android-build/android/app/build/outputs/apk/debug/`).
+- Plugin `@capacitor-community/admob@6.2.0` instalado y detectado por
+  Capacitor. **Nota:** hay que quedarse en la línea 6.x mientras el proyecto
+  sea Capacitor 6 — la 8.x exige el toolchain de Capacitor 7 (AGP 8.13,
+  Java 21, SDK 36) y no compila acá.
 - `android/app/src/main/AndroidManifest.xml` tiene el meta-data
   `com.google.android.gms.ads.APPLICATION_ID` con el **App ID de PRUEBA**
   oficial de Google (`ca-app-pub-3940256099942544~3347511713`) y el permiso
   `com.google.android.gms.permission.AD_ID`.
 - `ads.js` pide el banner de prueba (`ca-app-pub-3940256099942544/6300978111`)
   mientras `config.js` no tenga `admobBannerId` propio.
+- Toolchain de build instalado en la máquina (fuera de este repo): JDK 17 en
+  `C:\Program Files\Eclipse Adoptium`, y el SDK de Android en `C:\Android\sdk`
+  (`local.properties` apunta ahí con `sdk.dir=C:/Android/sdk` — barras
+  normales, no invertidas, para que Java no las lea como escapes).
 
 ## Cuando cambies algo en el cliente web (acá, en `bola gym`)
 
@@ -69,21 +76,23 @@ cd "C:\Users\braya\ces-android-build"
 npm run cap:sync
 ```
 
-## Compilar / probar
+## Compilar el APK
 
-Hace falta [Android Studio](https://developer.android.com/studio) instalado
-(trae el SDK de Android — no está disponible en este entorno de Claude Code,
-así que no se pudo compilar un APK real desde acá, solo generar y
-configurar el proyecto).
+Con el JDK y el SDK ya instalados en la máquina, el APK debug se compila
+por línea de comandos, sin Android Studio:
 
 ```bash
-cd "C:\Users\braya\ces-android-build"
-npm run cap:open
+cd "C:\Users\braya\ces-android-build\android"
+JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-17.0.19.10-hotspot" ./gradlew.bat assembleDebug
 ```
 
-Abre el proyecto en Android Studio. Desde ahí: `Run` para probarlo en un
-emulador o celular conectado, o `Build > Generate Signed Bundle/APK` cuando
-esté listo para subir a Play Store.
+El APK queda en `android/app/build/outputs/apk/debug/app-debug.apk`. Es
+instalable directo en un celular (activando "orígenes desconocidos") para
+probar; los anuncios salen con los IDs de prueba de Google.
+
+Para el AAB firmado que se sube a Play Store conviene [Android Studio](https://developer.android.com/studio)
+(`npm run cap:open` lo abre) y `Build > Generate Signed Bundle/APK`, o
+`./gradlew.bat bundleRelease` con un keystore configurado.
 
 ## AdMob: de prueba a real
 
