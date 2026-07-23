@@ -116,12 +116,8 @@ jobs:
           report() {
             local label="$1" file="$2"
             if [ -f "$file" ]; then
-              echo "===== Errores de $label (tail) ====="
-              grep -iE "error|fatal|failed|not found|unable to|no such file|couldn't|conflict" "$file" \
-                | tail -30 \
-                | while IFS= read -r line; do echo "::error::[$label] $line"; done
-              echo "----- $label: últimas 25 líneas crudas -----"
-              tail -25 "$file"
+              echo "===== $label: últimas 20 líneas (crudo) ====="
+              tail -20 "$file" | while IFS= read -r line; do echo "::error::[$label] $line"; done
             fi
           }
           report "pod install" podinstall.log
