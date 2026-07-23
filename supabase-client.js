@@ -13,6 +13,19 @@
   const PHOTO_BUCKET = 'photos';
   const SIGNED_URL_TTL = 60 * 60; // 1 hora
 
+  // Empaquetada como app nativa (Capacitor), el link de confirmación de
+  // Gmail no puede apuntar a http://localhost:3000 — en el celular eso es
+  // el propio teléfono, no la PC de desarrollo. En su lugar apunta a un
+  // esquema propio de la app; Android lo intercepta y reabre la app en vez
+  // de un navegador. Requiere que este esquema esté agregado en Supabase
+  // (Authentication → URL Configuration → Redirect URLs) y en
+  // AndroidManifest.xml (intent-filter con este mismo scheme).
+  const NATIVE_AUTH_CALLBACK = 'com.ces.gymmanager://auth-callback';
+
+  function isNative() {
+    return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  }
+
   function unwrap({ data, error }) {
     if (error) throw error;
     return data;
@@ -24,21 +37,21 @@
     async signUpAdmin({ name, email, phone, password }) {
       return unwrap(await client.auth.signUp({
         email, password,
-        options: { data: { role: 'admin', name, phone } },
+        options: { data: { role: 'admin', name, phone }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
       }));
     },
 
     async signUpTrainer({ name, email, phone, password, specialty, price }) {
       return unwrap(await client.auth.signUp({
         email, password,
-        options: { data: { role: 'trainer', name, phone, specialty, price } },
+        options: { data: { role: 'trainer', name, phone, specialty, price }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
       }));
     },
 
     async signUpClient({ name, email, phone, password }) {
       return unwrap(await client.auth.signUp({
         email, password,
-        options: { data: { role: 'client', name, phone } },
+        options: { data: { role: 'client', name, phone }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
       }));
     },
 
@@ -49,6 +62,25 @@
     async signOut() {
       const { error } = await client.auth.signOut();
       if (error) throw error;
+    },
+
+    // Llamada cuando la app nativa se abre por el deep link del correo de
+    // confirmación (com.ces.gymmanager://auth-callback#access_token=...).
+    // Supabase pone los tokens en el fragment (#), no en query params, así
+    // que hay que parsearlos a mano — no llegan por window.location porque
+    // el link no navega un navegador, lo recibe el plugin App como string.
+    // Si el link venció o ya se usó, Supabase manda #error_description en
+    // vez de tokens; se relanza como Error para que la UI lo muestre.
+    async setSessionFromUrl(url) {
+      const hashIndex = url.indexOf('#');
+      if (hashIndex === -1) return null;
+      const params = new URLSearchParams(url.slice(hashIndex + 1));
+      const errorDescription = params.get('error_description');
+      if (errorDescription) throw new Error(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (!access_token || !refresh_token) return null;
+      return unwrap(await client.auth.setSession({ access_token, refresh_token }));
     },
 
     async getSession() {

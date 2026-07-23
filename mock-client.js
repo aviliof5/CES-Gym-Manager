@@ -127,6 +127,9 @@
       session = { id: p.id, role: p.role };
     },
     async signOut() { await wait(); session = null; },
+    // No-op: el deep link de confirmación solo existe en la app nativa
+    // empaquetada, nunca en el navegador donde corre este mock.
+    async setSessionFromUrl() { await wait(); return null; },
     async getSession() { await wait(); return session ? { user: { id: session.id } } : null; },
     async getMyProfile() {
       await wait();

@@ -2029,4 +2029,40 @@ async function boot() {
   }
 }
 
-boot();
+/* ======================= deep link (confirmación de email) =======================
+   En la app nativa, el link "Confirmar mi correo" de Gmail no puede abrir
+   http://localhost:3000 (ver supabase-client.js) — en su lugar abre
+   com.ces.gymmanager://auth-callback#access_token=..., y Android se lo
+   entrega a esta app en vez de a un navegador (intent-filter en
+   AndroidManifest.xml). Dos casos posibles:
+   - App cerrada: Android la abre en frío con esa URL como "launch URL".
+   - App en segundo plano: dispara el evento appUrlOpen sin reiniciarla.
+   En ambos casos se completa la sesión con el token del link y se corre
+   boot() para rutear directo al panel que corresponda. */
+async function handleAuthDeepLink(url) {
+  if (!url || url.indexOf('com.ces.gymmanager://') !== 0) return;
+  try {
+    await BolaAPI.auth.setSessionFromUrl(url);
+  } catch (err) {
+    setState({ screen: 'role', error: friendlyError(err) });
+    return;
+  }
+  boot();
+}
+
+async function initDeepLinksAndBoot() {
+  const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (App) {
+    App.addListener('appUrlOpen', ({ url }) => handleAuthDeepLink(url));
+    try {
+      const launch = await App.getLaunchUrl();
+      if (launch && launch.url && launch.url.indexOf('com.ces.gymmanager://') === 0) {
+        await handleAuthDeepLink(launch.url);
+        return; // handleAuthDeepLink ya corrió boot()
+      }
+    } catch (_) { /* sin launch URL, arranque normal */ }
+  }
+  boot();
+}
+
+initDeepLinksAndBoot();

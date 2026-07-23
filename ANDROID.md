@@ -113,6 +113,42 @@ Cuando crees tu cuenta de AdMob ([apps.admob.google.com](https://apps.admob.goog
    y las políticas de Play Store para apps con anuncios — hay reglas
    específicas sobre dónde y cómo se pueden mostrar.
 
+## Confirmación de email en la app nativa: el link no puede abrir localhost
+
+En el navegador (dev / test-harness), el mail de confirmación que manda
+Supabase trae un link a `http://localhost:3000` — funciona porque ese
+`localhost` es la misma PC donde corre el servidor de pruebas. En el
+**celular**, ese mismo link falla (`ERR_CONNECTION_REFUSED`): "localhost"
+ahí es el propio teléfono, que no tiene nada corriendo en el puerto 3000.
+
+La solución implementada: cuando la app corre empaquetada como app nativa,
+`supabase-client.js` le pide a Supabase que en vez de `localhost:3000`
+redirija a un **esquema propio de la app** —
+`com.ces.gymmanager://auth-callback` — y Android, gracias al segundo
+`intent-filter` agregado en `AndroidManifest.xml`, abre esta app en vez de
+un navegador al tocar el link. `app.js` escucha ese evento (plugin
+`@capacitor/app`) y completa la sesión con el token que trae el link.
+
+⚠️ **Paso obligatorio, hay que hacerlo a mano en el dashboard de Supabase**
+(no es algo que se pueda hacer por código ni yo pueda hacer por vos, hace
+falta tu login):
+
+1. Entrá a tu proyecto en [supabase.com](https://supabase.com/dashboard).
+2. **Authentication → URL Configuration → Redirect URLs**.
+3. Agregá esta URL a la lista permitida (no reemplaces la Site URL, solo
+   sumá esta a "Redirect URLs"):
+   ```
+   com.ces.gymmanager://auth-callback
+   ```
+4. Guardá. Sin este paso, Supabase rechaza el `emailRedirectTo` de la app y
+   sigue mandando el link viejo a `localhost:3000`.
+
+Este cambio ya está compilado en el APK nuevo de `ces-android-build`, con
+`@capacitor/app` instalado y sincronizado. Para probarlo: instalá el APK
+nuevo, registrate con un correo real, y el link "Confirmar mi correo" del
+mail debería abrir la app directo — sin pasar por ningún navegador — y
+dejarte ya logueado.
+
 ## Lo que falta después de esto
 
 - Instalar Android Studio y compilar el APK/AAB por primera vez.
