@@ -2,9 +2,19 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CES Gym Manager · Gestión para gimnasios</title>
 <link rel="stylesheet" href="styles.css">
+
+<!-- PWA instalable -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0B0D10">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CES Gym">
+<meta name="mobile-web-app-capable" content="yes">
 </head>
 <body>
 <div class="stage">
@@ -21,5 +31,14 @@
 <script src="supabase-client.js?v=2"></script>
 <script src="ads.js"></script>
 <script src="app.js"></script>
+<script>
+// Registra el service worker para que la app sea instalable (Android/desktop)
+// y funcione offline. No se registra dentro de la app empaquetada con
+// Capacitor (ya es una app nativa, no necesita esto) ni en el
+// test-harness (evita cachear una versión vieja mientras se prueba app.js).
+if ('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+</script>
 </body>
 </html>
