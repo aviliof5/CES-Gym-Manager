@@ -271,7 +271,7 @@ input,textarea,select,button{font-family:inherit}
 .slot--circle{border-radius:50%}
 .slot img{width:100%;height:100%;object-fit:cover;display:block}
 
-.section-title{font-size:13px;font-weight:700;margin-bottom:10px}
+.section-title{font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;margin-bottom:10px}
 .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
 
 /* ---------- icon system (hand-rolled, no external assets) ---------- */
