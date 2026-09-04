@@ -230,7 +230,8 @@ export function viewClientEntrenar() {
       ${sectionTitle('Rutina de tu entrenador', 'zap', 'margin-bottom:4px')}
       <div class="hint">Creada y actualizada por ${esc(trainer.name)}</div>
       ${toggle}
-      ${exercises.length ? `<div class="card" style="border-color:rgba(52,211,153,0.3);padding:16px">
+      ${exercises.length ? `<button class="btn btn--mint" style="padding:14px;font-size:14px;margin-bottom:16px" ${act('startWorkout', 'trainer')}>Comenzar entrenamiento</button>
+      <div class="card" style="border-color:rgba(52,211,153,0.3);padding:16px">
         <div style="font-size:12.5px;color:var(--mint);font-weight:700;margin-bottom:10px">Rutina personalizada · ${esc(trainer.name)}</div>
         ${exercises.map(ex => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
           <div style="width:6px;height:6px;border-radius:50%;background:var(--mint);flex-shrink:0"></div>
@@ -253,7 +254,8 @@ export function viewClientEntrenar() {
     ${toggle}
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">${goals}</div>
     <button class="btn btn--lime" style="padding:14px;font-size:14px;margin-bottom:16px" ${act('generateRoutine')}>${state.busy ? 'Generando…' : 'Generar rutina con IA'}</button>
-    ${exercises.length ? `<div class="card" style="border-color:rgba(228,0,58,0.3);padding:16px">
+    ${exercises.length ? `<button class="btn btn--lime" style="padding:14px;font-size:14px;margin-bottom:16px" ${act('startWorkout', 'ia')}>Comenzar entrenamiento</button>
+    <div class="card" style="border-color:rgba(228,0,58,0.3);padding:16px">
       <div style="font-size:12.5px;color:var(--lime);font-weight:700;margin-bottom:10px">Rutina recomendada · ${esc(goalLabel)}</div>
       ${exercises.map(ex => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
         <div style="width:6px;height:6px;border-radius:50%;background:var(--lime);flex-shrink:0"></div>
@@ -261,6 +263,89 @@ export function viewClientEntrenar() {
       </div>`).join('')}
       <div style="font-size:10.5px;color:var(--muted);margin-top:10px">Basado en el equipo disponible de ${esc(state.gym.name)}</div>
     </div>` : ''}
+  </div>`;
+}
+
+// "Sentadilla en rack - 4x8" -> {name, detail:'4x8', sets:4, reps:8}
+// "Cardio en caminadora - 20 min" -> {name, detail:'20 min', sets:null}
+// El texto es libre (lo escribe el entrenador, o lo arma buildRoutine() para
+// la IA) — no siempre trae "NxM", así que sets/reps quedan null cuando no
+// se puede parsear, y la tarjeta cae a un solo check "Marcar como hecho".
+function parseExercise(text) {
+  const m = /^(.*?)\s*-\s*(.*)$/.exec(text || '');
+  const name = m ? m[1].trim() : (text || '');
+  const detail = m ? m[2].trim() : '';
+  const setsMatch = /(\d+)\s*x\s*(\d+)/i.exec(detail);
+  return {
+    name, detail,
+    sets: setsMatch ? Number(setsMatch[1]) : null,
+    reps: setsMatch ? Number(setsMatch[2]) : null,
+  };
+}
+
+function formatRest(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+export function viewWorkout() {
+  const w = state.workout;
+  if (!w) return `<div class="pane"></div>`;
+
+  if (w.finished) {
+    const totalSets = Object.values(w.doneSets).reduce((sum, v) => sum + (v instanceof Set ? v.size : (v === true ? 1 : 0)), 0);
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(52,211,153,0.15);display:flex;align-items:center;justify-content:center;color:var(--mint);margin-bottom:20px;font-size:28px">✓</div>
+      <div class="title" style="margin-bottom:0">Entrenamiento completado</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6">${w.exercises.length} ${w.exercises.length === 1 ? 'ejercicio' : 'ejercicios'} · ${totalSets} ${totalSets === 1 ? 'serie marcada' : 'series marcadas'}</div>
+      <button class="btn btn--mint" style="margin-top:28px" ${act('exitWorkout')}>Volver</button>
+    </div>`;
+  }
+
+  const ex = parseExercise((w.exercises[w.index] || {}).text || '');
+  const accent = w.source === 'trainer' ? 'mint' : 'lime';
+  const doneForThis = w.doneSets[w.index];
+  const isLast = w.index + 1 >= w.exercises.length;
+
+  const setsBlock = ex.sets
+    ? `<div style="display:flex;flex-direction:column;gap:8px;margin:20px 0">
+        ${Array.from({ length: ex.sets }, (_, i) => i + 1).map(n => {
+          const checked = doneForThis instanceof Set && doneForThis.has(n);
+          return `<div ${act('toggleSet', n)} style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;background:${checked ? `rgba(${accent === 'lime' ? '228,0,58' : '52,211,153'},0.12)` : 'var(--surface)'};border:1px solid ${checked ? `var(--${accent})` : 'var(--line)'}">
+            <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${checked ? `var(--${accent})` : 'transparent'};border:1px solid ${checked ? 'transparent' : 'var(--line)'};color:var(--bg);font-size:13px;font-weight:900">${checked ? '✓' : ''}</div>
+            <div style="flex:1;font-size:13.5px;font-weight:600">Serie ${n}${ex.reps ? ` · ${ex.reps} reps` : ''}</div>
+          </div>`;
+        }).join('')}
+      </div>`
+    : `<div ${act('toggleSimpleDone')} style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;cursor:pointer;margin:20px 0;background:${doneForThis === true ? `rgba(${accent === 'lime' ? '228,0,58' : '52,211,153'},0.12)` : 'var(--surface)'};border:1px solid ${doneForThis === true ? `var(--${accent})` : 'var(--line)'}">
+        <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${doneForThis === true ? `var(--${accent})` : 'transparent'};border:1px solid ${doneForThis === true ? 'transparent' : 'var(--line)'};color:var(--bg);font-size:13px;font-weight:900">${doneForThis === true ? '✓' : ''}</div>
+        <div style="flex:1;font-size:13.5px;font-weight:600">Marcar como completado${ex.detail ? ` · ${esc(ex.detail)}` : ''}</div>
+      </div>`;
+
+  const restBlock = w.restSecondsLeft > 0 ? `<div class="card--dashed" style="align-items:center;text-align:center;margin-bottom:20px">
+      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0.04em">DESCANSO</div>
+      <div style="font-size:32px;font-weight:900;color:var(--${accent})">${formatRest(w.restSecondsLeft)}</div>
+      <div ${act('skipRest')} style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline">Saltar descanso</div>
+    </div>` : '';
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('exitWorkout')}>&lsaquo;</div>
+      <div class="step-label">Ejercicio ${w.index + 1} de ${w.exercises.length}</div>
+      <div style="width:32px"></div>
+    </div>
+    ${stepBars(w.index + 1, w.exercises.length, accent)}
+    <div class="form-body">
+      <div class="title">${esc(ex.name)}</div>
+      ${ex.detail ? `<div class="subtitle">${esc(ex.detail)}</div>` : ''}
+      ${restBlock}
+      ${setsBlock}
+    </div>
+    <div class="form-foot" style="display:flex;gap:10px">
+      ${w.index > 0 ? `<button class="btn btn--ghost" style="flex:1" ${act('prevExercise')}>Anterior</button>` : ''}
+      <button class="btn btn--${accent}" style="flex:2" ${act('nextExercise')}>${isLast ? 'Finalizar' : 'Siguiente'}</button>
+    </div>
   </div>`;
 }
 

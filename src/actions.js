@@ -13,6 +13,15 @@ import { friendlyError, splitPhone, enrichClient, buildRoutine } from './helpers
 import { DURATION_LABELS } from './data.js';
 import { render } from './router.js';
 
+// Handle del setInterval del descanso entre series — módulo-scoped porque
+// no es parte del estado serializable, solo un recurso a limpiar (ver
+// ACTIONS.startRest/skipRest/nextExercise/exitWorkout, todos pasan por acá
+// antes de tocar state.workout para nunca dejar dos timers corriendo).
+let restTimerId = null;
+function clearRestTimer() {
+  if (restTimerId) { clearInterval(restTimerId); restTimerId = null; }
+}
+
 export const ACTIONS = {
   goto: v => setState({ screen: v, error: '' }),
   togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
@@ -323,6 +332,78 @@ export const ACTIONS = {
     await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, exerciseTexts);
     const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, state.aiGoal);
     setState({ busy: false, aiRoutine });
+  },
+
+  /* ---- workout: temporizador de descanso + marcar series (sección 8 del
+     pedido original) ---- */
+  startWorkout: source => {
+    const exercises = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
+    if (!exercises.exercises.length) return;
+    clearRestTimer();
+    setState({
+      screen: 'workout',
+      workout: { exercises: exercises.exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false },
+    });
+  },
+  toggleSet: setNum => {
+    const w = state.workout;
+    if (!w) return;
+    const num = Number(setNum); // data-v siempre llega como string
+    const key = w.index;
+    const current = new Set(w.doneSets[key] instanceof Set ? w.doneSets[key] : []);
+    const marking = !current.has(num); // true = se está marcando, false = desmarcando
+    if (marking) current.add(num); else current.delete(num);
+    setState({ workout: { ...w, doneSets: { ...w.doneSets, [key]: current } } });
+    // Descanso después de CADA serie que se marca (no al desmarcarla) —
+    // así funciona igual entre la serie 1→2 que entre la 3→4.
+    if (marking) ACTIONS.startRest();
+  },
+  toggleSimpleDone: () => {
+    const w = state.workout;
+    if (!w) return;
+    const key = w.index;
+    const wasDone = w.doneSets[key] === true;
+    setState({ workout: { ...w, doneSets: { ...w.doneSets, [key]: !wasDone } } });
+  },
+  startRest: () => {
+    clearRestTimer();
+    const w = state.workout;
+    if (!w) return;
+    setState({ workout: { ...w, restSecondsLeft: 60 } });
+    restTimerId = setInterval(() => {
+      const cur = state.workout;
+      if (!cur || cur.restSecondsLeft <= 1) {
+        clearRestTimer();
+        if (cur) setState({ workout: { ...cur, restSecondsLeft: 0 } });
+        return;
+      }
+      setState({ workout: { ...cur, restSecondsLeft: cur.restSecondsLeft - 1 } });
+    }, 1000);
+  },
+  skipRest: () => {
+    clearRestTimer();
+    const w = state.workout;
+    if (w) setState({ workout: { ...w, restSecondsLeft: 0 } });
+  },
+  nextExercise: () => {
+    const w = state.workout;
+    if (!w) return;
+    clearRestTimer();
+    if (w.index + 1 >= w.exercises.length) {
+      setState({ workout: { ...w, finished: true, restSecondsLeft: 0 } });
+    } else {
+      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0 } });
+    }
+  },
+  prevExercise: () => {
+    const w = state.workout;
+    if (!w || w.index === 0) return;
+    clearRestTimer();
+    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0 } });
+  },
+  exitWorkout: () => {
+    clearRestTimer();
+    setState({ screen: 'clientHome', workout: null });
   },
 
   addProgress: async () => {

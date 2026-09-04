@@ -71,6 +71,14 @@ export const state = {
   pendingPayment: null,     // {id, amount, status}
   clientVisitHour: null,
 
+  // Sesión de entrenamiento en curso (pantalla "workout" — ver
+  // docs/ARCHITECTURE_AUDIT.md gap de rutinas). Vive solo en memoria: no hay
+  // tabla de sesiones/sets en el backend todavía, así que no se persiste
+  // nada acá — es honesto mostrarlo como progreso de ESTA sesión, no
+  // guardarlo como si existiera esa tabla.
+  // { exercises:[{id,text}], source:'ia'|'trainer', index, doneSets:{[exerciseIndex]: Set<number>|true}, restSecondsLeft, finished }
+  workout: null,
+
   trainerAuthMode: 'login',
   trainerLoginEmail: '', trainerLoginPassword: '', trainerLoginError: '',
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
