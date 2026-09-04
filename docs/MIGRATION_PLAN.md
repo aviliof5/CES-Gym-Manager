@@ -76,7 +76,7 @@ Con esto, el rediseño Fight Club sustancial (Fases 2-8) queda completo: paleta,
 
 Fuera de esta pasada, a propósito: `package.json` (metadata interna de npm, nunca la ve un usuario), y la prosa de `ANDROID.md`/`IOS.md`/`ads.js` que menciona "CES Gym Manager" solo en comentarios para desarrolladores — no es branding de cara al usuario. El build nativo empaquetado (carpeta separada fuera de este repo, ver `ANDROID.md`) va a necesitar un `npm run cap:sync` ahí para levantar `appName`/íconos nuevos la próxima vez que se compile.
 
-**Fase 14 — Testing.** Manual, por rol, contra `test-harness.html` con `mock-client.js` actualizado a los 4 roles — no hay suite automatizada hoy, se mantiene esa realidad salvo que se pida agregar una.
+**Fase 14 — Testing.** ✅ Completa (2026-09-04). Pase manual cruzado por los 4 roles contra `test-harness.html`, con clicks reales (no solo lectura de código) — alta, aprobación y dashboard de dueño/admin/entrenador/cliente, paridad dueño↔admin confirmada, los dos gates de aprobación (admin sin gate, entrenador con gate de 10) probados, subida de foto de progreso (ejercita el bucket que arregló la migración de Fase 12), check-in y cobro en efectivo por staff, responsive mobile↔desktop. Detalle completo y el único hallazgo (menor, de UX, no bloqueante) en [TESTING_FASE14.md](TESTING_FASE14.md). Sigue sin haber suite automatizada — se mantiene esa realidad salvo que se pida agregar una.
 
 ## Archivos nuevos vs. modificados (vista previa, se confirma por fase)
 
