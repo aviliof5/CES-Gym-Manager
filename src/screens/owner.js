@@ -178,8 +178,34 @@ export function viewOwnerClientes() {
 
   return `<div class="pane">
     ${errorBanner()}
+    ${ownerMetricsGrid()}
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${state.clientsForGym.length} clientes registrados</div>
     ${rows}
+  </div>`;
+}
+
+// Resumen del gimnasio al abrir el panel (sección 4 del pedido original:
+// "Clientes / Entrenadores / Check-ins / Ingresos"). Solo se muestran
+// métricas reales ya cargadas en memoria — nada inventado; "check-ins" no
+// aparece acá todavía porque no hay eventos de check-in reales (ver el gap
+// en docs/DATABASE_MAP.md), así que el cuarto valor es "Al día" en su lugar.
+function ownerMetricsGrid() {
+  const trainersActivos = state.trainersForGym.filter(t => t.status === 'approved').length;
+  const alDia = state.clientsForGym.filter(c => c.status === 'al_dia').length;
+  const ingresos = state.clientsForGym.map(enrichClient)
+    .filter(c => c.status === 'al_dia')
+    .reduce((sum, c) => sum + c.amount, 0);
+
+  const tile = (label, value, color) => `<div class="card" style="padding:14px;text-align:center">
+    <div style="font-size:20px;font-weight:900;color:${color}">${value}</div>
+    <div style="font-size:10.5px;color:var(--muted);margin-top:3px">${label}</div>
+  </div>`;
+
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+    ${tile('Clientes', state.clientsForGym.length, 'var(--text)')}
+    ${tile('Entrenadores', trainersActivos, 'var(--amber)')}
+    ${tile('Ingresos (al día)', '$' + ingresos, 'var(--lime)')}
+    ${tile('Clientes al día', alDia, 'var(--mint)')}
   </div>`;
 }
 
