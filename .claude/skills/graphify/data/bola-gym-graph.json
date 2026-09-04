@@ -1,0 +1,7163 @@
+{
+ "generated_from": "graphify-out (C:/Users/braya/OneDrive/Desktop/graphify-out/graph.json)",
+ "generated_at": "2026-09-03T21:51:11.993Z",
+ "scope": "bola gym/",
+ "node_count": 280,
+ "link_count": 579,
+ "nodes": [
+  {
+   "id": "bola_gym_mock_client_add",
+   "label": "add()",
+   "norm_label": "add()",
+   "file": "mock-client.js",
+   "line": "L186",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_addtrainerexercise",
+   "label": "addTrainerExercise()",
+   "norm_label": "addtrainerexercise()",
+   "file": "mock-client.js",
+   "line": "L318",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_approve",
+   "label": "approve()",
+   "norm_label": "approve()",
+   "file": "mock-client.js",
+   "line": "L214",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_cancel",
+   "label": "cancel()",
+   "norm_label": "cancel()",
+   "file": "mock-client.js",
+   "line": "L354",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_chooseplan",
+   "label": "choosePlan()",
+   "norm_label": "chooseplan()",
+   "file": "mock-client.js",
+   "line": "L256",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_choosetrainer",
+   "label": "chooseTrainer()",
+   "norm_label": "choosetrainer()",
+   "file": "mock-client.js",
+   "line": "L257",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_confirm",
+   "label": "confirm()",
+   "norm_label": "confirm()",
+   "file": "mock-client.js",
+   "line": "L342",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_create",
+   "label": "create()",
+   "norm_label": "create()",
+   "file": "mock-client.js",
+   "line": "L158",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_createcashcharge",
+   "label": "createCashCharge()",
+   "norm_label": "createcashcharge()",
+   "file": "mock-client.js",
+   "line": "L331",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_ensureroutine",
+   "label": "ensureRoutine()",
+   "norm_label": "ensureroutine()",
+   "file": "mock-client.js",
+   "line": "L292",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_ensuretoday",
+   "label": "ensureToday()",
+   "norm_label": "ensuretoday()",
+   "file": "mock-client.js",
+   "line": "L277",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_exercisesfor",
+   "label": "exercisesFor()",
+   "norm_label": "exercisesfor()",
+   "file": "mock-client.js",
+   "line": "L297",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_findroutine",
+   "label": "findRoutine()",
+   "norm_label": "findroutine()",
+   "file": "mock-client.js",
+   "line": "L289",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_generateai",
+   "label": "generateAi()",
+   "norm_label": "generateai()",
+   "file": "mock-client.js",
+   "line": "L312",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_get",
+   "label": "get()",
+   "norm_label": "get()",
+   "file": "mock-client.js",
+   "line": "L157",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_getai",
+   "label": "getAi()",
+   "norm_label": "getai()",
+   "file": "mock-client.js",
+   "line": "L302",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_getbyid",
+   "label": "getById()",
+   "norm_label": "getbyid()",
+   "file": "mock-client.js",
+   "line": "L367",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_getmyprofile",
+   "label": "getMyProfile()",
+   "norm_label": "getmyprofile()",
+   "file": "mock-client.js",
+   "line": "L145",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_getpendingforclient",
+   "label": "getPendingForClient()",
+   "norm_label": "getpendingforclient()",
+   "file": "mock-client.js",
+   "line": "L362",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_getself",
+   "label": "getSelf()",
+   "norm_label": "getself()",
+   "file": "mock-client.js",
+   "line": "L251",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_getsession",
+   "label": "getSession()",
+   "norm_label": "getsession()",
+   "file": "mock-client.js",
+   "line": "L144",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_gettrainer",
+   "label": "getTrainer()",
+   "norm_label": "gettrainer()",
+   "file": "mock-client.js",
+   "line": "L307",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_join",
+   "label": "join()",
+   "norm_label": "join()",
+   "file": "mock-client.js",
+   "line": "L169",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_list",
+   "label": "list()",
+   "norm_label": "list()",
+   "file": "mock-client.js",
+   "line": "L185",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_listall",
+   "label": "listAll()",
+   "norm_label": "listall()",
+   "file": "mock-client.js",
+   "line": "L156",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_listapprovedforgym",
+   "label": "listApprovedForGym()",
+   "norm_label": "listapprovedforgym()",
+   "file": "mock-client.js",
+   "line": "L213",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_listforclient",
+   "label": "listForClient()",
+   "norm_label": "listforclient()",
+   "file": "mock-client.js",
+   "line": "L273",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_listforgym",
+   "label": "listForGym()",
+   "norm_label": "listforgym()",
+   "file": "mock-client.js",
+   "line": "L212",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_normalizeemail",
+   "label": "normalizeEmail()",
+   "norm_label": "normalizeemail()",
+   "file": "mock-client.js",
+   "line": "L33",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_profileof",
+   "label": "profileOf()",
+   "norm_label": "profileof()",
+   "file": "mock-client.js",
+   "line": "L43",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_reject",
+   "label": "reject()",
+   "norm_label": "reject()",
+   "file": "mock-client.js",
+   "line": "L222",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_remove",
+   "label": "remove()",
+   "norm_label": "remove()",
+   "file": "mock-client.js",
+   "line": "L187",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_removeexercise",
+   "label": "removeExercise()",
+   "norm_label": "removeexercise()",
+   "file": "mock-client.js",
+   "line": "L325",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_requireauth",
+   "label": "requireAuth()",
+   "norm_label": "requireauth()",
+   "file": "mock-client.js",
+   "line": "L38",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_setfacephotokey",
+   "label": "setFacePhotoKey()",
+   "norm_label": "setfacephotokey()",
+   "file": "mock-client.js",
+   "line": "L258",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_setphoto",
+   "label": "setPhoto()",
+   "norm_label": "setphoto()",
+   "file": "mock-client.js",
+   "line": "L284",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_setsessionfromurl",
+   "label": "setSessionFromUrl()",
+   "norm_label": "setsessionfromurl()",
+   "file": "mock-client.js",
+   "line": "L143",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_shapeclient",
+   "label": "shapeClient()",
+   "norm_label": "shapeclient()",
+   "file": "mock-client.js",
+   "line": "L239",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_shapetrainer",
+   "label": "shapeTrainer()",
+   "norm_label": "shapetrainer()",
+   "file": "mock-client.js",
+   "line": "L206",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_signedurl",
+   "label": "signedUrl()",
+   "norm_label": "signedurl()",
+   "file": "mock-client.js",
+   "line": "L267",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_signin",
+   "label": "signIn()",
+   "norm_label": "signin()",
+   "file": "mock-client.js",
+   "line": "L133",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_signout",
+   "label": "signOut()",
+   "norm_label": "signout()",
+   "file": "mock-client.js",
+   "line": "L140",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_signupadmin",
+   "label": "signUpAdmin()",
+   "norm_label": "signupadmin()",
+   "file": "mock-client.js",
+   "line": "L104",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_signupclient",
+   "label": "signUpClient()",
+   "norm_label": "signupclient()",
+   "file": "mock-client.js",
+   "line": "L123",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_signuptrainer",
+   "label": "signUpTrainer()",
+   "norm_label": "signuptrainer()",
+   "file": "mock-client.js",
+   "line": "L113",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_update",
+   "label": "update()",
+   "norm_label": "update()",
+   "file": "mock-client.js",
+   "line": "L195",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_updatephysical",
+   "label": "updatePhysical()",
+   "norm_label": "updatephysical()",
+   "file": "mock-client.js",
+   "line": "L252",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_updateprofile",
+   "label": "updateProfile()",
+   "norm_label": "updateprofile()",
+   "file": "mock-client.js",
+   "line": "L230",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_mock_client_upload",
+   "label": "upload()",
+   "norm_label": "upload()",
+   "file": "mock-client.js",
+   "line": "L266",
+   "callable": true,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_add",
+   "label": "add()",
+   "norm_label": "add()",
+   "file": "supabase-client.js",
+   "line": "L140",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_addtrainerexercise",
+   "label": "addTrainerExercise()",
+   "norm_label": "addtrainerexercise()",
+   "file": "supabase-client.js",
+   "line": "L340",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_approve",
+   "label": "approve()",
+   "norm_label": "approve()",
+   "file": "supabase-client.js",
+   "line": "L194",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_cancel",
+   "label": "cancel()",
+   "norm_label": "cancel()",
+   "file": "supabase-client.js",
+   "line": "L367",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_chooseplan",
+   "label": "choosePlan()",
+   "norm_label": "chooseplan()",
+   "file": "supabase-client.js",
+   "line": "L246",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_choosetrainer",
+   "label": "chooseTrainer()",
+   "norm_label": "choosetrainer()",
+   "file": "supabase-client.js",
+   "line": "L250",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_confirm",
+   "label": "confirm()",
+   "norm_label": "confirm()",
+   "file": "supabase-client.js",
+   "line": "L363",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_create",
+   "label": "create()",
+   "norm_label": "create()",
+   "file": "supabase-client.js",
+   "line": "L124",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_createcashcharge",
+   "label": "createCashCharge()",
+   "norm_label": "createcashcharge()",
+   "file": "supabase-client.js",
+   "line": "L360",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_ensureroutine",
+   "label": "ensureRoutine()",
+   "norm_label": "ensureroutine()",
+   "file": "supabase-client.js",
+   "line": "L305",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_ensuretoday",
+   "label": "ensureToday()",
+   "norm_label": "ensuretoday()",
+   "file": "supabase-client.js",
+   "line": "L291",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_generateai",
+   "label": "generateAi()",
+   "norm_label": "generateai()",
+   "file": "supabase-client.js",
+   "line": "L329",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_get",
+   "label": "get()",
+   "norm_label": "get()",
+   "file": "supabase-client.js",
+   "line": "L120",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_getbyid",
+   "label": "getById()",
+   "norm_label": "getbyid()",
+   "file": "supabase-client.js",
+   "line": "L375",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_getmyprofile",
+   "label": "getMyProfile()",
+   "norm_label": "getmyprofile()",
+   "file": "supabase-client.js",
+   "line": "L106",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_getpendingforclient",
+   "label": "getPendingForClient()",
+   "norm_label": "getpendingforclient()",
+   "file": "supabase-client.js",
+   "line": "L371",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_getself",
+   "label": "getSelf()",
+   "norm_label": "getself()",
+   "file": "supabase-client.js",
+   "line": "L238",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_getsession",
+   "label": "getSession()",
+   "norm_label": "getsession()",
+   "file": "supabase-client.js",
+   "line": "L95",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_isnative",
+   "label": "isNative()",
+   "norm_label": "isnative()",
+   "file": "supabase-client.js",
+   "line": "L25",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_join",
+   "label": "join()",
+   "norm_label": "join()",
+   "file": "supabase-client.js",
+   "line": "L128",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_list",
+   "label": "list()",
+   "norm_label": "list()",
+   "file": "supabase-client.js",
+   "line": "L137",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_listall",
+   "label": "listAll()",
+   "norm_label": "listall()",
+   "file": "supabase-client.js",
+   "line": "L116",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_listapprovedforgym",
+   "label": "listApprovedForGym()",
+   "norm_label": "listapprovedforgym()",
+   "file": "supabase-client.js",
+   "line": "L190",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_listforclient",
+   "label": "listForClient()",
+   "norm_label": "listforclient()",
+   "file": "supabase-client.js",
+   "line": "L286",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_listforgym",
+   "label": "listForGym()",
+   "norm_label": "listforgym()",
+   "file": "supabase-client.js",
+   "line": "L186",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_loadroutine",
+   "label": "loadRoutine()",
+   "norm_label": "loadroutine()",
+   "file": "supabase-client.js",
+   "line": "L316",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_normalizeemail",
+   "label": "normalizeEmail()",
+   "norm_label": "normalizeemail()",
+   "file": "supabase-client.js",
+   "line": "L33",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_reject",
+   "label": "reject()",
+   "norm_label": "reject()",
+   "file": "supabase-client.js",
+   "line": "L198",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_remove",
+   "label": "remove()",
+   "norm_label": "remove()",
+   "file": "supabase-client.js",
+   "line": "L143",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_removeexercise",
+   "label": "removeExercise()",
+   "norm_label": "removeexercise()",
+   "file": "supabase-client.js",
+   "line": "L348",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_setfacephotokey",
+   "label": "setFacePhotoKey()",
+   "norm_label": "setfacephotokey()",
+   "file": "supabase-client.js",
+   "line": "L254",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_setphoto",
+   "label": "setPhoto()",
+   "norm_label": "setphoto()",
+   "file": "supabase-client.js",
+   "line": "L297",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_setsessionfromurl",
+   "label": "setSessionFromUrl()",
+   "norm_label": "setsessionfromurl()",
+   "file": "supabase-client.js",
+   "line": "L83",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_shapeclient",
+   "label": "shapeClient()",
+   "norm_label": "shapeclient()",
+   "file": "supabase-client.js",
+   "line": "L217",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_shapetrainer",
+   "label": "shapeTrainer()",
+   "norm_label": "shapetrainer()",
+   "file": "supabase-client.js",
+   "line": "L173",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_signedurl",
+   "label": "signedUrl()",
+   "norm_label": "signedurl()",
+   "file": "supabase-client.js",
+   "line": "L275",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_signin",
+   "label": "signIn()",
+   "norm_label": "signin()",
+   "file": "supabase-client.js",
+   "line": "L67",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_signout",
+   "label": "signOut()",
+   "norm_label": "signout()",
+   "file": "supabase-client.js",
+   "line": "L71",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_signupadmin",
+   "label": "signUpAdmin()",
+   "norm_label": "signupadmin()",
+   "file": "supabase-client.js",
+   "line": "L46",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_signupclient",
+   "label": "signUpClient()",
+   "norm_label": "signupclient()",
+   "file": "supabase-client.js",
+   "line": "L60",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_signuptrainer",
+   "label": "signUpTrainer()",
+   "norm_label": "signuptrainer()",
+   "file": "supabase-client.js",
+   "line": "L53",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_unwrap",
+   "label": "unwrap()",
+   "norm_label": "unwrap()",
+   "file": "supabase-client.js",
+   "line": "L38",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_update",
+   "label": "update()",
+   "norm_label": "update()",
+   "file": "supabase-client.js",
+   "line": "L158",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_updatephysical",
+   "label": "updatePhysical()",
+   "norm_label": "updatephysical()",
+   "file": "supabase-client.js",
+   "line": "L242",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_updateprofile",
+   "label": "updateProfile()",
+   "norm_label": "updateprofile()",
+   "file": "supabase-client.js",
+   "line": "L202",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client_upload",
+   "label": "upload()",
+   "norm_label": "upload()",
+   "file": "supabase-client.js",
+   "line": "L269",
+   "callable": true,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_app_act",
+   "label": "act()",
+   "norm_label": "act()",
+   "file": "app.js",
+   "line": "L272",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_attachsignedurls",
+   "label": "attachSignedUrls()",
+   "norm_label": "attachsignedurls()",
+   "file": "app.js",
+   "line": "L1982",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_authscreen",
+   "label": "authScreen()",
+   "norm_label": "authscreen()",
+   "file": "app.js",
+   "line": "L297",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_barchart",
+   "label": "barChart()",
+   "norm_label": "barchart()",
+   "file": "app.js",
+   "line": "L804",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_boot",
+   "label": "boot()",
+   "norm_label": "boot()",
+   "file": "app.js",
+   "line": "L2146",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_buildroutine",
+   "label": "buildRoutine()",
+   "norm_label": "buildroutine()",
+   "file": "app.js",
+   "line": "L224",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_capturefocus",
+   "label": "captureFocus()",
+   "norm_label": "capturefocus()",
+   "file": "app.js",
+   "line": "L2114",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_chip",
+   "label": "chip()",
+   "norm_label": "chip()",
+   "file": "app.js",
+   "line": "L276",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_commentcards",
+   "label": "commentCards()",
+   "norm_label": "commentcards()",
+   "file": "app.js",
+   "line": "L840",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_continueafterfacephoto",
+   "label": "continueAfterFacePhoto()",
+   "norm_label": "continueafterfacephoto()",
+   "file": "app.js",
+   "line": "L1874",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_continueclientresume",
+   "label": "continueClientResume()",
+   "norm_label": "continueclientresume()",
+   "file": "app.js",
+   "line": "L1858",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_continueclientsignupaftergym",
+   "label": "continueClientSignUpAfterGym()",
+   "norm_label": "continueclientsignupaftergym()",
+   "file": "app.js",
+   "line": "L1892",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_continuetrainersignin",
+   "label": "continueTrainerSignIn()",
+   "norm_label": "continuetrainersignin()",
+   "file": "app.js",
+   "line": "L1911",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_continuetrainersignupaftergym",
+   "label": "continueTrainerSignUpAfterGym()",
+   "norm_label": "continuetrainersignupaftergym()",
+   "file": "app.js",
+   "line": "L1902",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_daysuntil",
+   "label": "daysUntil()",
+   "norm_label": "daysuntil()",
+   "file": "app.js",
+   "line": "L248",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_devcredit",
+   "label": "devCredit()",
+   "norm_label": "devcredit()",
+   "file": "app.js",
+   "line": "L430",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_emailfield",
+   "label": "emailField()",
+   "norm_label": "emailfield()",
+   "file": "app.js",
+   "line": "L348",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_enrichclient",
+   "label": "enrichClient()",
+   "norm_label": "enrichclient()",
+   "file": "app.js",
+   "line": "L258",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_enteradmindash",
+   "label": "enterAdminDash()",
+   "norm_label": "enteradmindash()",
+   "file": "app.js",
+   "line": "L1927",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_enterclienthome",
+   "label": "enterClientHome()",
+   "norm_label": "enterclienthome()",
+   "file": "app.js",
+   "line": "L1940",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_entertrainerdash",
+   "label": "enterTrainerDash()",
+   "norm_label": "entertrainerdash()",
+   "file": "app.js",
+   "line": "L1966",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_errorbanner",
+   "label": "errorBanner()",
+   "norm_label": "errorbanner()",
+   "file": "app.js",
+   "line": "L332",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_esc",
+   "label": "esc()",
+   "norm_label": "esc()",
+   "file": "app.js",
+   "line": "L214",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_friendlyerror",
+   "label": "friendlyError()",
+   "norm_label": "friendlyerror()",
+   "file": "app.js",
+   "line": "L237",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_handleauthdeeplink",
+   "label": "handleAuthDeepLink()",
+   "norm_label": "handleauthdeeplink()",
+   "file": "app.js",
+   "line": "L2213",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_iconspan",
+   "label": "iconSpan()",
+   "norm_label": "iconspan()",
+   "file": "app.js",
+   "line": "L135",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_initdeeplinksandboot",
+   "label": "initDeepLinksAndBoot()",
+   "norm_label": "initdeeplinksandboot()",
+   "file": "app.js",
+   "line": "L2224",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_initials",
+   "label": "initials()",
+   "norm_label": "initials()",
+   "file": "app.js",
+   "line": "L220",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_loadgympicker",
+   "label": "loadGymPicker()",
+   "norm_label": "loadgympicker()",
+   "file": "app.js",
+   "line": "L1887",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_offlinebanner",
+   "label": "offlineBanner()",
+   "norm_label": "offlinebanner()",
+   "file": "app.js",
+   "line": "L341",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_openphotopicker",
+   "label": "openPhotoPicker()",
+   "norm_label": "openphotopicker()",
+   "file": "app.js",
+   "line": "L1994",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_passwordfield",
+   "label": "passwordField()",
+   "norm_label": "passwordfield()",
+   "file": "app.js",
+   "line": "L391",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_passwordstrength",
+   "label": "passwordStrength()",
+   "norm_label": "passwordstrength()",
+   "file": "app.js",
+   "line": "L359",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_passwordstrengthmeter",
+   "label": "passwordStrengthMeter()",
+   "norm_label": "passwordstrengthmeter()",
+   "file": "app.js",
+   "line": "L372",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_phonefield",
+   "label": "phoneField()",
+   "norm_label": "phonefield()",
+   "file": "app.js",
+   "line": "L404",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_render",
+   "label": "render()",
+   "norm_label": "render()",
+   "file": "app.js",
+   "line": "L2130",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_restorefocus",
+   "label": "restoreFocus()",
+   "norm_label": "restorefocus()",
+   "file": "app.js",
+   "line": "L2120",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_resumeadminsession",
+   "label": "resumeAdminSession()",
+   "norm_label": "resumeadminsession()",
+   "file": "app.js",
+   "line": "L1833",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_resumeclientsession",
+   "label": "resumeClientSession()",
+   "norm_label": "resumeclientsession()",
+   "file": "app.js",
+   "line": "L1850",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_sectiontitle",
+   "label": "sectionTitle()",
+   "norm_label": "sectiontitle()",
+   "file": "app.js",
+   "line": "L316",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_setpath",
+   "label": "setPath()",
+   "norm_label": "setpath()",
+   "file": "app.js",
+   "line": "L2057",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_setstate",
+   "label": "setState()",
+   "norm_label": "setstate()",
+   "file": "app.js",
+   "line": "L207",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_splitphone",
+   "label": "splitPhone()",
+   "norm_label": "splitphone()",
+   "file": "app.js",
+   "line": "L419",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_statusmeta",
+   "label": "statusMeta()",
+   "norm_label": "statusmeta()",
+   "file": "app.js",
+   "line": "L231",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_stepbars",
+   "label": "stepBars()",
+   "norm_label": "stepbars()",
+   "file": "app.js",
+   "line": "L281",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_stephead",
+   "label": "stepHead()",
+   "norm_label": "stephead()",
+   "file": "app.js",
+   "line": "L287",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_tabsmarkup",
+   "label": "tabsMarkup()",
+   "norm_label": "tabsmarkup()",
+   "file": "app.js",
+   "line": "L320",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_textfield",
+   "label": "textField()",
+   "norm_label": "textfield()",
+   "file": "app.js",
+   "line": "L325",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminauth",
+   "label": "viewAdminAuth()",
+   "norm_label": "viewadminauth()",
+   "file": "app.js",
+   "line": "L478",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminclientes",
+   "label": "viewAdminClientes()",
+   "norm_label": "viewadminclientes()",
+   "file": "app.js",
+   "line": "L672",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadmincomentarios",
+   "label": "viewAdminComentarios()",
+   "norm_label": "viewadmincomentarios()",
+   "file": "app.js",
+   "line": "L852",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadmindash",
+   "label": "viewAdminDash()",
+   "norm_label": "viewadmindash()",
+   "file": "app.js",
+   "line": "L865",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminentrenadores",
+   "label": "viewAdminEntrenadores()",
+   "norm_label": "viewadminentrenadores()",
+   "file": "app.js",
+   "line": "L711",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminfacturacion",
+   "label": "viewAdminFacturacion()",
+   "norm_label": "viewadminfacturacion()",
+   "file": "app.js",
+   "line": "L766",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminreg1",
+   "label": "viewAdminReg1()",
+   "norm_label": "viewadminreg1()",
+   "file": "app.js",
+   "line": "L544",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminreg2",
+   "label": "viewAdminReg2()",
+   "norm_label": "viewadminreg2()",
+   "file": "app.js",
+   "line": "L567",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminreg3",
+   "label": "viewAdminReg3()",
+   "norm_label": "viewadminreg3()",
+   "file": "app.js",
+   "line": "L589",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadminreg4",
+   "label": "viewAdminReg4()",
+   "norm_label": "viewadminreg4()",
+   "file": "app.js",
+   "line": "L620",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewadmintrafico",
+   "label": "viewAdminTrafico()",
+   "norm_label": "viewadmintrafico()",
+   "file": "app.js",
+   "line": "L817",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewboot",
+   "label": "viewBoot()",
+   "norm_label": "viewboot()",
+   "file": "app.js",
+   "line": "L436",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientauth",
+   "label": "viewClientAuth()",
+   "norm_label": "viewclientauth()",
+   "file": "app.js",
+   "line": "L510",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientcomentarios",
+   "label": "viewClientComentarios()",
+   "norm_label": "viewclientcomentarios()",
+   "file": "app.js",
+   "line": "L1223",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewcliententrenar",
+   "label": "viewClientEntrenar()",
+   "norm_label": "viewcliententrenar()",
+   "file": "app.js",
+   "line": "L1089",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclienthome",
+   "label": "viewClientHome()",
+   "norm_label": "viewclienthome()",
+   "file": "app.js",
+   "line": "L1240",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientinicio",
+   "label": "viewClientInicio()",
+   "norm_label": "viewclientinicio()",
+   "file": "app.js",
+   "line": "L1054",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientpago",
+   "label": "viewClientPago()",
+   "norm_label": "viewclientpago()",
+   "file": "app.js",
+   "line": "L1198",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientphotorequired",
+   "label": "viewClientPhotoRequired()",
+   "norm_label": "viewclientphotorequired()",
+   "file": "app.js",
+   "line": "L925",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientprogreso",
+   "label": "viewClientProgreso()",
+   "norm_label": "viewclientprogreso()",
+   "file": "app.js",
+   "line": "L1141",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientreg1",
+   "label": "viewClientReg1()",
+   "norm_label": "viewclientreg1()",
+   "file": "app.js",
+   "line": "L889",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientreg2",
+   "label": "viewClientReg2()",
+   "norm_label": "viewclientreg2()",
+   "file": "app.js",
+   "line": "L952",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientreg3",
+   "label": "viewClientReg3()",
+   "norm_label": "viewclientreg3()",
+   "file": "app.js",
+   "line": "L983",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclientreg4",
+   "label": "viewClientReg4()",
+   "norm_label": "viewclientreg4()",
+   "file": "app.js",
+   "line": "L1013",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewclienttrafico",
+   "label": "viewClientTrafico()",
+   "norm_label": "viewclienttrafico()",
+   "file": "app.js",
+   "line": "L1164",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewgympicker",
+   "label": "viewGymPicker()",
+   "norm_label": "viewgympicker()",
+   "file": "app.js",
+   "line": "L1330",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewplanseditor",
+   "label": "viewPlansEditor()",
+   "norm_label": "viewplanseditor()",
+   "file": "app.js",
+   "line": "L630",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewrole",
+   "label": "viewRole()",
+   "norm_label": "viewrole()",
+   "file": "app.js",
+   "line": "L442",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewtrainerauth",
+   "label": "viewTrainerAuth()",
+   "norm_label": "viewtrainerauth()",
+   "file": "app.js",
+   "line": "L1280",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewtrainerclientes",
+   "label": "viewTrainerClientes()",
+   "norm_label": "viewtrainerclientes()",
+   "file": "app.js",
+   "line": "L1376",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewtrainerdash",
+   "label": "viewTrainerDash()",
+   "norm_label": "viewtrainerdash()",
+   "file": "app.js",
+   "line": "L1468",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewtrainerpending",
+   "label": "viewTrainerPending()",
+   "norm_label": "viewtrainerpending()",
+   "file": "app.js",
+   "line": "L1365",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_viewtrainerperfil",
+   "label": "viewTrainerPerfil()",
+   "norm_label": "viewtrainerperfil()",
+   "file": "app.js",
+   "line": "L1445",
+   "callable": true,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_ads_hidebanner",
+   "label": "hideBanner()",
+   "norm_label": "hidebanner()",
+   "file": "ads.js",
+   "line": "L64",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_ads_init",
+   "label": "init()",
+   "norm_label": "init()",
+   "file": "ads.js",
+   "line": "L38",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_ads_isnative",
+   "label": "isNative()",
+   "norm_label": "isnative()",
+   "file": "ads.js",
+   "line": "L22",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_ads_platform",
+   "label": "platform()",
+   "norm_label": "platform()",
+   "file": "ads.js",
+   "line": "L26",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_ads_plugin",
+   "label": "plugin()",
+   "norm_label": "plugin()",
+   "file": "ads.js",
+   "line": "L34",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_ads_showbanner",
+   "label": "showBanner()",
+   "norm_label": "showbanner()",
+   "file": "ads.js",
+   "line": "L46",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_ads_testbannerid",
+   "label": "testBannerId()",
+   "norm_label": "testbannerid()",
+   "file": "ads.js",
+   "line": "L30",
+   "callable": true,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_icons_main",
+   "label": "main()",
+   "norm_label": "main()",
+   "file": "scripts/build-icons.js",
+   "line": "L11",
+   "callable": true,
+   "community_name": "build-icons.js"
+  },
+  {
+   "id": "bola_gym_cloud_build",
+   "label": "CLOUD-BUILD.md",
+   "norm_label": "cloud-build.md",
+   "file": "CLOUD-BUILD.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_cloud_build_compilar_la_app_de_iphone_en_la_nube_sin_tener_una_mac",
+   "label": "Compilar la app de iPhone en la nube (sin tener una Mac)",
+   "norm_label": "compilar la app de iphone en la nube (sin tener una mac)",
+   "file": "CLOUD-BUILD.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_cloud_build_cómo_lanzarlo",
+   "label": "Cómo lanzarlo",
+   "norm_label": "como lanzarlo",
+   "file": "CLOUD-BUILD.md",
+   "line": "L9",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_cloud_build_hacer_la_app_funcional_conectada_a_supabase_en_el_build_de_la_nube",
+   "label": "Hacer la app funcional (conectada a Supabase) en el build de la nube",
+   "norm_label": "hacer la app funcional (conectada a supabase) en el build de la nube",
+   "file": "CLOUD-BUILD.md",
+   "line": "L74",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_cloud_build_lo_que_este_build_puede_y_lo_que_no",
+   "label": "⚠️ Lo que este build puede y lo que no",
+   "norm_label": "⚠️ lo que este build puede y lo que no",
+   "file": "CLOUD-BUILD.md",
+   "line": "L23",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_cloud_build_opción_recomendada_para_builds_firmados_codemagic",
+   "label": "Opción recomendada para builds firmados: Codemagic",
+   "norm_label": "opcion recomendada para builds firmados: codemagic",
+   "file": "CLOUD-BUILD.md",
+   "line": "L54",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_cloud_build_subir_a_un_ipa_instalable_cuando_tengas_cuenta_apple_developer",
+   "label": "Subir a un .ipa instalable (cuando tengas cuenta Apple Developer)",
+   "norm_label": "subir a un .ipa instalable (cuando tengas cuenta apple developer)",
+   "file": "CLOUD-BUILD.md",
+   "line": "L37",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios",
+   "label": "IOS.md",
+   "norm_label": "ios.md",
+   "file": "IOS.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_admob_de_prueba_a_real",
+   "label": "AdMob: de prueba a real",
+   "norm_label": "admob: de prueba a real",
+   "file": "IOS.md",
+   "line": "L189",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_admob_en_ios_configuración_obligatoria_del_info_plist",
+   "label": "AdMob en iOS: configuración obligatoria del `Info.plist`",
+   "norm_label": "admob en ios: configuracion obligatoria del `info.plist`",
+   "file": "IOS.md",
+   "line": "L155",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "label": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)",
+   "norm_label": "empaquetar ces gym manager como app ios (iphone, con admob)",
+   "file": "IOS.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_estructura_de_la_carpeta_ces_ios_build",
+   "label": "Estructura de la carpeta (`ces-ios-build`)",
+   "norm_label": "estructura de la carpeta (`ces-ios-build`)",
+   "file": "IOS.md",
+   "line": "L42",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_fix_necesario_conflicto_de_cocoapods_con_googleusermessagingplatform",
+   "label": "Fix necesario: conflicto de CocoaPods con `GoogleUserMessagingPlatform`",
+   "norm_label": "fix necesario: conflicto de cocoapods con `googleusermessagingplatform`",
+   "file": "IOS.md",
+   "line": "L98",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_lo_primero_y_más_importante_ios_solo_se_compila_en_una_mac",
+   "label": "⚠️ Lo primero y más importante: iOS solo se compila en una Mac",
+   "norm_label": "⚠️ lo primero y mas importante: ios solo se compila en una mac",
+   "file": "IOS.md",
+   "line": "L8",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_lo_que_falta_checklist_para_la_mac",
+   "label": "Lo que falta (checklist para la Mac)",
+   "norm_label": "lo que falta (checklist para la mac)",
+   "file": "IOS.md",
+   "line": "L221",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_pasos_en_la_mac_de_cero_a_app_corriendo",
+   "label": "Pasos en la Mac (de cero a app corriendo)",
+   "norm_label": "pasos en la mac (de cero a app corriendo)",
+   "file": "IOS.md",
+   "line": "L58",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_publicar_en_la_app_store_resumen",
+   "label": "Publicar en la App Store (resumen)",
+   "norm_label": "publicar en la app store (resumen)",
+   "file": "IOS.md",
+   "line": "L210",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_ios_y_si_no_tenés_una_mac",
+   "label": "¿Y si no tenés una Mac?",
+   "norm_label": "¿y si no tenes una mac?",
+   "file": "IOS.md",
+   "line": "L25",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app iOS (iPhone, con AdMob)"
+  },
+  {
+   "id": "bola_gym_mock_client",
+   "label": "mock-client.js",
+   "norm_label": "mock-client.js",
+   "file": "mock-client.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "mock-client.js"
+  },
+  {
+   "id": "bola_gym_supabase_client",
+   "label": "supabase-client.js",
+   "norm_label": "supabase-client.js",
+   "file": "supabase-client.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "supabase-client.js"
+  },
+  {
+   "id": "bola_gym_android",
+   "label": "ANDROID.md",
+   "norm_label": "android.md",
+   "file": "ANDROID.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_admob_de_prueba_a_real",
+   "label": "AdMob: de prueba a real",
+   "norm_label": "admob: de prueba a real",
+   "file": "ANDROID.md",
+   "line": "L97",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_compilar_el_apk",
+   "label": "Compilar el APK",
+   "norm_label": "compilar el apk",
+   "file": "ANDROID.md",
+   "line": "L79",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_confirmación_de_email_en_la_app_nativa_el_link_no_puede_abrir_localhost",
+   "label": "Confirmación de email en la app nativa: el link no puede abrir localhost",
+   "norm_label": "confirmacion de email en la app nativa: el link no puede abrir localhost",
+   "file": "ANDROID.md",
+   "line": "L116",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_cuando_cambies_algo_en_el_cliente_web_acá_en_bola_gym",
+   "label": "Cuando cambies algo en el cliente web (acá, en `bola gym`)",
+   "norm_label": "cuando cambies algo en el cliente web (aca, en `bola gym`)",
+   "file": "ANDROID.md",
+   "line": "L69",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "label": "Empaquetar CES Gym Manager como app Android (con AdMob)",
+   "norm_label": "empaquetar ces gym manager como app android (con admob)",
+   "file": "ANDROID.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_lo_que_falta_después_de_esto",
+   "label": "Lo que falta después de esto",
+   "norm_label": "lo que falta despues de esto",
+   "file": "ANDROID.md",
+   "line": "L152",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_por_qué_hay_dos_carpetas",
+   "label": "Por qué hay dos carpetas",
+   "norm_label": "por que hay dos carpetas",
+   "file": "ANDROID.md",
+   "line": "L10",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_qué_es_cada_cosa_nueva_en_bola_gym",
+   "label": "Qué es cada cosa nueva (en `bola gym`)",
+   "norm_label": "que es cada cosa nueva (en `bola gym`)",
+   "file": "ANDROID.md",
+   "line": "L28",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_android_ya_está_hecho",
+   "label": "Ya está hecho",
+   "norm_label": "ya esta hecho",
+   "file": "ANDROID.md",
+   "line": "L49",
+   "callable": false,
+   "community_name": "Empaquetar CES Gym Manager como app Android (con AdMob)"
+  },
+  {
+   "id": "bola_gym_app",
+   "label": "app.js",
+   "norm_label": "app.js",
+   "file": "app.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_actions",
+   "label": "ACTIONS",
+   "norm_label": "actions",
+   "file": "app.js",
+   "line": "L1486",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_admin_tabs",
+   "label": "ADMIN_TABS",
+   "norm_label": "admin_tabs",
+   "file": "app.js",
+   "line": "L863",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_client_tabs",
+   "label": "CLIENT_TABS",
+   "norm_label": "client_tabs",
+   "file": "app.js",
+   "line": "L1238",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_country_codes",
+   "label": "COUNTRY_CODES",
+   "norm_label": "country_codes",
+   "file": "app.js",
+   "line": "L86",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_day_labels",
+   "label": "DAY_LABELS",
+   "norm_label": "day_labels",
+   "file": "app.js",
+   "line": "L13",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_duration_labels",
+   "label": "DURATION_LABELS",
+   "norm_label": "duration_labels",
+   "file": "app.js",
+   "line": "L59",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_equipment_suggestions",
+   "label": "EQUIPMENT_SUGGESTIONS",
+   "norm_label": "equipment_suggestions",
+   "file": "app.js",
+   "line": "L11",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_exercise_lib",
+   "label": "EXERCISE_LIB",
+   "norm_label": "exercise_lib",
+   "file": "app.js",
+   "line": "L32",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_filepicker",
+   "label": "filePicker",
+   "norm_label": "filepicker",
+   "file": "app.js",
+   "line": "L1991",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_goals",
+   "label": "GOALS",
+   "norm_label": "goals",
+   "file": "app.js",
+   "line": "L19",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_heatmap",
+   "label": "HEATMAP",
+   "norm_label": "heatmap",
+   "file": "app.js",
+   "line": "L14",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_hour_values",
+   "label": "HOUR_VALUES",
+   "norm_label": "hour_values",
+   "file": "app.js",
+   "line": "L12",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_icon_paths",
+   "label": "ICON_PATHS",
+   "norm_label": "icon_paths",
+   "file": "app.js",
+   "line": "L63",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_levels",
+   "label": "LEVELS",
+   "norm_label": "levels",
+   "file": "app.js",
+   "line": "L27",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_meses",
+   "label": "MESES",
+   "norm_label": "meses",
+   "file": "app.js",
+   "line": "L58",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_root",
+   "label": "root",
+   "norm_label": "root",
+   "file": "app.js",
+   "line": "L2032",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_screens",
+   "label": "SCREENS",
+   "norm_label": "screens",
+   "file": "app.js",
+   "line": "L2034",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_state",
+   "label": "state",
+   "norm_label": "state",
+   "file": "app.js",
+   "line": "L142",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_app_trainer_tabs",
+   "label": "TRAINER_TABS",
+   "norm_label": "trainer_tabs",
+   "file": "app.js",
+   "line": "L1466",
+   "callable": false,
+   "community_name": "app.js"
+  },
+  {
+   "id": "bola_gym_ads",
+   "label": "ads.js",
+   "norm_label": "ads.js",
+   "file": "ads.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "ads.js"
+  },
+  {
+   "id": "bola_gym_supabase_readme",
+   "label": "supabase/README.md",
+   "norm_label": "supabase/readme.md",
+   "file": "supabase/README.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "label": "Backend de Bolá (Supabase)",
+   "norm_label": "backend de bola (supabase)",
+   "file": "supabase/README.md",
+   "line": "L1",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_cuentas_de_prueba_ver_seed_sql",
+   "label": "Cuentas de prueba (ver seed.sql)",
+   "norm_label": "cuentas de prueba (ver seed.sql)",
+   "file": "supabase/README.md",
+   "line": "L54",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_cómo_mapea_al_bug_que_se_corrigió_en_el_frontend",
+   "label": "Cómo mapea al bug que se corrigió en el frontend",
+   "norm_label": "como mapea al bug que se corrigio en el frontend",
+   "file": "supabase/README.md",
+   "line": "L62",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_estado_de_verificación_léelo_antes_de_confiar_ciegamente_en_esto",
+   "label": "Estado de verificación — léelo antes de confiar ciegamente en esto",
+   "norm_label": "estado de verificacion — leelo antes de confiar ciegamente en esto",
+   "file": "supabase/README.md",
+   "line": "L80",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_estructura",
+   "label": "Estructura",
+   "norm_label": "estructura",
+   "file": "supabase/README.md",
+   "line": "L7",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_levantarlo_en_local",
+   "label": "Levantarlo en local",
+   "norm_label": "levantarlo en local",
+   "file": "supabase/README.md",
+   "line": "L20",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_supabase_readme_publicar_a_un_proyecto_real",
+   "label": "Publicar a un proyecto real",
+   "norm_label": "publicar a un proyecto real",
+   "file": "supabase/README.md",
+   "line": "L70",
+   "callable": false,
+   "community_name": "Backend de Bolá (Supabase)"
+  },
+  {
+   "id": "bola_gym_scripts_build_www",
+   "label": "build-www.js",
+   "norm_label": "build-www.js",
+   "file": "scripts/build-www.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "build-www.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_www_files",
+   "label": "FILES",
+   "norm_label": "files",
+   "file": "scripts/build-www.js",
+   "line": "L14",
+   "callable": false,
+   "community_name": "build-www.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_www_fs",
+   "label": "fs",
+   "norm_label": "fs",
+   "file": "scripts/build-www.js",
+   "line": "L8",
+   "callable": false,
+   "community_name": "build-www.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_www_path",
+   "label": "path",
+   "norm_label": "path",
+   "file": "scripts/build-www.js",
+   "line": "L9",
+   "callable": false,
+   "community_name": "build-www.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_www_root",
+   "label": "root",
+   "norm_label": "root",
+   "file": "scripts/build-www.js",
+   "line": "L11",
+   "callable": false,
+   "community_name": "build-www.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_www_wwwdir",
+   "label": "wwwDir",
+   "norm_label": "wwwdir",
+   "file": "scripts/build-www.js",
+   "line": "L12",
+   "callable": false,
+   "community_name": "build-www.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_icons",
+   "label": "build-icons.js",
+   "norm_label": "build-icons.js",
+   "file": "scripts/build-icons.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "build-icons.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_icons_dir",
+   "label": "dir",
+   "norm_label": "dir",
+   "file": "scripts/build-icons.js",
+   "line": "L8",
+   "callable": false,
+   "community_name": "build-icons.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_icons_path",
+   "label": "path",
+   "norm_label": "path",
+   "file": "scripts/build-icons.js",
+   "line": "L6",
+   "callable": false,
+   "community_name": "build-icons.js"
+  },
+  {
+   "id": "bola_gym_scripts_build_icons_sharp",
+   "label": "sharp",
+   "norm_label": "sharp",
+   "file": "scripts/build-icons.js",
+   "line": "L5",
+   "callable": false,
+   "community_name": "build-icons.js"
+  },
+  {
+   "id": "bola_gym_config_example",
+   "label": "config.example.js",
+   "norm_label": "config.example.js",
+   "file": "config.example.js",
+   "line": "L1",
+   "callable": false,
+   "community_name": "config.example.js"
+  },
+  {
+   "id": "bola_gym_package",
+   "label": "bola gym/package.json",
+   "norm_label": "bola gym/package.json",
+   "file": "package.json",
+   "line": "L1",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_dependencies",
+   "label": "dependencies",
+   "norm_label": "dependencies",
+   "file": "package.json",
+   "line": "L14",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_dependencies_capacitor_android",
+   "label": "@capacitor/android",
+   "norm_label": "@capacitor/android",
+   "file": "package.json",
+   "line": "L16",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_dependencies_capacitor_app",
+   "label": "@capacitor/app",
+   "norm_label": "@capacitor/app",
+   "file": "package.json",
+   "line": "L17",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_dependencies_capacitor_community_admob",
+   "label": "@capacitor-community/admob",
+   "norm_label": "@capacitor-community/admob",
+   "file": "package.json",
+   "line": "L15",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_dependencies_capacitor_core",
+   "label": "@capacitor/core",
+   "norm_label": "@capacitor/core",
+   "file": "package.json",
+   "line": "L18",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_dependencies_capacitor_ios",
+   "label": "@capacitor/ios",
+   "norm_label": "@capacitor/ios",
+   "file": "package.json",
+   "line": "L19",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_description",
+   "label": "description",
+   "norm_label": "description",
+   "file": "package.json",
+   "line": "L4",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_devdependencies",
+   "label": "devDependencies",
+   "norm_label": "devdependencies",
+   "file": "package.json",
+   "line": "L21",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_devdependencies_capacitor_cli",
+   "label": "@capacitor/cli",
+   "norm_label": "@capacitor/cli",
+   "file": "package.json",
+   "line": "L22",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_name",
+   "label": "name",
+   "norm_label": "name",
+   "file": "package.json",
+   "line": "L2",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_private",
+   "label": "private",
+   "norm_label": "private",
+   "file": "package.json",
+   "line": "L5",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts",
+   "label": "scripts",
+   "norm_label": "scripts",
+   "file": "package.json",
+   "line": "L6",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts_build_www",
+   "label": "build:www",
+   "norm_label": "build:www",
+   "file": "package.json",
+   "line": "L8",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts_cap_open",
+   "label": "cap:open",
+   "norm_label": "cap:open",
+   "file": "package.json",
+   "line": "L11",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts_cap_open_ios",
+   "label": "cap:open:ios",
+   "norm_label": "cap:open:ios",
+   "file": "package.json",
+   "line": "L12",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts_cap_sync",
+   "label": "cap:sync",
+   "norm_label": "cap:sync",
+   "file": "package.json",
+   "line": "L9",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts_cap_sync_ios",
+   "label": "cap:sync:ios",
+   "norm_label": "cap:sync:ios",
+   "file": "package.json",
+   "line": "L10",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_scripts_dev",
+   "label": "dev",
+   "norm_label": "dev",
+   "file": "package.json",
+   "line": "L7",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "bola_gym_package_version",
+   "label": "version",
+   "norm_label": "version",
+   "file": "package.json",
+   "line": "L3",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "capacitor_android",
+   "label": "@capacitor/android",
+   "norm_label": "@capacitor/android",
+   "file": "package.json",
+   "line": "L16",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "capacitor_app",
+   "label": "@capacitor/app",
+   "norm_label": "@capacitor/app",
+   "file": "package.json",
+   "line": "L17",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "capacitor_cli",
+   "label": "@capacitor/cli",
+   "norm_label": "@capacitor/cli",
+   "file": "package.json",
+   "line": "L22",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "capacitor_community_admob",
+   "label": "@capacitor-community/admob",
+   "norm_label": "@capacitor-community/admob",
+   "file": "package.json",
+   "line": "L15",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "capacitor_core",
+   "label": "@capacitor/core",
+   "norm_label": "@capacitor/core",
+   "file": "package.json",
+   "line": "L18",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  },
+  {
+   "id": "capacitor_ios",
+   "label": "@capacitor/ios",
+   "norm_label": "@capacitor/ios",
+   "file": "package.json",
+   "line": "L19",
+   "callable": false,
+   "community_name": "bola gym/package.json"
+  }
+ ],
+ "links": [
+  {
+   "source": "bola_gym_ads_hidebanner",
+   "target": "bola_gym_ads_isnative",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L65",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_hidebanner",
+   "target": "bola_gym_ads_plugin",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L66",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_init",
+   "target": "bola_gym_ads_plugin",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L40",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_showbanner",
+   "target": "bola_gym_ads_isnative",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L47",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_showbanner",
+   "target": "bola_gym_ads_init",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L48",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_showbanner",
+   "target": "bola_gym_ads_plugin",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L49",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_showbanner",
+   "target": "bola_gym_ads_testbannerid",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L54",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads_testbannerid",
+   "target": "bola_gym_ads_platform",
+   "relation": "calls",
+   "file": "ads.js",
+   "line": "L31",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_act",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L273",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_authscreen",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L300",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_authscreen",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L301",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_authscreen",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L305",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_authscreen",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L309",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_boot",
+   "target": "bola_gym_app_render",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2147",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_boot",
+   "target": "bola_gym_app_friendlyerror",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2153",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_boot",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2153",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_boot",
+   "target": "bola_gym_app_resumeadminsession",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2175",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_boot",
+   "target": "bola_gym_app_resumeclientsession",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2177",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_boot",
+   "target": "bola_gym_app_entertrainerdash",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2192",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_commentcards",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L844",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continueafterfacephoto",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1878",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continueafterfacephoto",
+   "target": "bola_gym_app_enterclienthome",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1881",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continueclientresume",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1865",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continueclientresume",
+   "target": "bola_gym_app_continueafterfacephoto",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1871",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continueclientsignupaftergym",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1899",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continuetrainersignin",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1916",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continuetrainersignin",
+   "target": "bola_gym_app_entertrainerdash",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1924",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_continuetrainersignupaftergym",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1904",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_emailfield",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L351",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_enteradmindash",
+   "target": "bola_gym_app_render",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1937",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_enterclienthome",
+   "target": "bola_gym_app_attachsignedurls",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1951",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_enterclienthome",
+   "target": "bola_gym_app_render",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1963",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_entertrainerdash",
+   "target": "bola_gym_app_render",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1979",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_errorbanner",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L334",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_handleauthdeeplink",
+   "target": "bola_gym_app_friendlyerror",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2218",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_handleauthdeeplink",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2218",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_handleauthdeeplink",
+   "target": "bola_gym_app_boot",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2221",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_initdeeplinksandboot",
+   "target": "bola_gym_app_handleauthdeeplink",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2227",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_initdeeplinksandboot",
+   "target": "bola_gym_app_boot",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2236",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_loadgympicker",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1889",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_offlinebanner",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L342",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_passwordfield",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L396",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_passwordfield",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L397",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_passwordfield",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L397",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_passwordfield",
+   "target": "bola_gym_app_passwordstrengthmeter",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L398",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_passwordstrengthmeter",
+   "target": "bola_gym_app_passwordstrength",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L373",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_phonefield",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L406",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_render",
+   "target": "bola_gym_app_capturefocus",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2131",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_render",
+   "target": "bola_gym_app_offlinebanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2132",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_render",
+   "target": "bola_gym_app_restorefocus",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2133",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_resumeadminsession",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1835",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_resumeadminsession",
+   "target": "bola_gym_app_splitphone",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1837",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_resumeadminsession",
+   "target": "bola_gym_app_enteradmindash",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1842",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_resumeclientsession",
+   "target": "bola_gym_app_loadgympicker",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1852",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_resumeclientsession",
+   "target": "bola_gym_app_continueclientresume",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1855",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_sectiontitle",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L317",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_sectiontitle",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L317",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_setpath",
+   "target": "bola_gym_app_setstate",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L2059",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_setstate",
+   "target": "bola_gym_app_render",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L209",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_stephead",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L289",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_stephead",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L290",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_tabsmarkup",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L322",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_tabsmarkup",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L322",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_textfield",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L328",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminauth",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L481",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminauth",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L481",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminauth",
+   "target": "bola_gym_app_authscreen",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L486",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminauth",
+   "target": "bola_gym_app_emailfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L497",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminauth",
+   "target": "bola_gym_app_passwordfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L498",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminauth",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L500",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminclientes",
+   "target": "bola_gym_app_statusmeta",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L674",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminclientes",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L679",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminclientes",
+   "target": "bola_gym_app_initials",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L679",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminclientes",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L687",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminclientes",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L705",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmincomentarios",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L857",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmincomentarios",
+   "target": "bola_gym_app_commentcards",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L859",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L876",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L879",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_tabsmarkup",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L882",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_devcredit",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L883",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminentrenadores",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L721",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminentrenadores",
+   "target": "bola_gym_app_initials",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L721",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminentrenadores",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L729",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminentrenadores",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L759",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminfacturacion",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L772",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminfacturacion",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L772",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminfacturacion",
+   "target": "bola_gym_app_statusmeta",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L778",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminfacturacion",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L781",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminfacturacion",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L789",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_passwordstrength",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L546",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L548",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L549",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L553",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L555",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_emailfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L556",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_phonefield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L557",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_passwordfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L558",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg1",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L562",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg2",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L571",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg2",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L572",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg2",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L576",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg2",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L578",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg2",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L584",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg3",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L592",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg3",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L593",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg3",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L601",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg3",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L602",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg3",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L606",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg3",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L608",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg4",
+   "target": "bola_gym_app_viewplanseditor",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L621",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg4",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L622",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg4",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L622",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminreg4",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L623",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmintrafico",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L827",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadmintrafico",
+   "target": "bola_gym_app_barchart",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L829",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientauth",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L513",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientauth",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L513",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientauth",
+   "target": "bola_gym_app_authscreen",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L518",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientauth",
+   "target": "bola_gym_app_emailfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L529",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientauth",
+   "target": "bola_gym_app_passwordfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L530",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientauth",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L532",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientcomentarios",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1225",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientcomentarios",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1228",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientcomentarios",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1229",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientcomentarios",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1231",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientcomentarios",
+   "target": "bola_gym_app_commentcards",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1234",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewcliententrenar",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1095",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewcliententrenar",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1095",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewcliententrenar",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1096",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewcliententrenar",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1103",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewcliententrenar",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1104",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_daysuntil",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1251",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1258",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1260",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_tabsmarkup",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1273",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_devcredit",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1274",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientinicio",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1059",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientinicio",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1062",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientinicio",
+   "target": "bola_gym_app_initials",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1074",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientinicio",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1082",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientpago",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1208",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientpago",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1217",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientpago",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1220",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientphotorequired",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L928",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientphotorequired",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L933",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientphotorequired",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L940",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientprogreso",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1144",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientprogreso",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1145",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientprogreso",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1152",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientprogreso",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1153",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_passwordstrength",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L891",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L893",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L897",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L898",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L902",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L904",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L909",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_emailfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L910",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_phonefield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L911",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg1",
+   "target": "bola_gym_app_passwordfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L912",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg2",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L955",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg2",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L955",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg2",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L960",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg2",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L961",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg2",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L965",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg2",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L967",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg3",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L986",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg3",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L988",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg3",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L996",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg3",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L997",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg3",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L999",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1018",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1019",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_initials",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1019",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_stephead",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1032",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_stepbars",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1033",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1037",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclientreg4",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1039",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewclienttrafico",
+   "target": "bola_gym_app_barchart",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1193",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewgympicker",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1337",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewgympicker",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1339",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewgympicker",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1354",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewplanseditor",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L634",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewplanseditor",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L638",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewplanseditor",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L644",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewplanseditor",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L653",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewplanseditor",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L657",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewrole",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L444",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewrole",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L450",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewrole",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L452",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewrole",
+   "target": "bola_gym_app_devcredit",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L474",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_passwordstrength",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1284",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_emailfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1287",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_passwordfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1288",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1290",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1293",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_phonefield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1295",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1304",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1309",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1313",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerauth",
+   "target": "bola_gym_app_chip",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1315",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerclientes",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1388",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerclientes",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1390",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerclientes",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1392",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerclientes",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1397",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerclientes",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1414",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerclientes",
+   "target": "bola_gym_app_initials",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1432",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerdash",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1473",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerdash",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1476",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerdash",
+   "target": "bola_gym_app_tabsmarkup",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1479",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerdash",
+   "target": "bola_gym_app_devcredit",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1480",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerpending",
+   "target": "bola_gym_app_iconspan",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1367",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerpending",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1370",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerpending",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1371",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerperfil",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1449",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerperfil",
+   "target": "bola_gym_app_esc",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1451",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerperfil",
+   "target": "bola_gym_app_initials",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1451",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerperfil",
+   "target": "bola_gym_app_textfield",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1459",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerperfil",
+   "target": "bola_gym_app_act",
+   "relation": "calls",
+   "file": "app.js",
+   "line": "L1461",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_addtrainerexercise",
+   "target": "bola_gym_mock_client_ensureroutine",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L320",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_approve",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L216",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_approve",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L218",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_cancel",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L356",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_confirm",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L344",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_create",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L160",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_create",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L162",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_createcashcharge",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L333",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_ensureroutine",
+   "target": "bola_gym_mock_client_findroutine",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L293",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_generateai",
+   "target": "bola_gym_mock_client_ensureroutine",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L314",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_getai",
+   "target": "bola_gym_mock_client_findroutine",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L304",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_getai",
+   "target": "bola_gym_mock_client_exercisesfor",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L305",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_getmyprofile",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L148",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_getself",
+   "target": "bola_gym_mock_client_shapeclient",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L251",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_gettrainer",
+   "target": "bola_gym_mock_client_findroutine",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L309",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_gettrainer",
+   "target": "bola_gym_mock_client_exercisesfor",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L310",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_join",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L171",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_join",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L173",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_listforgym",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L376",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_reject",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L224",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_reject",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L226",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_shapeclient",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L240",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_shapetrainer",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L207",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_signedurl",
+   "target": "bola_gym_mock_client_get",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L267",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_signin",
+   "target": "bola_gym_mock_client_normalizeemail",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L134",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_signupadmin",
+   "target": "bola_gym_mock_client_normalizeemail",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L105",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_signupclient",
+   "target": "bola_gym_mock_client_normalizeemail",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L124",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client_signuptrainer",
+   "target": "bola_gym_mock_client_normalizeemail",
+   "relation": "calls",
+   "file": "mock-client.js",
+   "line": "L114",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_icons_main",
+   "target": "bola_gym_scripts_build_icons_sharp",
+   "relation": "calls",
+   "file": "scripts/build-icons.js",
+   "line": "L15",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_add",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L141",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_addtrainerexercise",
+   "target": "bola_gym_supabase_client_ensureroutine",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L341",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_addtrainerexercise",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L342",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_chooseplan",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L247",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_choosetrainer",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L251",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_create",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L125",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_createcashcharge",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L361",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_ensureroutine",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L308",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_ensuretoday",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L293",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_generateai",
+   "target": "bola_gym_supabase_client_ensureroutine",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L330",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_get",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L121",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_getbyid",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L376",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_getmyprofile",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L109",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_getpendingforclient",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L372",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_getself",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L239",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_getself",
+   "target": "bola_gym_supabase_client_shapeclient",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L240",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_list",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L138",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listall",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L117",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listapprovedforgym",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L191",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listforclient",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L287",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listforgym",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L187",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_loadroutine",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L319",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_setfacephotokey",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L255",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_setphoto",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L298",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_setsessionfromurl",
+   "target": "bola_gym_supabase_client_get",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L87",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_setsessionfromurl",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L92",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signin",
+   "target": "bola_gym_supabase_client_normalizeemail",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L68",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signin",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L68",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signupadmin",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L47",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signupadmin",
+   "target": "bola_gym_supabase_client_normalizeemail",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L48",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signupadmin",
+   "target": "bola_gym_supabase_client_isnative",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L49",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signupclient",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L61",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signupclient",
+   "target": "bola_gym_supabase_client_normalizeemail",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L62",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signupclient",
+   "target": "bola_gym_supabase_client_isnative",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L63",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signuptrainer",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L54",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signuptrainer",
+   "target": "bola_gym_supabase_client_normalizeemail",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L55",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_signuptrainer",
+   "target": "bola_gym_supabase_client_isnative",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L56",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_update",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L159",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_updatephysical",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L243",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client_updateprofile",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "calls",
+   "file": "supabase-client.js",
+   "line": "L203",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies_capacitor_android",
+   "target": "capacitor_android",
+   "relation": "imports",
+   "file": "package.json",
+   "line": "L16",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies_capacitor_app",
+   "target": "capacitor_app",
+   "relation": "imports",
+   "file": "package.json",
+   "line": "L17",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies_capacitor_community_admob",
+   "target": "capacitor_community_admob",
+   "relation": "imports",
+   "file": "package.json",
+   "line": "L15",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies_capacitor_core",
+   "target": "capacitor_core",
+   "relation": "imports",
+   "file": "package.json",
+   "line": "L18",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies_capacitor_ios",
+   "target": "capacitor_ios",
+   "relation": "imports",
+   "file": "package.json",
+   "line": "L19",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_devdependencies_capacitor_cli",
+   "target": "capacitor_cli",
+   "relation": "imports",
+   "file": "package.json",
+   "line": "L22",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_isnative",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L22",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_platform",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L26",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_testbannerid",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L30",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_plugin",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L34",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_init",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L38",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_showbanner",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L46",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ads",
+   "target": "bola_gym_ads_hidebanner",
+   "relation": "contains",
+   "file": "ads.js",
+   "line": "L64",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android",
+   "target": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L1",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_por_qué_hay_dos_carpetas",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L10",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_confirmación_de_email_en_la_app_nativa_el_link_no_puede_abrir_localhost",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L116",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_lo_que_falta_después_de_esto",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L152",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_qué_es_cada_cosa_nueva_en_bola_gym",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L28",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_ya_está_hecho",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L49",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_cuando_cambies_algo_en_el_cliente_web_acá_en_bola_gym",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L69",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_compilar_el_apk",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L79",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_android_empaquetar_ces_gym_manager_como_app_android_con_admob",
+   "target": "bola_gym_android_admob_de_prueba_a_real",
+   "relation": "contains",
+   "file": "ANDROID.md",
+   "line": "L97",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientinicio",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1054",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewcliententrenar",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1089",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_equipment_suggestions",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L11",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientprogreso",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1141",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclienttrafico",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1164",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientpago",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1198",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_hour_values",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L12",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientcomentarios",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1223",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_client_tabs",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1238",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_day_labels",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L13",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_iconspan",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L135",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewtrainerclientes",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1376",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_heatmap",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L14",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_state",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L142",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewtrainerperfil",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1445",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_trainer_tabs",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1466",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_actions",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1486",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_resumeadminsession",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1833",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_resumeclientsession",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1850",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_continueclientresume",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1858",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_continueafterfacephoto",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1874",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_loadgympicker",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1887",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_continueclientsignupaftergym",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1892",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_goals",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L19",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_continuetrainersignupaftergym",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1902",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_continuetrainersignin",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1911",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_enteradmindash",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1927",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_enterclienthome",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1940",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_entertrainerdash",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1966",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_attachsignedurls",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1982",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_filepicker",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1991",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_openphotopicker",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L1994",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_root",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2032",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_screens",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2034",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_setpath",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2057",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_setstate",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L207",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_capturefocus",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2114",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_restorefocus",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2120",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_render",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2130",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_esc",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L214",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_boot",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2146",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_initials",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L220",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_handleauthdeeplink",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2213",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_initdeeplinksandboot",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L2224",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_buildroutine",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L224",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_statusmeta",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L231",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_friendlyerror",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L237",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_daysuntil",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L248",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_enrichclient",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L258",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_levels",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L27",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_act",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L272",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_chip",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L276",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_stepbars",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L281",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_stephead",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L287",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_authscreen",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L297",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_sectiontitle",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L316",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_exercise_lib",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L32",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_tabsmarkup",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L320",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_textfield",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L325",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_errorbanner",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L332",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_offlinebanner",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L341",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_emailfield",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L348",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_passwordstrength",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L359",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_passwordstrengthmeter",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L372",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_passwordfield",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L391",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_phonefield",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L404",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_splitphone",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L419",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_devcredit",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L430",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_meses",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L58",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_duration_labels",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L59",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_icon_paths",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L63",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewplanseditor",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L630",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminclientes",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L672",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminentrenadores",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L711",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminfacturacion",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L766",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_barchart",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L804",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadmintrafico",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L817",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_commentcards",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L840",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadmincomentarios",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L852",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_country_codes",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L86",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_admin_tabs",
+   "relation": "contains",
+   "file": "app.js",
+   "line": "L863",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build",
+   "target": "bola_gym_cloud_build_compilar_la_app_de_iphone_en_la_nube_sin_tener_una_mac",
+   "relation": "contains",
+   "file": "CLOUD-BUILD.md",
+   "line": "L1",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build_compilar_la_app_de_iphone_en_la_nube_sin_tener_una_mac",
+   "target": "bola_gym_cloud_build_lo_que_este_build_puede_y_lo_que_no",
+   "relation": "contains",
+   "file": "CLOUD-BUILD.md",
+   "line": "L23",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build_compilar_la_app_de_iphone_en_la_nube_sin_tener_una_mac",
+   "target": "bola_gym_cloud_build_subir_a_un_ipa_instalable_cuando_tengas_cuenta_apple_developer",
+   "relation": "contains",
+   "file": "CLOUD-BUILD.md",
+   "line": "L37",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build_compilar_la_app_de_iphone_en_la_nube_sin_tener_una_mac",
+   "target": "bola_gym_cloud_build_hacer_la_app_funcional_conectada_a_supabase_en_el_build_de_la_nube",
+   "relation": "contains",
+   "file": "CLOUD-BUILD.md",
+   "line": "L74",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build_compilar_la_app_de_iphone_en_la_nube_sin_tener_una_mac",
+   "target": "bola_gym_cloud_build_cómo_lanzarlo",
+   "relation": "contains",
+   "file": "CLOUD-BUILD.md",
+   "line": "L9",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build_subir_a_un_ipa_instalable_cuando_tengas_cuenta_apple_developer",
+   "target": "bola_gym_cloud_build_opción_recomendada_para_builds_firmados_codemagic",
+   "relation": "contains",
+   "file": "CLOUD-BUILD.md",
+   "line": "L54",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios",
+   "target": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L1",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_admob_en_ios_configuración_obligatoria_del_info_plist",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L155",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_admob_de_prueba_a_real",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L189",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_publicar_en_la_app_store_resumen",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L210",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_lo_que_falta_checklist_para_la_mac",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L221",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_estructura_de_la_carpeta_ces_ios_build",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L42",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_pasos_en_la_mac_de_cero_a_app_corriendo",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L58",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_lo_primero_y_más_importante_ios_solo_se_compila_en_una_mac",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L8",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_empaquetar_ces_gym_manager_como_app_ios_iphone_con_admob",
+   "target": "bola_gym_ios_fix_necesario_conflicto_de_cocoapods_con_googleusermessagingplatform",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L98",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_ios_lo_primero_y_más_importante_ios_solo_se_compila_en_una_mac",
+   "target": "bola_gym_ios_y_si_no_tenés_una_mac",
+   "relation": "contains",
+   "file": "IOS.md",
+   "line": "L25",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_signupadmin",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L104",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_signuptrainer",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L113",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_signupclient",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L123",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_signin",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L133",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_signout",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L140",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_setsessionfromurl",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L143",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_getsession",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L144",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_getmyprofile",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L145",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_listall",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L156",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_get",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L157",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_create",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L158",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_join",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L169",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_list",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L193",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_update",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L195",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_remove",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L201",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_shapetrainer",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L206",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_listapprovedforgym",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L213",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_approve",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L214",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_reject",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L222",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_updateprofile",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L230",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_shapeclient",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L239",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_getself",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L251",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_updatephysical",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L252",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_chooseplan",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L256",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_choosetrainer",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L257",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_setfacephotokey",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L258",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_upload",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L266",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_signedurl",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L267",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_listforclient",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L273",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_ensuretoday",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L277",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_setphoto",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L284",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_findroutine",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L289",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_ensureroutine",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L292",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_exercisesfor",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L297",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_getai",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L302",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_gettrainer",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L307",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_generateai",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L312",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_addtrainerexercise",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L318",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_removeexercise",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L325",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_normalizeemail",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L33",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_createcashcharge",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L331",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_confirm",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L342",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_cancel",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L354",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_getpendingforclient",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L362",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_getbyid",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L367",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_listforgym",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L373",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_add",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L378",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_requireauth",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L38",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_mock_client",
+   "target": "bola_gym_mock_client_profileof",
+   "relation": "contains",
+   "file": "mock-client.js",
+   "line": "L43",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_dependencies",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L14",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_name",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L2",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_devdependencies",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L21",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_version",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L3",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_description",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L4",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_private",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L5",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package",
+   "target": "bola_gym_package_scripts",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L6",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies",
+   "target": "bola_gym_package_dependencies_capacitor_community_admob",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L15",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies",
+   "target": "bola_gym_package_dependencies_capacitor_android",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L16",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies",
+   "target": "bola_gym_package_dependencies_capacitor_app",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L17",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies",
+   "target": "bola_gym_package_dependencies_capacitor_core",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L18",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_dependencies",
+   "target": "bola_gym_package_dependencies_capacitor_ios",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L19",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_devdependencies",
+   "target": "bola_gym_package_devdependencies_capacitor_cli",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L22",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_scripts",
+   "target": "bola_gym_package_scripts_cap_sync_ios",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L10",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_scripts",
+   "target": "bola_gym_package_scripts_cap_open",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L11",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_scripts",
+   "target": "bola_gym_package_scripts_cap_open_ios",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L12",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_scripts",
+   "target": "bola_gym_package_scripts_dev",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L7",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_scripts",
+   "target": "bola_gym_package_scripts_build_www",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L8",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_package_scripts",
+   "target": "bola_gym_package_scripts_cap_sync",
+   "relation": "contains",
+   "file": "package.json",
+   "line": "L9",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_icons",
+   "target": "bola_gym_scripts_build_icons_main",
+   "relation": "contains",
+   "file": "scripts/build-icons.js",
+   "line": "L11",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_icons",
+   "target": "bola_gym_scripts_build_icons_sharp",
+   "relation": "contains",
+   "file": "scripts/build-icons.js",
+   "line": "L5",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_icons",
+   "target": "bola_gym_scripts_build_icons_path",
+   "relation": "contains",
+   "file": "scripts/build-icons.js",
+   "line": "L6",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_icons",
+   "target": "bola_gym_scripts_build_icons_dir",
+   "relation": "contains",
+   "file": "scripts/build-icons.js",
+   "line": "L8",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_www",
+   "target": "bola_gym_scripts_build_www_root",
+   "relation": "contains",
+   "file": "scripts/build-www.js",
+   "line": "L11",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_www",
+   "target": "bola_gym_scripts_build_www_wwwdir",
+   "relation": "contains",
+   "file": "scripts/build-www.js",
+   "line": "L12",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_www",
+   "target": "bola_gym_scripts_build_www_files",
+   "relation": "contains",
+   "file": "scripts/build-www.js",
+   "line": "L14",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_www",
+   "target": "bola_gym_scripts_build_www_fs",
+   "relation": "contains",
+   "file": "scripts/build-www.js",
+   "line": "L8",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_scripts_build_www",
+   "target": "bola_gym_scripts_build_www_path",
+   "relation": "contains",
+   "file": "scripts/build-www.js",
+   "line": "L9",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_getmyprofile",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L106",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_listall",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L116",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_get",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L120",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_create",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L124",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_join",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L128",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_list",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L152",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_update",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L158",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_remove",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L161",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_shapetrainer",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L173",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_listapprovedforgym",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L190",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_approve",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L194",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_reject",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L198",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_updateprofile",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L202",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_shapeclient",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L217",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_getself",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L238",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_updatephysical",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L242",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_chooseplan",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L246",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_isnative",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L25",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_choosetrainer",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L250",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_setfacephotokey",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L254",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_upload",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L269",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_signedurl",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L275",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_listforclient",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L286",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_ensuretoday",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L291",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_setphoto",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L297",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_ensureroutine",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L305",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_loadroutine",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L316",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_generateai",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L329",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_normalizeemail",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L33",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_addtrainerexercise",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L340",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_removeexercise",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L348",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_createcashcharge",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L360",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_confirm",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L363",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_cancel",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L367",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_getpendingforclient",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L371",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_getbyid",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L375",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_unwrap",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L38",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_listforgym",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L383",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_add",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L392",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_signupadmin",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L46",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_signuptrainer",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L53",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_signupclient",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L60",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_signin",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L67",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_signout",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L71",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_setsessionfromurl",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L83",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_client",
+   "target": "bola_gym_supabase_client_getsession",
+   "relation": "contains",
+   "file": "supabase-client.js",
+   "line": "L95",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme",
+   "target": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L1",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "target": "bola_gym_supabase_readme_levantarlo_en_local",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L20",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "target": "bola_gym_supabase_readme_cuentas_de_prueba_ver_seed_sql",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L54",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "target": "bola_gym_supabase_readme_cómo_mapea_al_bug_que_se_corrigió_en_el_frontend",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L62",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "target": "bola_gym_supabase_readme_estructura",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L7",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "target": "bola_gym_supabase_readme_publicar_a_un_proyecto_real",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L70",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_supabase_readme_backend_de_bolá_supabase",
+   "target": "bola_gym_supabase_readme_estado_de_verificación_léelo_antes_de_confiar_ciegamente_en_esto",
+   "relation": "contains",
+   "file": "supabase/README.md",
+   "line": "L80",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_cloud_build",
+   "target": "bola_gym_ios",
+   "relation": "references",
+   "file": "CLOUD-BUILD.md",
+   "line": "L3",
+   "confidence": "EXTRACTED"
+  },
+  {
+   "source": "bola_gym_app_viewadminclientes",
+   "target": "bola_gym_app_enrichclient",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L673",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewadminfacturacion",
+   "target": "bola_gym_app_enrichclient",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L768",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_mock_client_listapprovedforgym",
+   "target": "bola_gym_mock_client_shapetrainer",
+   "relation": "indirect_call",
+   "file": "mock-client.js",
+   "line": "L213",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_mock_client_listforgym",
+   "target": "bola_gym_mock_client_shapetrainer",
+   "relation": "indirect_call",
+   "file": "mock-client.js",
+   "line": "L212",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_mock_client_listforgym",
+   "target": "bola_gym_mock_client_shapeclient",
+   "relation": "indirect_call",
+   "file": "mock-client.js",
+   "line": "L250",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listapprovedforgym",
+   "target": "bola_gym_supabase_client_shapetrainer",
+   "relation": "indirect_call",
+   "file": "supabase-client.js",
+   "line": "L192",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listforgym",
+   "target": "bola_gym_supabase_client_shapetrainer",
+   "relation": "indirect_call",
+   "file": "supabase-client.js",
+   "line": "L188",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_supabase_client_listforgym",
+   "target": "bola_gym_supabase_client_shapeclient",
+   "relation": "indirect_call",
+   "file": "supabase-client.js",
+   "line": "L236",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewboot",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2035",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewrole",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2036",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminauth",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2037",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientauth",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2038",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminreg1",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2039",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminreg2",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2040",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminreg3",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2041",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadminreg4",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2042",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewadmindash",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2043",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientreg1",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2044",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientreg2",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2045",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientreg3",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2046",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientreg4",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2047",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclienthome",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2048",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewtrainerauth",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2049",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewtrainerpending",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2050",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewtrainerdash",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2051",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewgympicker",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2052",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app",
+   "target": "bola_gym_app_viewclientphotorequired",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L2053",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_viewadminclientes",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L867",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_viewadminentrenadores",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L868",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_viewadminfacturacion",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L869",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_viewadmintrafico",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L870",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewadmindash",
+   "target": "bola_gym_app_viewadmincomentarios",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L871",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_viewclientinicio",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1243",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_viewcliententrenar",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1244",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_viewclientprogreso",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1245",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_viewclienttrafico",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1246",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_viewclientpago",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1247",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewclienthome",
+   "target": "bola_gym_app_viewclientcomentarios",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1248",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerdash",
+   "target": "bola_gym_app_viewtrainerclientes",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1469",
+   "confidence": "INFERRED"
+  },
+  {
+   "source": "bola_gym_app_viewtrainerdash",
+   "target": "bola_gym_app_viewtrainerperfil",
+   "relation": "indirect_call",
+   "file": "app.js",
+   "line": "L1469",
+   "confidence": "INFERRED"
+  }
+ ]
+}
