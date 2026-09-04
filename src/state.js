@@ -20,6 +20,7 @@ export const state = {
   // cuando el cliente llegó desde el link/QR que compartió su gimnasio.
   inviteCode: null,
   inviteLinkCopied: false, // feedback transitorio del botón "Copiar link" del dueño
+  inviteLinkCopyFailed: false, // idem, cuando el portapapeles del navegador deniega el permiso
   busy: false,
   error: '',
   offline: !navigator.onLine,

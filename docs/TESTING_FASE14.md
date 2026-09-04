@@ -69,19 +69,27 @@ breakpoint de `styles.css` (Fase 8) funciona en ambas direcciones.
 clicks, 4 altas de cuenta, 2 aprobaciones, 1 check-in, 1 cobro, 1 subida de
 foto), salvo el hallazgo de abajo.
 
-## Hallazgo (menor, no bloqueante)
+## Hallazgo (menor, no bloqueante) — ✅ corregido (2026-09-04)
 
-**Copiar link de invitación no avisa si falla.** `copyInviteLink()` en
-[actions.js:186](../src/actions.js#L186) hace `try { await
+**Copiar link de invitación no avisaba si fallaba.** `copyInviteLink()` en
+[actions.js:186](../src/actions.js#L186) hacía `try { await
 navigator.clipboard.writeText(link) } catch { console.error(...); return }`
 — si el navegador deniega el permiso de portapapeles (poco común, pero
 ocurre en navegadores en modo automatizado/sandbox, algunas configuraciones
-corporativas, o contextos no-HTTPS), el usuario no ve ningún error en
-pantalla: el botón simplemente no cambia a "¡Copiado!" y no pasa nada. El
-código de invitación sigue visible en la tarjeta así que no hay pérdida de
-funcionalidad (el usuario puede copiarlo a mano), pero no hay feedback de
-que el copiado automático falló. Severidad baja — no toca seguridad ni
-datos, es una mejora de UX pendiente si se quiere pulir.
+corporativas, o contextos no-HTTPS), el usuario no veía ningún error en
+pantalla: el botón simplemente no cambiaba a "¡Copiado!" y no pasaba nada.
+
+Corregido agregando `state.inviteLinkCopyFailed` ([state.js](../src/state.js))
+que se prende 2.5s cuando el `catch` se dispara. El botón "Copiar link" en
+[owner.js `inviteCard()`](../src/screens/owner.js) pasa a "No se pudo
+copiar" con borde/texto rojo, y aparece una línea debajo: "Tu navegador no
+dejó copiar automático — copiá el código de arriba a mano." El código
+sigue visible en la tarjeta de todos modos, así que no hay pérdida real de
+funcionalidad — esto solo agrega el feedback que faltaba. Verificado en
+vivo contra `test-harness.html` (este entorno deniega el portapapeles de
+forma consistente, así que reprodujo el fallo real): el botón cambió a
+"No se pudo copiar" apenas se disparó el `catch`, confirmado leyendo el DOM
+inmediatamente después del click.
 
 ## Qué no se probó en este pase
 
@@ -99,5 +107,5 @@ Los 4 roles funcionan de punta a punta sobre el mock, con paridad
 dueño/admin confirmada, los dos gates de aprobación (admin sin gate,
 entrenador con gate de 10) comportándose como se diseñó, y ningún estado
 inventado en ninguna pantalla — todo lo que se muestra viene de datos
-reales cargados en el flujo de prueba. Un solo hallazgo menor de UX, sin
-impacto en seguridad ni en datos.
+reales cargados en el flujo de prueba. El único hallazgo (menor, de UX, sin
+impacto en seguridad ni en datos) ya está corregido.

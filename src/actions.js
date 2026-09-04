@@ -188,8 +188,12 @@ export const ACTIONS = {
       await navigator.clipboard.writeText(link);
     } catch (err) {
       // Sin permiso/soporte de portapapeles (poco común, pero no es motivo
-      // para romper la pantalla) -- el código sigue visible igual en la tarjeta.
+      // para romper la pantalla) -- el código sigue visible igual en la
+      // tarjeta, así que solo avisamos que el copiado automático falló para
+      // que el dueño sepa que tiene que copiarlo a mano.
       console.error('No se pudo copiar el link de invitación:', err);
+      setState({ inviteLinkCopyFailed: true });
+      setTimeout(() => setState({ inviteLinkCopyFailed: false }), 2500);
       return;
     }
     setState({ inviteLinkCopied: true });

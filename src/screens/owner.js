@@ -206,8 +206,9 @@ function inviteCard() {
         <div style="font-size:10.5px;color:var(--muted)">Código</div>
         <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;font-family:var(--font-display)">${esc(state.gym.invite_code)}</div>
       </div>
-      <button ${act('copyInviteLink', link)} style="background:var(--lime);border:none;border-radius:10px;padding:10px 16px;color:var(--bg);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap">${state.inviteLinkCopied ? '¡Copiado!' : 'Copiar link'}</button>
+      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--lime)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--red)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--red)' : 'var(--bg)'};font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
     </div>
+    ${state.inviteLinkCopyFailed ? `<div style="font-size:11px;color:var(--red);margin-top:8px">Tu navegador no dejó copiar automático — copiá el código de arriba a mano.</div>` : ''}
   </div>`;
 }
 
