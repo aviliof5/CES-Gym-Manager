@@ -8,7 +8,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, HEATMAP, DAY_LABELS } from '../data.js';
+import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, HEATMAP, DAY_LABELS, iconSpan } from '../data.js';
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, sectionTitle,
   tabsMarkup, devCredit, initials, statusMeta, enrichClient, barChart, commentCards,
@@ -167,7 +167,7 @@ export function viewOwnerClientes() {
         </div>
       </div>
       ${showCharge ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;gap:12px;align-items:center">
-        <div class="qr qr--sm"></div>
+        <canvas class="qr-canvas" data-qr="${esc(JSON.stringify({ t: 'payment', id: state.activeCharge.paymentId }))}" data-qr-size="56"></canvas>
         <div style="flex:1">
           <div style="font-size:12.5px;font-weight:700">Cobro pendiente · $${esc(state.activeCharge.amount)} en efectivo</div>
           <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Confirma solo cuando ${esc(c.name)} te entregue el efectivo en el mostrador</div>
@@ -184,24 +184,60 @@ export function viewOwnerClientes() {
     ${errorBanner()}
     ${ownerMetricsGrid()}
     ${inviteCard()}
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${state.clientsForGym.length} clientes registrados</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--muted)">${state.clientsForGym.length} clientes registrados</div>
+      <div ${act('goToScanCheckin')} style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--sky);cursor:pointer;font-weight:700">${iconSpan('camera', 14)} Escanear QR</div>
+    </div>
     ${rows}
+  </div>`;
+}
+
+// Pantalla de check-in por cámara (Fase 15) — alternativa a clickear
+// "Registrar entrada" cliente por cliente: apunta la cámara al "Mi QR" del
+// cliente (ver src/screens/client.js qrCard()) y check_in_client() se llama
+// solo apenas se lee un código válido de este gimnasio. La lectura en sí
+// vive en src/qr.js; acá solo se arma el visor y el estado del último
+// resultado — router.js es quien prende/apaga la cámara según
+// state.screen (ver render() ahí).
+export function viewScanCheckin() {
+  const status = state.scanStatus;
+  return `<div class="pane">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="back" ${act('goto', 'ownerDash')}>&lsaquo;</div>
+      <div style="font-size:15px;font-weight:800">Escanear QR de check-in</div>
+    </div>
+    ${state.scanError
+      ? `<div class="card" style="text-align:center;padding:28px 20px">
+          <div style="color:var(--red);font-size:13px;font-weight:700;margin-bottom:6px">No pudimos abrir la cámara</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">${esc(state.scanError)}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5">Mientras tanto podés registrar la entrada a mano desde la lista de clientes.</div>
+          <div style="display:flex;gap:18px;justify-content:center;margin-top:12px">
+            <div ${act('goToScanCheckin')} style="font-size:12px;color:var(--mint);cursor:pointer;font-weight:700">Reintentar</div>
+            <div ${act('goto', 'ownerDash')} style="font-size:12px;color:var(--sky);cursor:pointer;font-weight:700">Volver a Clientes</div>
+          </div>
+        </div>`
+      : `<div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:1/1">
+          <video id="qrScanVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+          <div style="position:absolute;inset:16%;border:2px solid rgba(255,255,255,0.55);border-radius:16px;pointer-events:none"></div>
+        </div>
+        ${status ? `<div class="card" style="margin-top:14px;text-align:center;border-color:${status.ok ? 'var(--mint)' : 'var(--red)'}">
+            <div style="font-size:13px;font-weight:700;color:${status.ok ? 'var(--mint)' : 'var(--red)'}">${esc(status.text)}</div>
+          </div>` : `<div style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px">Apuntá la cámara al código "Mi QR" del cliente</div>`}`}
   </div>`;
 }
 
 // Link/código de invitación (sección 10 del pedido original) — el código lo
 // generó create_gym() solo, nadie lo "genera" a mano acá, esta tarjeta solo
-// lo muestra y arma el link para compartir. El QR sigue siendo el mismo
-// patrón decorativo (CSS a cuadros) que ya usa el cobro en efectivo en esta
-// app — no hay librería de generación de QR todavía, así que es honesto no
-// pretender que es escaneable de verdad.
+// lo muestra y arma el link para compartir. El QR es real (Fase 15, ver
+// src/qr.js) — codifica el mismo link con ?invite=CODE, así que cualquier
+// cámara (la de esta app o la del sistema) lo abre directo.
 function inviteCard() {
   const link = `${window.location.origin}${window.location.pathname}?invite=${state.gym.invite_code}`;
   return `<div class="card--dashed" style="margin-bottom:18px">
     <div style="font-size:13px;font-weight:700;color:var(--muted)">Invitá clientes</div>
     <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Compartí este código o link — quien se registre como cliente con él queda unido directo a tu gimnasio, sin elegirlo de una lista.</div>
     <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
-      <div class="qr qr--sm"></div>
+      <canvas class="qr-canvas" data-qr="${esc(link)}" data-qr-size="64"></canvas>
       <div style="flex:1;min-width:0">
         <div style="font-size:10.5px;color:var(--muted)">Código</div>
         <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;font-family:var(--font-display)">${esc(state.gym.invite_code)}</div>

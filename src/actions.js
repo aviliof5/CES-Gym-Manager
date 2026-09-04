@@ -225,17 +225,21 @@ export const ACTIONS = {
     setState({ gymAdminsForGym });
   },
 
-  // "Escanear QR" real requeriría cámara + una librería de lectura de QR
-  // que este proyecto no tiene — el sustituto honesto es que el staff
-  // registra la entrada desde la lista de clientes (mismo patrón que ya
-  // usa el cobro en efectivo: una acción de staff con efecto real en el
-  // servidor, con un QR decorativo del lado del cliente como referencia
-  // visual, no como lector automático).
+  // Check-in manual desde la lista de clientes — sigue existiendo como
+  // alternativa a "Escanear QR" (ver goto:scanCheckin / handleCheckinScan
+  // más abajo, y src/qr.js) para cuando no hay cámara a mano o el cliente
+  // no tiene el código a la vista. Mismo RPC en ambos casos.
   checkInClient: async clientId => {
     await BolaAPI.checkins.checkIn(clientId);
     const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
     setState({ todayCheckins });
   },
+  clearScanStatus: () => setState({ scanStatus: null }),
+  // Limpia el error/toast de una visita anterior a esta pantalla antes de
+  // entrar — si no, un fallo de cámara viejo (p. ej. "permiso denegado")
+  // quedaría pegado en pantalla un instante mientras router.js reintenta
+  // pedir la cámara de nuevo (ver ensureQrScanner en src/qr.js).
+  goToScanCheckin: () => setState({ screen: 'scanCheckin', scanError: '', scanStatus: null, error: '' }),
 
   generateCharge: async clientId => {
     const c = state.clientsForGym.map(enrichClient).find(x => x.id === clientId);
@@ -695,6 +699,45 @@ export async function continueTrainerSignIn(profile) {
     return;
   }
   await enterTrainerDash(profile, gym, myTrainer);
+}
+
+// Callback de src/qr.js cuando la cámara de la pantalla "Escanear QR" lee
+// un código — llamado directo por router.js (no pasa por el dispatcher de
+// data-a porque no lo dispara un click, lo dispara un frame de video). Las
+// validaciones de acá (payload bien formado, mismo gimnasio, cliente
+// existente) son solo para dar un mensaje claro en pantalla — la que de
+// verdad importa es la de siempre: check_in_client() exige
+// app_role_is_staff() del lado del servidor, así que aunque alguien
+// fabricara un QR a mano con el user_id de otro gimnasio, el RPC lo
+// rechaza igual (gym_id se deriva de auth.uid(), nunca del texto leído).
+export async function handleCheckinScan(payload) {
+  let data;
+  try { data = JSON.parse(payload); } catch (_) { data = null; }
+  if (!data || data.t !== 'checkin' || !data.u) {
+    setState({ scanStatus: { ok: false, text: 'Ese código no es un QR de check-in de Fight Club Gym Manager.' } });
+    return;
+  }
+  if (data.gym !== state.gym.id) {
+    setState({ scanStatus: { ok: false, text: 'Ese código es de otro gimnasio.' } });
+    return;
+  }
+  const client = state.clientsForGym.find(c => c.id === data.u);
+  if (!client) {
+    setState({ scanStatus: { ok: false, text: 'No encontramos a ese cliente en tu gimnasio.' } });
+    return;
+  }
+  if (state.todayCheckins.some(chk => chk.client_user_id === client.id)) {
+    setState({ scanStatus: { ok: true, text: `${client.name} ya tiene el check-in de hoy registrado.` } });
+    return;
+  }
+  try {
+    await BolaAPI.checkins.checkIn(client.id);
+    const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
+    if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
+    setState({ todayCheckins, scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
+  } catch (err) {
+    setState({ scanStatus: { ok: false, text: friendlyError(err) } });
+  }
 }
 
 // Entrada compartida por el dueño y por un administrador ya aprobado —

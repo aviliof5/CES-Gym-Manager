@@ -177,11 +177,13 @@ export function viewClientReg4() {
 
 /* ---------------- cliente: home ---------------- */
 
-// "Mi QR" (sección 13 del pedido original) — el QR sigue siendo el mismo
-// patrón decorativo (CSS a cuadros) que ya usa el cobro en efectivo, no hay
-// librería de generación real todavía. Lo que SÍ es real es el historial
-// debajo: check_in_client() (ver actions.js/checkInClient, solo lo puede
-// llamar el staff) es la única forma de que aparezca acá un registro.
+// "Mi QR" (sección 13 del pedido original) — el QR es real (Fase 15, ver
+// src/qr.js): codifica {t:'checkin', gym, u} en JSON, y la pantalla
+// "Escanear QR" del staff (viewScanCheckin en owner.js) lo lee con la
+// cámara y llama al mismo check_in_client() que ya usaba el botón manual
+// "Registrar entrada" — la seguridad real sigue siendo 100% del RPC
+// server-side, esto solo evita que el staff tenga que buscar al cliente en
+// una lista. Lo que SÍ era real desde antes es el historial debajo.
 function formatCheckinTime(iso) {
   const d = new Date(iso);
   return `${d.toISOString().slice(0, 10)} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -189,9 +191,10 @@ function formatCheckinTime(iso) {
 
 function qrCard() {
   const history = state.checkinHistory;
+  const payload = JSON.stringify({ t: 'checkin', gym: state.gym.id, u: state.myClient.id });
   return `<div class="card" style="margin-bottom:16px">
     <div style="display:flex;align-items:center;gap:14px">
-      <div class="qr qr--sm"></div>
+      <canvas class="qr-canvas" data-qr="${esc(payload)}" data-qr-size="64"></canvas>
       <div style="flex:1">
         <div style="font-size:13.5px;font-weight:700">Mi QR</div>
         <div style="font-size:11px;color:var(--muted);margin-top:2px">Mostrá este código en recepción al llegar al gym</div>
@@ -481,7 +484,7 @@ export function viewClientPago() {
     </div>`;
   } else {
     body = `<div style="margin-top:20px;font-size:13px;font-weight:700">Muestra este código en el mostrador</div>
-      <div class="qr qr--lg"></div>
+      <canvas class="qr-canvas" style="margin-top:16px" data-qr="${esc(JSON.stringify({ t: 'payment', id: pending.id }))}" data-qr-size="180"></canvas>
       <div style="font-size:12px;color:var(--muted);margin-top:12px">Paga $${esc(pending.amount)} en efectivo. El staff confirmará el cobro desde su panel.</div>
       <div style="font-size:11.5px;color:var(--amber);margin-top:14px;font-weight:700">Esperando confirmación del gimnasio…</div>
       <div ${act('refreshPendingPayment')} style="font-size:11.5px;color:var(--muted);margin-top:14px;cursor:pointer;text-decoration:underline">¿Ya te confirmaron? Actualizar</div>`;

@@ -45,6 +45,12 @@ export const state = {
   pendingAdminName: '',
   gymAdminsForGym: [],   // gym_admins de ESTE gimnasio — lo carga el dueño para aprobar/rechazar
   todayCheckins: [],       // check-ins de HOY en este gimnasio — [{client_user_id, created_at}], para el badge "✓ Hoy" en la tab Clientes
+  // Pantalla "Escanear QR" (ver src/qr.js + src/screens/owner.js
+  // viewScanCheckin) — scanStatus es el toast transitorio del último código
+  // leído ({ok:boolean, text:string}), scanError es un problema de cámara
+  // (permiso denegado, sin hardware) que reemplaza el visor por un mensaje.
+  scanStatus: null,
+  scanError: '',
   trainerInterest: [],      // [{candidate_user_id, client_user_id}] de este gimnasio — "10 clientes interesados" (owner/admin y cliente lo leen distinto)
 
   equipment: [],

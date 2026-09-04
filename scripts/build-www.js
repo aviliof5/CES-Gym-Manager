@@ -11,7 +11,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const wwwDir = path.join(root, 'www');
 
-const FILES = ['index.html', 'styles.css', 'config.js', 'supabase-client.js', 'ads.js'];
+const FILES = ['index.html', 'styles.css', 'config.js', 'supabase-client.js', 'ads.js', 'qrcode-generator.min.js', 'jsQR.min.js'];
 // app.js fue reemplazado por módulos ES bajo src/ (ver docs/MIGRATION_PLAN.md,
 // Fase 3) — se copia el directorio completo, no un archivo suelto.
 const DIRS = ['src'];

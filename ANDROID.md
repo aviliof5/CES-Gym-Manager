@@ -114,6 +114,35 @@ Cuando crees tu cuenta de AdMob ([apps.admob.google.com](https://apps.admob.goog
    y las políticas de Play Store para apps con anuncios — hay reglas
    específicas sobre dónde y cómo se pueden mostrar.
 
+## Cámara para escanear QR de check-in (Fase 15) — paso obligatorio en `ces-android-build`
+
+La pantalla "Escanear QR" (panel de dueño/admin, tab Clientes) usa
+`navigator.getUserMedia()` en el WebView para leer el QR de check-in del
+cliente con la cámara (ver `src/qr.js`). En el navegador (dev/test-harness)
+esto solo pide el permiso del navegador y funciona directo — **pero en la
+app empaquetada con Capacitor, Android bloquea el acceso a la cámara del
+WebView si el permiso no está declarado en el manifest**, y esto vive en
+`ces-android-build` (fuera de este repo, ver "Por qué hay dos carpetas" más
+arriba), así que hace falta agregarlo ahí a mano:
+
+1. En `ces-android-build\android\app\src\main\AndroidManifest.xml`, agregá
+   (junto a los `<uses-permission>` que ya tiene, como el de AdMob):
+   ```xml
+   <uses-permission android:name="android.permission.CAMERA" />
+   <uses-feature android:name="android.hardware.camera" android:required="false" />
+   ```
+   `required="false"` es a propósito: la app sigue siendo instalable en
+   dispositivos sin cámara (el check-in manual desde la lista de clientes
+   sigue funcionando igual, la cámara es solo un atajo).
+2. Volvé a compilar (`npm run cap:sync` desde acá, después `Build` en
+   Android Studio). Sin este permiso, "Escanear QR" muestra el mensaje de
+   error que ya tiene previsto ("No pudimos abrir la cámara") en vez de
+   crashear — pero el check-in por QR no va a funcionar hasta agregarlo.
+3. La primera vez que un usuario real abra "Escanear QR" en el teléfono,
+   Android le va a pedir el permiso de cámara con el diálogo del sistema
+   (esto lo maneja Android solo, no hace falta código extra) — si lo
+   rechaza, puede habilitarlo después a mano en Ajustes de la app.
+
 ## Confirmación de email en la app nativa: el link no puede abrir localhost
 
 En el navegador (dev / test-harness), el mail de confirmación que manda
