@@ -111,16 +111,18 @@ export const TRAINER_TABS = [['clientes', 'Mis clientes', 'users'], ['perfil', '
 
 export function viewTrainerDash() {
   const panes = { clientes: viewTrainerClientes, perfil: viewTrainerPerfil };
-  return `<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-    <div class="app-head">
-      <div>
-        <div class="app-title">${esc(state.myTrainer.name)}</div>
-        <div class="app-sub">Panel de entrenador · ${esc(state.gym.name)}</div>
+  return `<div class="dash-shell">
+    <div class="dash-main">
+      <div class="app-head">
+        <div>
+          <div class="app-title">${esc(state.myTrainer.name)}</div>
+          <div class="app-sub">Panel de entrenador · ${esc(state.gym.name)}</div>
+        </div>
+        <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
-      <div ${act('signOut')} class="link-muted">Salir</div>
+      ${(panes[state.trainerTab] || panes.clientes)()}
+      ${devCredit()}
     </div>
-    ${(panes[state.trainerTab] || panes.clientes)()}
     <div class="tabbar tabbar--trainer">${tabsMarkup(TRAINER_TABS, state.trainerTab, 'trainerTab')}</div>
-    ${devCredit()}
   </div>`;
 }

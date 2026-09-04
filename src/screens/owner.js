@@ -395,16 +395,18 @@ export function viewOwnerDash() {
     admins: viewOwnerAdmins,
   };
   const activeTab = (state.ownerTab === 'admins' && !isOwner) ? 'clientes' : state.ownerTab;
-  return `<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-    <div class="app-head">
-      <div>
-        <div class="app-title">${esc(state.gym.name)}</div>
-        <div class="app-sub">${isOwner ? 'Panel de dueño' : 'Panel de administrador'}</div>
+  return `<div class="dash-shell">
+    <div class="dash-main">
+      <div class="app-head">
+        <div>
+          <div class="app-title">${esc(state.gym.name)}</div>
+          <div class="app-sub">${isOwner ? 'Panel de dueño' : 'Panel de administrador'}</div>
+        </div>
+        <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
-      <div ${act('signOut')} class="link-muted">Salir</div>
+      ${(panes[activeTab] || panes.clientes)()}
+      ${devCredit()}
     </div>
-    ${(panes[activeTab] || panes.clientes)()}
     <div class="tabbar">${tabsMarkup(tabs, activeTab, 'ownerTab')}</div>
-    ${devCredit()}
   </div>`;
 }

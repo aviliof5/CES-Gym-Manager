@@ -84,6 +84,8 @@ input,textarea,select,button{font-family:inherit}
 /* ---------- primitives ---------- */
 .col{flex:1;display:flex;flex-direction:column;overflow:auto}
 .pane{flex:1;overflow:auto;padding:0 22px 16px}
+.dash-shell{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.dash-main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0}
 
 .field{
   background:var(--surface);
@@ -295,3 +297,29 @@ input,textarea,select,button{font-family:inherit}
 .gym-watermark--amber{color:var(--amber)}
 .gym-watermark--sky{color:var(--sky)}
 .gym-watermark svg{width:100%;height:100%;display:block}
+
+/* ---------- escritorio ---------- */
+/* La app deja de ser "un teléfono centrado" (regla 21 del pedido de
+   rebrand) — el dispositivo se ensancha a una ventana tipo dashboard, y
+   .dash-shell/.dash-main (los 3 paneles con tabs: dueño/admin, cliente,
+   entrenador) pasan la tabbar de abajo a un costado como sidebar, vía
+   `order` — sin reordenar el DOM ni tocar los screens/*.js de nuevo. Tiene
+   que ir al FINAL del archivo: misma especificidad que las reglas base de
+   más arriba (.dash-shell, .tabbar, etc.), así que el orden en la hoja de
+   estilos es lo único que decide cuál gana dentro del media query. */
+@media (min-width:900px){
+  .device{width:min(1040px, 94vw);height:min(820px, 92vh);border-radius:24px}
+  .device-notch{display:none}
+  .dash-shell{flex-direction:row}
+  .dash-main{flex:1;min-width:0}
+  .tabbar{
+    order:-1;
+    flex-direction:column;
+    justify-content:flex-start;
+    width:104px;flex-shrink:0;
+    border-top:none;border-right:1px solid var(--line);
+    padding:20px 8px;gap:6px;
+  }
+  .tabbar--client,.tabbar--trainer{padding:20px 8px}
+  .tab{padding:10px 4px}
+}

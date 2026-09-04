@@ -386,17 +386,19 @@ export function viewClientHome() {
       <div ${act('goPayTab')} style="font-size:11px;font-weight:700;color:${urgent ? 'var(--red)' : 'var(--amber)'};cursor:pointer;white-space:nowrap">Pagar</div>
     </div>` : '';
 
-  return `<div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
-    <div class="app-head">
-      <div>
-        <div class="app-title">Hola, ${esc((client.name || 'Cliente').split(' ')[0])}</div>
-        <div class="app-sub">${esc(state.gym.name)}</div>
+  return `<div class="dash-shell">
+    <div class="dash-main">
+      <div class="app-head">
+        <div>
+          <div class="app-title">Hola, ${esc((client.name || 'Cliente').split(' ')[0])}</div>
+          <div class="app-sub">${esc(state.gym.name)}</div>
+        </div>
+        <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
-      <div ${act('signOut')} class="link-muted">Salir</div>
+      ${alert}
+      ${(panes[state.clientTab] || panes.inicio)()}
+      ${devCredit()}
     </div>
-    ${alert}
-    ${(panes[state.clientTab] || panes.inicio)()}
     <div class="tabbar tabbar--client">${tabsMarkup(CLIENT_TABS, state.clientTab, 'selectClientTab')}</div>
-    ${devCredit()}
   </div>`;
 }
