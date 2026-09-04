@@ -445,5 +445,28 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews };
+  /* ---------------- check-in ---------------- */
+  // check_in_client() es la única vía de escritura (security definer, exige
+  // staff en el servidor) — ver supabase/migrations/20260904000100_checkin_events.sql.
+  // El cliente nunca escribe su propio check-in.
+
+  const checkins = {
+    async checkIn(clientUserId) {
+      return unwrap(await client.rpc('check_in_client', { p_client_user_id: clientUserId }));
+    },
+    async listForClient(clientUserId, limit) {
+      return unwrap(await client.from('checkin_events').select('id, created_at')
+        .eq('client_user_id', clientUserId).order('created_at', { ascending: false }).limit(limit || 5));
+    },
+    // "Hoy" aproximado por UTC (misma precisión que el resto de la app usa
+    // para fechas, ej. membership_expires_at) — alcanza para el badge
+    // "✓ Hoy" del panel de staff, no es un reporte de asistencia preciso.
+    async listTodayForGym(gymId) {
+      const todayStart = new Date().toISOString().slice(0, 10) + 'T00:00:00';
+      return unwrap(await client.from('checkin_events').select('client_user_id, created_at')
+        .eq('gym_id', gymId).gte('created_at', todayStart).order('created_at', { ascending: false }));
+    },
+  };
+
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins };
 })();

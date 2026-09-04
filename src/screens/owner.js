@@ -148,6 +148,7 @@ export function viewOwnerClientes() {
   const rows = state.clientsForGym.map(enrichClient).map(c => {
     const m = statusMeta(c.status);
     const showCharge = state.activeCharge && state.activeCharge.clientId === c.id;
+    const checkedInToday = state.todayCheckins.some(chk => chk.client_user_id === c.id);
     return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -160,6 +161,9 @@ export function viewOwnerClientes() {
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
           <div class="${m.cls}">${m.label}</div>
           <div ${act('generateCharge', c.id)} style="font-size:11.5px;color:var(--lime);cursor:pointer;font-weight:600">Cobrar / QR</div>
+          ${checkedInToday
+            ? `<div style="font-size:11px;color:var(--mint);font-weight:700">✓ Hoy</div>`
+            : `<div ${act('checkInClient', c.id)} style="font-size:11.5px;color:var(--sky);cursor:pointer;font-weight:600">Registrar entrada</div>`}
         </div>
       </div>
       ${showCharge ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;gap:12px;align-items:center">

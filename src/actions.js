@@ -221,6 +221,18 @@ export const ACTIONS = {
     setState({ gymAdminsForGym });
   },
 
+  // "Escanear QR" real requeriría cámara + una librería de lectura de QR
+  // que este proyecto no tiene — el sustituto honesto es que el staff
+  // registra la entrada desde la lista de clientes (mismo patrón que ya
+  // usa el cobro en efectivo: una acción de staff con efecto real en el
+  // servidor, con un QR decorativo del lado del cliente como referencia
+  // visual, no como lector automático).
+  checkInClient: async clientId => {
+    await BolaAPI.checkins.checkIn(clientId);
+    const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
+    setState({ todayCheckins });
+  },
+
   generateCharge: async clientId => {
     const c = state.clientsForGym.map(enrichClient).find(x => x.id === clientId);
     if (!c) return;
@@ -671,15 +683,16 @@ export async function continueTrainerSignIn(profile) {
 // paridad total (ver docs/ROLES_AND_PERMISSIONS.md). viewOwnerDash decide
 // internamente si muestra la tab de aprobar administradores según el rol.
 export async function enterOwnerDash() {
-  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym] = await Promise.all([
+  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins] = await Promise.all([
     BolaAPI.clients.listForGym(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
     BolaAPI.plans.list(state.gym.id),
     BolaAPI.equipment.list(state.gym.id),
     BolaAPI.reviews.listForGym(state.gym.id),
     BolaAPI.admins.listForGym(state.gym.id),
+    BolaAPI.checkins.listTodayForGym(state.gym.id),
   ]);
-  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, busy: false });
+  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, busy: false });
   if (window.CesAds) window.CesAds.hideBanner();
   render();
 }
@@ -698,11 +711,12 @@ export async function enterClientHome() {
   const progressList = await attachSignedUrls(progressRaw);
   const trainerRoutineForMe = trainer ? await BolaAPI.routines.getTrainer(client.id) : null;
   const aiRoutine = await BolaAPI.routines.getAi(client.id, client.physical.goal || 'perder_peso');
+  const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
 
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
-    plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe,
+    plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe, checkinHistory,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
     pendingPayment: null, busy: false,
   });

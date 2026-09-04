@@ -177,6 +177,33 @@ export function viewClientReg4() {
 
 /* ---------------- cliente: home ---------------- */
 
+// "Mi QR" (sección 13 del pedido original) — el QR sigue siendo el mismo
+// patrón decorativo (CSS a cuadros) que ya usa el cobro en efectivo, no hay
+// librería de generación real todavía. Lo que SÍ es real es el historial
+// debajo: check_in_client() (ver actions.js/checkInClient, solo lo puede
+// llamar el staff) es la única forma de que aparezca acá un registro.
+function formatCheckinTime(iso) {
+  const d = new Date(iso);
+  return `${d.toISOString().slice(0, 10)} · ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function qrCard() {
+  const history = state.checkinHistory;
+  return `<div class="card" style="margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div class="qr qr--sm"></div>
+      <div style="flex:1">
+        <div style="font-size:13.5px;font-weight:700">Mi QR</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">Mostrá este código en recepción al llegar al gym</div>
+      </div>
+    </div>
+    ${history.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
+      <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Últimos check-ins</div>
+      ${history.map(h => `<div style="font-size:12px;color:var(--text-soft);padding:3px 0">${esc(formatCheckinTime(h.created_at))}</div>`).join('')}
+    </div>` : `<div style="font-size:11px;color:var(--muted);margin-top:10px">Todavía no tenés check-ins registrados.</div>`}
+  </div>`;
+}
+
 export function viewClientInicio() {
   const plan = state.myClientPlan || { name: '—', price: 0, duration: 'mensual' };
   const trainer = state.myClientTrainer;
@@ -196,6 +223,7 @@ export function viewClientInicio() {
         <div style="font-size:17px;font-weight:900;color:var(--lime)">$${esc(total)}</div>
       </div>` : ''}
     </div>
+    ${qrCard()}
     ${trainer ? `<div class="card" style="border-color:rgba(52,211,153,0.25);margin-bottom:16px;display:flex;align-items:center;gap:12px">
       <div class="avatar avatar--sq avatar--mint" style="width:40px;height:40px;font-size:14px">${esc(initials(trainer.name))}</div>
       <div style="flex:1">

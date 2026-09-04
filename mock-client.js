@@ -24,6 +24,7 @@
     routineExercises: [],  // {id, routine_id, position, text}
     payments: [],           // {id, client_user_id, gym_id, amount, status, confirmed_by, confirmed_at}
     reviews: [],
+    checkinEvents: [],       // {id, gym_id, client_user_id, checked_in_by, created_at}
     storage: new Map(),      // path -> File
   };
 
@@ -433,6 +434,37 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews };
+  /* ---------------- check-in ---------------- */
+  // Espeja supabase-client.js: checkIn() es la única vía de escritura,
+  // exige staff (isStaff, mismo helper de trainers.approve/reject) y que el
+  // cliente pertenezca al gimnasio de quien registra.
+
+  const checkins = {
+    async checkIn(clientUserId) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio registran un check-in.');
+      const c = db.clientProfiles.find(x => x.user_id === clientUserId);
+      const me = profileOf(s.id);
+      if (!c || c.gym_id !== me.gym_id) throw new Error('Ese cliente no pertenece a tu gimnasio.');
+      const row = { id: uid('chk'), gym_id: c.gym_id, client_user_id: clientUserId, checked_in_by: s.id, created_at: new Date().toISOString() };
+      db.checkinEvents.push(row);
+      return { ...row };
+    },
+    async listForClient(clientUserId, limit) {
+      await wait();
+      return db.checkinEvents.filter(e => e.client_user_id === clientUserId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit || 5)
+        .map(e => ({ id: e.id, created_at: e.created_at }));
+    },
+    async listTodayForGym(gymId) {
+      await wait();
+      const today = new Date().toISOString().slice(0, 10);
+      return db.checkinEvents.filter(e => e.gym_id === gymId && e.created_at.slice(0, 10) === today)
+        .map(e => ({ client_user_id: e.client_user_id, created_at: e.created_at }));
+    },
+  };
+
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

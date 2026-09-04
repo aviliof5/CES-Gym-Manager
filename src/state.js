@@ -43,6 +43,7 @@ export const state = {
   adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   pendingAdminName: '',
   gymAdminsForGym: [],   // gym_admins de ESTE gimnasio — lo carga el dueño para aprobar/rechazar
+  todayCheckins: [],       // check-ins de HOY en este gimnasio — [{client_user_id, created_at}], para el badge "✓ Hoy" en la tab Clientes
 
   equipment: [],
   newEquipment: '',
@@ -69,6 +70,7 @@ export const state = {
   myClient: null,
   myClientPlan: null,
   myClientTrainer: null,
+  checkinHistory: [],   // últimos check-ins propios — [{id, created_at}], mostrado en Inicio junto a "Mi QR"
   progressList: [],
   routineSource: 'ia',
   aiGoal: 'perder_peso',
