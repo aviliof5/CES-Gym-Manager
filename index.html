@@ -33,6 +33,11 @@
      verificar app.js sin un backend real levantado. -->
 <script src="supabase-client.js?v=2"></script>
 <script src="ads.js"></script>
+<!-- Generación y lectura de QR real (Fase 15) — vendorizadas localmente
+     (no CDN) para que funcionen offline en la PWA y dentro de la app
+     empaquetada con Capacitor. window.qrcode / window.jsQR, ver src/qr.js. -->
+<script src="qrcode-generator.min.js"></script>
+<script src="jsQR.min.js"></script>
 <script type="module" src="src/router.js"></script>
 <script>
 // Registra el service worker para que la app sea instalable (Android/desktop)

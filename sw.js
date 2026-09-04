@@ -8,7 +8,7 @@
 // script de supabase-js del CDN: esos siempre van directo a la red, para
 // no arriesgar servir datos o tokens de sesión viejos desde el cache.
 
-const CACHE_NAME = 'fight-club-gym-shell-v4';
+const CACHE_NAME = 'fight-club-gym-shell-v5';
 const SHELL_FILES = [
   './',
   './index.html',
@@ -16,12 +16,15 @@ const SHELL_FILES = [
   './config.js',
   './supabase-client.js',
   './ads.js',
+  './qrcode-generator.min.js',
+  './jsQR.min.js',
   './manifest.webmanifest',
   './src/router.js',
   './src/state.js',
   './src/actions.js',
   './src/data.js',
   './src/helpers.js',
+  './src/qr.js',
   './src/screens/auth.js',
   './src/screens/owner.js',
   './src/screens/admin.js',

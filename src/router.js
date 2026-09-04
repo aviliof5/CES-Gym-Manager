@@ -15,11 +15,12 @@
 
 import { state, setState } from './state.js';
 import { offlineBanner, friendlyError } from './helpers.js';
-import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash } from './actions.js';
+import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan } from './actions.js';
+import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
 
 import { viewBoot, viewRole, viewOwnerAuth, viewClientAuth, viewTrainerAuth, viewGymPicker } from './screens/auth.js';
 import {
-  viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash,
+  viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash, viewScanCheckin,
 } from './screens/owner.js';
 import { viewAdminAuth, viewAdminPending } from './screens/admin.js';
 import {
@@ -41,6 +42,7 @@ const SCREENS = {
   ownerReg3: viewOwnerReg3,
   ownerReg4: viewOwnerReg4,
   ownerDash: viewOwnerDash,
+  scanCheckin: viewScanCheckin,
   adminPending: viewAdminPending,
   clientReg1: viewClientReg1,
   clientReg2: viewClientReg2,
@@ -129,10 +131,47 @@ function restoreFocus(snapshot) {
   }
 }
 
+// getUserMedia() rechaza con nombres de DOMException estándar — se traducen
+// acá en vez de en friendlyError() (que es sobre errores de red/servidor,
+// no de hardware/permisos).
+function cameraErrorMessage(err) {
+  const name = err && err.name;
+  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+    return 'Le negaste el permiso de cámara al navegador. Habilitalo en la configuración del sitio y volvé a intentar.';
+  }
+  if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+    return 'No encontramos ninguna cámara en este dispositivo.';
+  }
+  if (name === 'NotReadableError' || name === 'TrackStartError') {
+    return 'La cámara está siendo usada por otra app. Cerrala e intentá de nuevo.';
+  }
+  return (err && err.message) || 'No pudimos acceder a la cámara.';
+}
+
 export function render() {
   const snapshot = captureFocus();
   root.innerHTML = (state.offline ? offlineBanner() : '') + (SCREENS[state.screen] || viewRole)();
   restoreFocus(snapshot);
+  paintQrCodes(root);
+
+  // La cámara de lectura de QR (ver src/qr.js) solo debe estar prendida
+  // mientras la pantalla "Escanear QR" está activa — se corta apenas se
+  // navega a cualquier otra, para no dejar el hardware ocupado de fondo.
+  // El `!state.scanError` es a propósito: si ya falló una vez en esta
+  // visita a la pantalla (permiso denegado, sin cámara), NO hay que
+  // reintentar en cada render — eso causaría un loop infinito, porque
+  // `ensureQrScanner` fallaría de nuevo, dispararía `setState({scanError})`,
+  // que dispara OTRO render(), que reintenta, etc. Reintentar de verdad pasa
+  // solo si el usuario sale y vuelve a entrar (goToScanCheckin en
+  // actions.js limpia scanError antes de navegar acá).
+  if (state.screen === 'scanCheckin' && !state.scanError) {
+    ensureQrScanner('qrScanVideo', handleCheckinScan).catch(err => {
+      console.error('No se pudo acceder a la cámara:', err);
+      setState({ scanError: cameraErrorMessage(err) });
+    });
+  } else if (state.screen !== 'scanCheckin') {
+    stopQrScanner();
+  }
 }
 
 // Se actualiza apenas cambia la conexión (no hace falta que el usuario

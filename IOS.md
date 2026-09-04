@@ -186,6 +186,26 @@ iOS necesita más config que Android. En Xcode, abrir
    </array>
    ```
 
+## Cámara para escanear QR de check-in (Fase 15) — paso obligatorio en `ios/App/App/Info.plist`
+
+Igual que AdMob, esto también vive en el `Info.plist` de la carpeta de
+compilación (`ces-ios-build`, fuera de este repo). La pantalla "Escanear
+QR" (panel de dueño/admin) usa la cámara del WebView (`src/qr.js`) para
+leer el QR de check-in — **iOS exige un texto explicándole al usuario para
+qué se usa la cámara, o la app crashea al pedir el permiso**, mismo patrón
+que `NSUserTrackingUsageDescription` de AdMob arriba:
+
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Usamos la cámara para leer el código QR de check-in de tus clientes. Podés seguir registrando la entrada a mano si preferís no dar este permiso.</string>
+```
+
+Sin esto, "Escanear QR" muestra el mensaje de error ya previsto ("No
+pudimos abrir la cámara") en vez de crashear — pero como en Android, el
+check-in por QR no funciona hasta agregar este permiso y recompilar. No
+hace falta ningún plugin de Capacitor nuevo — `getUserMedia()` funciona
+directo en el WebView de iOS una vez declarado el permiso.
+
 ## AdMob: de prueba a real
 
 Cuando tengas tu cuenta de AdMob ([apps.admob.google.com](https://apps.admob.google.com)):
