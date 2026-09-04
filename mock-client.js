@@ -15,6 +15,7 @@
     gyms: [],
     profiles: [],       // {id, role, gym_id, name, email, phone, password}
     trainers: [],        // {user_id, gym_id, specialty, price, status}
+    gymAdmins: [],        // {user_id, gym_id, status} — mismo patrón que trainers, sin specialty/price
     clientProfiles: [],  // {user_id, gym_id, plan_id, trainer_user_id, face_photo_key, weight, height, age, level, goal, membership_status, membership_expires_at, last_payment_at}
     equipment: [],
     plans: [],
@@ -23,6 +24,8 @@
     routineExercises: [],  // {id, routine_id, position, text}
     payments: [],           // {id, client_user_id, gym_id, amount, status, confirmed_by, confirmed_at}
     reviews: [],
+    checkinEvents: [],       // {id, gym_id, client_user_id, checked_in_by, created_at}
+    trainerInterest: [],      // {candidate_user_id, client_user_id, gym_id}
     storage: new Map(),      // path -> File
   };
 
@@ -48,11 +51,12 @@
 
   (function seed() {
     const gymId = 'gym-1';
-    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00' });
+    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234' });
 
     const mkUser = (id, role, name, email, phone, extra) => {
       db.profiles.push({ id, role, gym_id: gymId, name, email, phone, password: extra.password });
       if (role === 'trainer') db.trainers.push({ user_id: id, gym_id: gymId, specialty: extra.specialty, price: extra.price, status: 'approved' });
+      if (role === 'admin') db.gymAdmins.push({ user_id: id, gym_id: gymId, status: 'approved' });
       if (role === 'client') db.clientProfiles.push({
         user_id: id, gym_id: gymId, plan_id: extra.planId, trainer_user_id: extra.trainerUserId || null,
         face_photo_key: null, weight: null, height: null, age: null, level: 'principiante', goal: extra.goal || 'perder_peso',
@@ -60,7 +64,10 @@
       });
     };
 
-    mkUser('admin-1', 'admin', 'Avilio Fernández', 'admin@bola.app', '555-0100', { password: 'admin123' });
+    // El fundador del gym de muestra es el dueño (mismo criterio que se usó
+    // para migrar la cuenta real en producción, ver supabase/migrations/
+    // 20260903000002_owner_role_fix_wrong_promotion.sql).
+    mkUser('admin-1', 'owner', 'Avilio Fernández', 'admin@bola.app', '555-0100', { password: 'admin123' });
     mkUser('trainer-1', 'trainer', 'Marco Díaz', 'marco@bola.app', '555-0201', { password: 'coach123', specialty: 'Fuerza e hipertrofia', price: 20 });
     mkUser('trainer-2', 'trainer', 'Laura Gómez', 'laura@bola.app', '555-0202', { password: 'coach123', specialty: 'Pérdida de peso y cardio', price: 15 });
     mkUser('trainer-3', 'trainer', 'Diego Ruiz', 'diego@bola.app', '555-0203', { password: 'coach123', specialty: 'Funcional y movilidad', price: 10 });
@@ -101,12 +108,26 @@
     // siempre presente — el mock simula un proyecto sin confirmación de
     // correo (el caso "hay que confirmar" se probó a mano contra Supabase
     // real, ver conversación; acá solo se cubre el camino feliz).
+    // El dueño crea el gimnasio — mismo alcance que el signUpAdmin original,
+    // renombrado (ver docs/MIGRATION_PLAN.md Fase 4).
+    async signUpOwner({ name, email, phone, password }) {
+      email = normalizeEmail(email);
+      await wait();
+      if (db.profiles.some(p => p.email === email)) throw new Error('Ya existe una cuenta con ese correo.');
+      const id = uid('owner');
+      db.profiles.push({ id, role: 'owner', gym_id: null, name, email, phone, password });
+      session = { id, role: 'owner' };
+      return { user: { id }, session };
+    },
+    // El administrador se une a un gimnasio ya creado (como un entrenador) y
+    // queda pendiente de aprobación por el dueño.
     async signUpAdmin({ name, email, phone, password }) {
       email = normalizeEmail(email);
       await wait();
       if (db.profiles.some(p => p.email === email)) throw new Error('Ya existe una cuenta con ese correo.');
       const id = uid('admin');
       db.profiles.push({ id, role: 'admin', gym_id: null, name, email, phone, password });
+      db.gymAdmins.push({ user_id: id, gym_id: null, status: 'pending' });
       session = { id, role: 'admin' };
       return { user: { id }, session };
     },
@@ -155,27 +176,31 @@
   const gyms = {
     async listAll() { await wait(); return [...db.gyms]; },
     async get(gymId) { await wait(); return db.gyms.find(g => g.id === gymId) || null; },
+    // Espeja supabase-client.js: no es un chequeo de seguridad (gyms ya es
+    // público), solo la resolución del link/código de invitación.
+    async getByInviteCode(code) { await wait(); return db.gyms.find(g => g.invite_code === code) || null; },
     async create({ name, address, hours }) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'admin') throw new Error('Solo una cuenta de administrador puede crear un gimnasio.');
+      if (s.role !== 'owner') throw new Error('Solo una cuenta de dueño puede crear un gimnasio.');
       const me = profileOf(s.id);
       if (me.gym_id) throw new Error('Esta cuenta ya tiene un gimnasio asignado.');
       const id = uid('gym');
-      db.gyms.push({ id, name, address, hours });
+      db.gyms.push({ id, name, address, hours, invite_code: Math.random().toString(36).slice(2, 10) });
       me.gym_id = id;
       return id;
     },
     async join(gymId) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'trainer' && s.role !== 'client') throw new Error('Solo entrenadores y clientes se unen con esta función.');
+      if (!['trainer', 'client', 'admin'].includes(s.role)) throw new Error('Solo entrenadores, clientes y administradores se unen con esta función.');
       const me = profileOf(s.id);
       if (me.gym_id) throw new Error('Esta cuenta ya pertenece a un gimnasio.');
       if (!db.gyms.some(g => g.id === gymId)) throw new Error('Ese gimnasio no existe.');
       me.gym_id = gymId;
       if (s.role === 'trainer') db.trainers.find(t => t.user_id === s.id).gym_id = gymId;
       if (s.role === 'client') db.clientProfiles.find(c => c.user_id === s.id).gym_id = gymId;
+      if (s.role === 'admin') db.gymAdmins.find(a => a.user_id === s.id).gym_id = gymId;
     },
   };
 
@@ -208,13 +233,17 @@
     return { id: t.user_id, name: p.name, email: p.email, phone: p.phone, specialty: t.specialty, price: Number(t.price), status: t.status };
   }
 
+  function isStaff(s) { return s.role === 'admin' || s.role === 'owner'; }
+
   const trainers = {
     async listForGym(gymId) { await wait(); return db.trainers.filter(t => t.gym_id === gymId).map(shapeTrainer); },
     async listApprovedForGym(gymId) { await wait(); return db.trainers.filter(t => t.gym_id === gymId && t.status === 'approved').map(shapeTrainer); },
     async approve(userId) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'admin') throw new Error('Solo el administrador del gimnasio aprueba entrenadores.');
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio aprueban entrenadores.');
+      const interestCount = db.trainerInterest.filter(i => i.candidate_user_id === userId).length;
+      if (interestCount < 10) throw new Error(`Este candidato todavía no llega a los 10 clientes interesados mínimos (tiene ${interestCount}).`);
       const me = profileOf(s.id);
       const t = db.trainers.find(x => x.user_id === userId && x.gym_id === me.gym_id);
       if (t) t.status = 'approved';
@@ -222,7 +251,7 @@
     async reject(userId) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'admin') throw new Error('Solo el administrador del gimnasio rechaza entrenadores.');
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio rechazan entrenadores.');
       const me = profileOf(s.id);
       const t = db.trainers.find(x => x.user_id === userId && x.gym_id === me.gym_id);
       if (t) t.status = 'rejected';
@@ -231,6 +260,55 @@
       await wait();
       const t = db.trainers.find(x => x.user_id === userId);
       Object.assign(t, { specialty, price });
+    },
+
+    // Espeja supabase-client.js — ver el comentario ahí.
+    async markInterest(candidateUserId) {
+      await wait();
+      const s = requireAuth();
+      if (s.role !== 'client') throw new Error('Solo un cliente puede marcar interés en un entrenador candidato.');
+      const t = db.trainers.find(x => x.user_id === candidateUserId);
+      const me = profileOf(s.id);
+      if (!t || t.gym_id !== me.gym_id) throw new Error('Ese candidato no pertenece a tu gimnasio.');
+      if (!db.trainerInterest.some(i => i.candidate_user_id === candidateUserId && i.client_user_id === s.id)) {
+        db.trainerInterest.push({ candidate_user_id: candidateUserId, client_user_id: s.id, gym_id: t.gym_id });
+      }
+    },
+    async unmarkInterest(candidateUserId) {
+      await wait();
+      const s = requireAuth();
+      db.trainerInterest = db.trainerInterest.filter(i => !(i.candidate_user_id === candidateUserId && i.client_user_id === s.id));
+    },
+    async listInterestForGym(gymId) {
+      await wait();
+      return db.trainerInterest.filter(i => i.gym_id === gymId).map(i => ({ ...i }));
+    },
+  };
+
+  /* ---------------- administradores (aprobación por el dueño) ---------------- */
+
+  function shapeGymAdmin(a) {
+    const p = profileOf(a.user_id);
+    return { id: a.user_id, name: p.name, email: p.email, phone: p.phone, status: a.status };
+  }
+
+  const admins = {
+    async listForGym(gymId) { await wait(); return db.gymAdmins.filter(a => a.gym_id === gymId).map(shapeGymAdmin); },
+    async approve(userId) {
+      await wait();
+      const s = requireAuth();
+      if (s.role !== 'owner') throw new Error('Solo el dueño del gimnasio aprueba administradores.');
+      const me = profileOf(s.id);
+      const a = db.gymAdmins.find(x => x.user_id === userId && x.gym_id === me.gym_id);
+      if (a) a.status = 'approved';
+    },
+    async reject(userId) {
+      await wait();
+      const s = requireAuth();
+      if (s.role !== 'owner') throw new Error('Solo el dueño del gimnasio rechaza administradores.');
+      const me = profileOf(s.id);
+      const a = db.gymAdmins.find(x => x.user_id === userId && x.gym_id === me.gym_id);
+      if (a) a.status = 'rejected';
     },
   };
 
@@ -331,7 +409,7 @@
     async createCashCharge(clientUserId) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'admin') throw new Error('Solo el administrador del gimnasio genera un cobro.');
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio generan un cobro.');
       const c = db.clientProfiles.find(x => x.user_id === clientUserId);
       const plan = db.plans.find(p => p.id === c.plan_id) || { price: 0 };
       const trainer = c.trainer_user_id ? db.trainers.find(t => t.user_id === c.trainer_user_id) : null;
@@ -342,7 +420,7 @@
     async confirm(paymentId) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'admin') throw new Error('Solo el staff del gimnasio puede confirmar un cobro.');
+      if (!isStaff(s)) throw new Error('Solo el staff del gimnasio puede confirmar un cobro.');
       const pay = db.payments.find(p => p.id === paymentId);
       if (!pay || pay.status !== 'pending') throw new Error('Este cobro ya fue procesado.');
       pay.status = 'confirmed'; pay.confirmed_by = s.id; pay.confirmed_at = new Date().toISOString();
@@ -354,7 +432,7 @@
     async cancel(paymentId) {
       await wait();
       const s = requireAuth();
-      if (s.role !== 'admin') throw new Error('Solo el staff del gimnasio puede cancelar un cobro.');
+      if (!isStaff(s)) throw new Error('Solo el staff del gimnasio puede cancelar un cobro.');
       const pay = db.payments.find(p => p.id === paymentId);
       if (!pay || pay.status !== 'pending') throw new Error('Este cobro ya fue procesado.');
       pay.status = 'cancelled';
@@ -381,6 +459,37 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, clients, photos, progress, routines, payments, reviews };
+  /* ---------------- check-in ---------------- */
+  // Espeja supabase-client.js: checkIn() es la única vía de escritura,
+  // exige staff (isStaff, mismo helper de trainers.approve/reject) y que el
+  // cliente pertenezca al gimnasio de quien registra.
+
+  const checkins = {
+    async checkIn(clientUserId) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio registran un check-in.');
+      const c = db.clientProfiles.find(x => x.user_id === clientUserId);
+      const me = profileOf(s.id);
+      if (!c || c.gym_id !== me.gym_id) throw new Error('Ese cliente no pertenece a tu gimnasio.');
+      const row = { id: uid('chk'), gym_id: c.gym_id, client_user_id: clientUserId, checked_in_by: s.id, created_at: new Date().toISOString() };
+      db.checkinEvents.push(row);
+      return { ...row };
+    },
+    async listForClient(clientUserId, limit) {
+      await wait();
+      return db.checkinEvents.filter(e => e.client_user_id === clientUserId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit || 5)
+        .map(e => ({ id: e.id, created_at: e.created_at }));
+    },
+    async listTodayForGym(gymId) {
+      await wait();
+      const today = new Date().toISOString().slice(0, 10);
+      return db.checkinEvents.filter(e => e.gym_id === gymId && e.created_at.slice(0, 10) === today)
+        .map(e => ({ client_user_id: e.client_user_id, created_at: e.created_at }));
+    },
+  };
+
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

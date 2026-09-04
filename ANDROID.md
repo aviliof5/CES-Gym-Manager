@@ -71,7 +71,8 @@ instalación tardó 20 segundos sin un solo error.
 Sincronizá los archivos a la carpeta de compilación y corré el sync de Capacitor ahí:
 
 ```bash
-cp index.html app.js styles.css config.js supabase-client.js ads.js "C:\Users\braya\ces-android-build\"
+cp index.html styles.css config.js supabase-client.js ads.js "C:\Users\braya\ces-android-build\"
+cp -r src "C:\Users\braya\ces-android-build\"
 cd "C:\Users\braya\ces-android-build"
 npm run cap:sync
 ```

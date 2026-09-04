@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CES Gym Manager · arnés de pruebas (mock)</title>
+<title>Fight Club Gym Manager · arnés de pruebas (mock)</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -15,9 +15,9 @@
 </div>
 <input type="file" id="filePicker" accept="image/*" hidden>
 <!-- Reemplaza supabase-js + config.js + supabase-client.js por el mock:
-     app.js llama a window.BolaAPI exactamente igual en ambos casos. -->
+     src/ llama a window.BolaAPI exactamente igual en ambos casos. -->
 <script src="mock-client.js"></script>
 <script src="ads.js"></script>
-<script src="app.js"></script>
+<script type="module" src="src/router.js"></script>
 </body>
 </html>

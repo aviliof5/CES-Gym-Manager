@@ -43,6 +43,20 @@
   /* ---------------- auth ---------------- */
 
   const auth = {
+    // El dueño crea el gimnasio (create_gym() exige role='owner' en el
+    // servidor) — ver docs/MIGRATION_PLAN.md Fase 4. No inserta fila en
+    // ninguna tabla aparte: su único dato extra (el gimnasio) lo setea
+    // create_gym() en gyms.owner_user_id/profiles.gym_id.
+    async signUpOwner({ name, email, phone, password }) {
+      return unwrap(await client.auth.signUp({
+        email: normalizeEmail(email), password,
+        options: { data: { role: 'owner', name, phone }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
+      }));
+    },
+
+    // El administrador se une a un gimnasio ya creado por el dueño (igual
+    // que un entrenador) y queda pendiente de aprobación — handle_new_user()
+    // ya inserta la fila en gym_admins con status='pending'.
     async signUpAdmin({ name, email, phone, password }) {
       return unwrap(await client.auth.signUp({
         email: normalizeEmail(email), password,
@@ -118,7 +132,18 @@
     },
 
     async get(gymId) {
-      return unwrap(await client.from('gyms').select('id, name, address, hours').eq('id', gymId).single());
+      return unwrap(await client.from('gyms').select('id, name, address, hours, invite_code').eq('id', gymId).single());
+    },
+
+    // Resolución del link/código de invitación (sección 10 del pedido
+    // original) -- no es un chequeo de seguridad, gyms ya es público para
+    // cualquier autenticado; join_gym() sigue siendo quien de verdad valida
+    // la unión. Devuelve null en vez de lanzar si el código no existe, para
+    // que el llamador pueda caer al selector manual sin un try/catch propio.
+    async getByInviteCode(code) {
+      const { data, error } = await client.from('gyms').select('id, name, address, hours, invite_code').eq('invite_code', code).maybeSingle();
+      if (error) throw error;
+      return data;
     },
 
     async create({ name, address, hours }) {
@@ -201,6 +226,47 @@
     },
     async updateProfile(userId, { specialty, price }) {
       const { error } = await client.from('trainers').update({ specialty, price }).eq('user_id', userId);
+      if (error) throw error;
+    },
+
+    // "10 clientes interesados" (sección 11 del pedido original) — el
+    // conteo real lo hace approve_trainer() en el servidor, esto es solo
+    // para que la UI muestre el progreso. mark/unmarkInterest pasan por RPC
+    // (security definer): un cliente nunca inserta/borra la fila directo.
+    async markInterest(candidateUserId) {
+      const { error } = await client.rpc('mark_trainer_interest', { p_candidate_user_id: candidateUserId });
+      if (error) throw error;
+    },
+    async unmarkInterest(candidateUserId) {
+      const { error } = await client.rpc('unmark_trainer_interest', { p_candidate_user_id: candidateUserId });
+      if (error) throw error;
+    },
+    async listInterestForGym(gymId) {
+      return unwrap(await client.from('trainer_candidate_interest').select('candidate_user_id, client_user_id').eq('gym_id', gymId));
+    },
+  };
+
+  /* ---------------- administradores (aprobación por el dueño) ---------------- */
+  // Igual patrón que `trainers`: gym_admins no tiene nombre/correo propios —
+  // vienen de `profiles` vía el FK gym_admins.user_id -> profiles.id.
+
+  const ADMIN_SELECT = 'user_id, status, profiles!inner(name, email, phone)';
+
+  function shapeGymAdmin(row) {
+    return { id: row.user_id, name: row.profiles.name, email: row.profiles.email, phone: row.profiles.phone, status: row.status };
+  }
+
+  const admins = {
+    async listForGym(gymId) {
+      const rows = unwrap(await client.from('gym_admins').select(ADMIN_SELECT).eq('gym_id', gymId));
+      return rows.map(shapeGymAdmin);
+    },
+    async approve(userId) {
+      const { error } = await client.rpc('approve_admin', { p_admin_user_id: userId });
+      if (error) throw error;
+    },
+    async reject(userId) {
+      const { error } = await client.rpc('reject_admin', { p_admin_user_id: userId });
       if (error) throw error;
     },
   };
@@ -395,5 +461,28 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, clients, photos, progress, routines, payments, reviews };
+  /* ---------------- check-in ---------------- */
+  // check_in_client() es la única vía de escritura (security definer, exige
+  // staff en el servidor) — ver supabase/migrations/20260904000100_checkin_events.sql.
+  // El cliente nunca escribe su propio check-in.
+
+  const checkins = {
+    async checkIn(clientUserId) {
+      return unwrap(await client.rpc('check_in_client', { p_client_user_id: clientUserId }));
+    },
+    async listForClient(clientUserId, limit) {
+      return unwrap(await client.from('checkin_events').select('id, created_at')
+        .eq('client_user_id', clientUserId).order('created_at', { ascending: false }).limit(limit || 5));
+    },
+    // "Hoy" aproximado por UTC (misma precisión que el resto de la app usa
+    // para fechas, ej. membership_expires_at) — alcanza para el badge
+    // "✓ Hoy" del panel de staff, no es un reporte de asistencia preciso.
+    async listTodayForGym(gymId) {
+      const todayStart = new Date().toISOString().slice(0, 10) + 'T00:00:00';
+      return unwrap(await client.from('checkin_events').select('client_user_id, created_at')
+        .eq('gym_id', gymId).gte('created_at', todayStart).order('created_at', { ascending: false }));
+    },
+  };
+
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins };
 })();
