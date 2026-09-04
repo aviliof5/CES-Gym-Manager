@@ -228,6 +228,22 @@
       const { error } = await client.from('trainers').update({ specialty, price }).eq('user_id', userId);
       if (error) throw error;
     },
+
+    // "10 clientes interesados" (sección 11 del pedido original) — el
+    // conteo real lo hace approve_trainer() en el servidor, esto es solo
+    // para que la UI muestre el progreso. mark/unmarkInterest pasan por RPC
+    // (security definer): un cliente nunca inserta/borra la fila directo.
+    async markInterest(candidateUserId) {
+      const { error } = await client.rpc('mark_trainer_interest', { p_candidate_user_id: candidateUserId });
+      if (error) throw error;
+    },
+    async unmarkInterest(candidateUserId) {
+      const { error } = await client.rpc('unmark_trainer_interest', { p_candidate_user_id: candidateUserId });
+      if (error) throw error;
+    },
+    async listInterestForGym(gymId) {
+      return unwrap(await client.from('trainer_candidate_interest').select('candidate_user_id, client_user_id').eq('gym_id', gymId));
+    },
   };
 
   /* ---------------- administradores (aprobación por el dueño) ---------------- */

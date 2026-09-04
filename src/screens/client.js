@@ -240,6 +240,35 @@ export function viewClientInicio() {
   </div>`;
 }
 
+// "¿Quieres ser entrenador de Fight Club?" (sección 11 del pedido original)
+// — desde el lado del cliente: candidatos pendientes de SU gimnasio, con el
+// conteo real de interés (state.trainerInterest, cargado junto al resto de
+// enterClientHome) y un toggle para marcar/desmarcar. El mínimo de 10 lo
+// exige el servidor en approve_trainer(), acá solo se informa el progreso.
+function trainerCandidatesSection() {
+  const pending = state.trainersForGym.filter(t => t.status === 'pending');
+  if (!pending.length) return '';
+  const myId = state.myClient.id;
+
+  const cards = pending.map(t => {
+    const interested = state.trainerInterest.filter(i => i.candidate_user_id === t.id);
+    const iAmInterested = interested.some(i => i.client_user_id === myId);
+    return `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px">
+      <div class="avatar avatar--sq avatar--amber">${esc(initials(t.name))}</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:700">${esc(t.name)}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)}</div>
+        <div style="font-size:11px;color:${interested.length >= 10 ? 'var(--mint)' : 'var(--muted)'};font-weight:700;margin-top:2px">${interested.length}/10 clientes interesados</div>
+      </div>
+      <div ${act(iAmInterested ? 'unmarkTrainerInterest' : 'markTrainerInterest', t.id)} class="chip chip--amber${iAmInterested ? ' is-active' : ''}" style="flex-shrink:0">${iAmInterested ? '✓ Te interesa' : 'Me interesa'}</div>
+    </div>`;
+  }).join('');
+
+  return `${sectionTitle('¿Querés que sea tu entrenador?', 'idcard', 'margin:20px 0 4px')}
+    <div class="hint">Un candidato necesita 10 clientes interesados para que el gimnasio lo apruebe</div>
+    ${cards}`;
+}
+
 export function viewClientEntrenar() {
   const trainer = state.myClientTrainer;
   const source = trainer ? state.routineSource : 'ia';
@@ -268,6 +297,7 @@ export function viewClientEntrenar() {
       </div>` : `<div class="card" style="border:1px dashed rgba(255,255,255,0.12);padding:28px 16px;text-align:center">
         <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Tu entrenador aún no ha creado tu rutina.<br/>Mientras tanto, prueba la rutina con IA.</div>
       </div>`}
+      ${trainerCandidatesSection()}
     </div>`;
   }
 
@@ -291,6 +321,7 @@ export function viewClientEntrenar() {
       </div>`).join('')}
       <div style="font-size:10.5px;color:var(--muted);margin-top:10px">Basado en el equipo disponible de ${esc(state.gym.name)}</div>
     </div>` : ''}
+    ${trainerCandidatesSection()}
   </div>`;
 }
 

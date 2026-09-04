@@ -25,6 +25,7 @@
     payments: [],           // {id, client_user_id, gym_id, amount, status, confirmed_by, confirmed_at}
     reviews: [],
     checkinEvents: [],       // {id, gym_id, client_user_id, checked_in_by, created_at}
+    trainerInterest: [],      // {candidate_user_id, client_user_id, gym_id}
     storage: new Map(),      // path -> File
   };
 
@@ -241,6 +242,8 @@
       await wait();
       const s = requireAuth();
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio aprueban entrenadores.');
+      const interestCount = db.trainerInterest.filter(i => i.candidate_user_id === userId).length;
+      if (interestCount < 10) throw new Error(`Este candidato todavía no llega a los 10 clientes interesados mínimos (tiene ${interestCount}).`);
       const me = profileOf(s.id);
       const t = db.trainers.find(x => x.user_id === userId && x.gym_id === me.gym_id);
       if (t) t.status = 'approved';
@@ -257,6 +260,28 @@
       await wait();
       const t = db.trainers.find(x => x.user_id === userId);
       Object.assign(t, { specialty, price });
+    },
+
+    // Espeja supabase-client.js — ver el comentario ahí.
+    async markInterest(candidateUserId) {
+      await wait();
+      const s = requireAuth();
+      if (s.role !== 'client') throw new Error('Solo un cliente puede marcar interés en un entrenador candidato.');
+      const t = db.trainers.find(x => x.user_id === candidateUserId);
+      const me = profileOf(s.id);
+      if (!t || t.gym_id !== me.gym_id) throw new Error('Ese candidato no pertenece a tu gimnasio.');
+      if (!db.trainerInterest.some(i => i.candidate_user_id === candidateUserId && i.client_user_id === s.id)) {
+        db.trainerInterest.push({ candidate_user_id: candidateUserId, client_user_id: s.id, gym_id: t.gym_id });
+      }
+    },
+    async unmarkInterest(candidateUserId) {
+      await wait();
+      const s = requireAuth();
+      db.trainerInterest = db.trainerInterest.filter(i => !(i.candidate_user_id === candidateUserId && i.client_user_id === s.id));
+    },
+    async listInterestForGym(gymId) {
+      await wait();
+      return db.trainerInterest.filter(i => i.gym_id === gymId).map(i => ({ ...i }));
     },
   };
 

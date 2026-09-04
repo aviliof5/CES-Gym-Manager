@@ -213,12 +213,11 @@ function inviteCard() {
 
 // Resumen del gimnasio al abrir el panel (sección 4 del pedido original:
 // "Clientes / Entrenadores / Check-ins / Ingresos"). Solo se muestran
-// métricas reales ya cargadas en memoria — nada inventado; "check-ins" no
-// aparece acá todavía porque no hay eventos de check-in reales (ver el gap
-// en docs/DATABASE_MAP.md), así que el cuarto valor es "Al día" en su lugar.
+// métricas reales ya cargadas en memoria — nada inventado. "Check-ins hoy"
+// ahora sí es real (checkin_events, ver docs/DATABASE_MAP.md) — antes de
+// esa migración este cuarto valor mostraba "Clientes al día" en su lugar.
 function ownerMetricsGrid() {
   const trainersActivos = state.trainersForGym.filter(t => t.status === 'approved').length;
-  const alDia = state.clientsForGym.filter(c => c.status === 'al_dia').length;
   const ingresos = state.clientsForGym.map(enrichClient)
     .filter(c => c.status === 'al_dia')
     .reduce((sum, c) => sum + c.amount, 0);
@@ -232,7 +231,7 @@ function ownerMetricsGrid() {
     ${tile('Clientes', state.clientsForGym.length, 'var(--text)')}
     ${tile('Entrenadores', trainersActivos, 'var(--amber)')}
     ${tile('Ingresos (al día)', '$' + ingresos, 'var(--lime)')}
-    ${tile('Clientes al día', alDia, 'var(--mint)')}
+    ${tile('Check-ins hoy', state.todayCheckins.length, 'var(--mint)')}
   </div>`;
 }
 
@@ -241,9 +240,18 @@ export function viewOwnerEntrenadores() {
   const approved = state.trainersForGym.filter(t => t.status === 'approved');
   const clientsOf = trainerId => state.clientsForGym.filter(c => c.trainerUserId === trainerId).map(c => c.name);
 
+  // "10 clientes interesados" (sección 11 del pedido original) — el
+  // mínimo real lo exige approve_trainer() en el servidor; acá solo se
+  // deshabilita el botón como ayuda de UX, para no gastar un viaje al
+  // servidor en un intento que ya se sabe que va a fallar.
+  const interestCountFor = candidateId => state.trainerInterest.filter(i => i.candidate_user_id === candidateId).length;
+
   const pendingBlock = pending.length ? `
     <div class="section-title" style="color:var(--amber);margin-bottom:10px">Solicitudes pendientes (${pending.length})</div>
-    ${pending.map(t => `
+    ${pending.map(t => {
+      const interest = interestCountFor(t.id);
+      const canApprove = interest >= 10;
+      return `
       <div class="card" style="border-color:rgba(251,191,36,0.35);margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:12px">
           <div class="avatar avatar--sq avatar--amber">${esc(initials(t.name))}</div>
@@ -253,11 +261,13 @@ export function viewOwnerEntrenadores() {
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(t.email)} · ${esc(t.phone)}</div>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button ${act('approveTrainer', t.id)} style="flex:1;background:var(--mint);border:none;border-radius:10px;padding:10px;color:var(--bg);font-weight:700;font-size:12.5px;cursor:pointer">Aprobar</button>
+        <div style="margin-top:10px;font-size:11.5px;font-weight:700;color:${canApprove ? 'var(--mint)' : 'var(--muted)'}">${interest}/10 clientes interesados${canApprove ? ' ✓' : ''}</div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button ${act('approveTrainer', t.id)} ${canApprove ? '' : 'disabled'} style="flex:1;background:${canApprove ? 'var(--mint)' : 'var(--surface-2)'};border:none;border-radius:10px;padding:10px;color:${canApprove ? 'var(--bg)' : 'var(--muted-dim)'};font-weight:700;font-size:12.5px;cursor:${canApprove ? 'pointer' : 'not-allowed'}">Aprobar</button>
           <button ${act('rejectTrainer', t.id)} style="flex:1;background:var(--surface-2);border:none;border-radius:10px;padding:10px;color:var(--red);font-weight:700;font-size:12.5px;cursor:pointer">Rechazar</button>
         </div>
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   ` : '';
 
   const rows = approved.map(t => {

@@ -44,6 +44,7 @@ export const state = {
   pendingAdminName: '',
   gymAdminsForGym: [],   // gym_admins de ESTE gimnasio — lo carga el dueño para aprobar/rechazar
   todayCheckins: [],       // check-ins de HOY en este gimnasio — [{client_user_id, created_at}], para el badge "✓ Hoy" en la tab Clientes
+  trainerInterest: [],      // [{candidate_user_id, client_user_id}] de este gimnasio — "10 clientes interesados" (owner/admin y cliente lo leen distinto)
 
   equipment: [],
   newEquipment: '',

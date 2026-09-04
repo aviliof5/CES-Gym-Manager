@@ -363,6 +363,20 @@ export const ACTIONS = {
     setState({ busy: false, aiRoutine });
   },
 
+  // "10 clientes interesados" (sección 11 del pedido original) — el
+  // mínimo real lo exige approve_trainer() en el servidor, esto solo marca
+  // el interés propio y refresca el conteo que ve todo el gimnasio.
+  markTrainerInterest: async candidateId => {
+    await BolaAPI.trainers.markInterest(candidateId);
+    const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
+    setState({ trainerInterest });
+  },
+  unmarkTrainerInterest: async candidateId => {
+    await BolaAPI.trainers.unmarkInterest(candidateId);
+    const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
+    setState({ trainerInterest });
+  },
+
   /* ---- workout: temporizador de descanso + marcar series (sección 8 del
      pedido original) ---- */
   startWorkout: source => {
@@ -683,7 +697,7 @@ export async function continueTrainerSignIn(profile) {
 // paridad total (ver docs/ROLES_AND_PERMISSIONS.md). viewOwnerDash decide
 // internamente si muestra la tab de aprobar administradores según el rol.
 export async function enterOwnerDash() {
-  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins] = await Promise.all([
+  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest] = await Promise.all([
     BolaAPI.clients.listForGym(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
     BolaAPI.plans.list(state.gym.id),
@@ -691,8 +705,9 @@ export async function enterOwnerDash() {
     BolaAPI.reviews.listForGym(state.gym.id),
     BolaAPI.admins.listForGym(state.gym.id),
     BolaAPI.checkins.listTodayForGym(state.gym.id),
+    BolaAPI.trainers.listInterestForGym(state.gym.id),
   ]);
-  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, busy: false });
+  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, busy: false });
   if (window.CesAds) window.CesAds.hideBanner();
   render();
 }
@@ -712,11 +727,12 @@ export async function enterClientHome() {
   const trainerRoutineForMe = trainer ? await BolaAPI.routines.getTrainer(client.id) : null;
   const aiRoutine = await BolaAPI.routines.getAi(client.id, client.physical.goal || 'perder_peso');
   const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
+  const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
 
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
-    plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe, checkinHistory,
+    plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
     pendingPayment: null, busy: false,
   });

@@ -62,7 +62,7 @@ Con esto, el rediseño Fight Club sustancial (Fases 2-8) queda completo: paleta,
 
 **Fase 10 — Invitación por link/QR.** Requiere `invite_code`/token en `gyms` + RPC nuevo (ver `SECURITY_AUDIT.md` riesgo 1).
 
-**Fase 11 — Entrenadores: regla de 10 clientes interesados.** Requiere decisión de producto (¿self-reported o verificable?) antes de diseñar la tabla — no se resuelve en código sin esa definición.
+**Fase 11 — Entrenadores: regla de 10 clientes interesados.** ✅ Completa (2026-09-04). Tabla `trainer_candidate_interest` + RPCs `mark_trainer_interest()`/`unmark_trainer_interest()` + `approve_trainer()` actualizado para contar interés real server-side. UI: sección "¿Querés que sea tu entrenador?" en la tab Entrenar del cliente (toggle Me interesa/Ya no), progreso "X/10" + botón Aprobar deshabilitado hasta llegar a 10 en la tab Coaches del dueño/admin. Verificado con clicks reales: rechazado en 9, aceptado en 10.
 
 **Fase 12 — Seguridad.** Repetir `SECURITY_AUDIT.md` sobre todo lo nuevo (invitaciones, check-in, regla de entrenadores) antes de dar por cerrada la migración.
 
