@@ -225,7 +225,21 @@ async function handleAuthDeepLink(url) {
   boot();
 }
 
+// Link de invitación de gimnasio (?invite=XXXXX) — solo tiene sentido en la
+// web (un click abre el navegador directo con la query string); en la app
+// nativa alguien que toca ese mismo link simplemente abre el navegador del
+// teléfono, no esta app empaquetada, así que no hace falta manejarlo acá
+// como el deep link de confirmación de correo (ese sí reabre la app nativa,
+// por el esquema com.ces.gymmanager:// registrado aparte).
+function readInviteCodeFromUrl() {
+  try {
+    const code = new URLSearchParams(window.location.search).get('invite');
+    if (code) state.inviteCode = code;
+  } catch (_) { /* URL/URLSearchParams no disponible, no es crítico */ }
+}
+
 async function initDeepLinksAndBoot() {
+  readInviteCodeFromUrl();
   const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (App) {
     App.addListener('appUrlOpen', ({ url }) => handleAuthDeepLink(url));

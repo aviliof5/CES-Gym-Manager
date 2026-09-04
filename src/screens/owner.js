@@ -179,8 +179,31 @@ export function viewOwnerClientes() {
   return `<div class="pane">
     ${errorBanner()}
     ${ownerMetricsGrid()}
+    ${inviteCard()}
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">${state.clientsForGym.length} clientes registrados</div>
     ${rows}
+  </div>`;
+}
+
+// Link/código de invitación (sección 10 del pedido original) — el código lo
+// generó create_gym() solo, nadie lo "genera" a mano acá, esta tarjeta solo
+// lo muestra y arma el link para compartir. El QR sigue siendo el mismo
+// patrón decorativo (CSS a cuadros) que ya usa el cobro en efectivo en esta
+// app — no hay librería de generación de QR todavía, así que es honesto no
+// pretender que es escaneable de verdad.
+function inviteCard() {
+  const link = `${window.location.origin}${window.location.pathname}?invite=${state.gym.invite_code}`;
+  return `<div class="card--dashed" style="margin-bottom:18px">
+    <div style="font-size:13px;font-weight:700;color:var(--muted)">Invitá clientes</div>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Compartí este código o link — quien se registre como cliente con él queda unido directo a tu gimnasio, sin elegirlo de una lista.</div>
+    <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+      <div class="qr qr--sm"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10.5px;color:var(--muted)">Código</div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;font-family:var(--font-display)">${esc(state.gym.invite_code)}</div>
+      </div>
+      <button ${act('copyInviteLink', link)} style="background:var(--lime);border:none;border-radius:10px;padding:10px 16px;color:var(--bg);font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap">${state.inviteLinkCopied ? '¡Copiado!' : 'Copiar link'}</button>
+    </div>
   </div>`;
 }
 

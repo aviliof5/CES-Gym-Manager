@@ -132,7 +132,18 @@
     },
 
     async get(gymId) {
-      return unwrap(await client.from('gyms').select('id, name, address, hours').eq('id', gymId).single());
+      return unwrap(await client.from('gyms').select('id, name, address, hours, invite_code').eq('id', gymId).single());
+    },
+
+    // Resolución del link/código de invitación (sección 10 del pedido
+    // original) -- no es un chequeo de seguridad, gyms ya es público para
+    // cualquier autenticado; join_gym() sigue siendo quien de verdad valida
+    // la unión. Devuelve null en vez de lanzar si el código no existe, para
+    // que el llamador pueda caer al selector manual sin un try/catch propio.
+    async getByInviteCode(code) {
+      const { data, error } = await client.from('gyms').select('id, name, address, hours, invite_code').eq('invite_code', code).maybeSingle();
+      if (error) throw error;
+      return data;
     },
 
     async create({ name, address, hours }) {

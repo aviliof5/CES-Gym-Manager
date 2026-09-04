@@ -183,6 +183,18 @@ export const ACTIONS = {
   },
 
   ownerTab: v => setState({ ownerTab: v }),
+  copyInviteLink: async link => {
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch (err) {
+      // Sin permiso/soporte de portapapeles (poco común, pero no es motivo
+      // para romper la pantalla) -- el código sigue visible igual en la tarjeta.
+      console.error('No se pudo copiar el link de invitación:', err);
+      return;
+    }
+    setState({ inviteLinkCopied: true });
+    setTimeout(() => setState({ inviteLinkCopied: false }), 2000);
+  },
   setBillingFilter: v => setState({ billingFilter: v }),
 
   approveTrainer: async v => {
@@ -283,6 +295,11 @@ export const ACTIONS = {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
     }
+    // Si llegó desde un link/QR de invitación (?invite=XXXXX), se une
+    // directo a ESE gimnasio sin pasar por el selector manual. Cualquier
+    // problema con el código (no existe, ya expiró el rol, etc.) cae al
+    // selector de siempre — nunca deja a alguien varado por un link roto.
+    if (await tryJoinViaInviteCode('clientSignUp')) return;
     await loadGymPicker('clientSignUp');
   },
   setLevel: v => setState({ clientPhysicalReg: { ...state.clientPhysicalReg, level: v } }),
@@ -558,6 +575,26 @@ export async function continueAfterFacePhoto(client) {
     return;
   }
   await enterClientHome();
+}
+
+// Intenta unirse directo al gimnasio del link/QR de invitación (ver
+// router.js:readInviteCodeFromUrl), sin pasar por el selector manual.
+// Devuelve true si se unió (y ya avanzó a la pantalla que corresponde),
+// false si no había código, no existía ese gimnasio, o falló el join por
+// cualquier motivo — en cuyo caso el llamador cae al selector de siempre.
+async function tryJoinViaInviteCode(next) {
+  const code = state.inviteCode;
+  if (!code) return false;
+  try {
+    const gym = await BolaAPI.gyms.getByInviteCode(code);
+    if (!gym) return false;
+    await BolaAPI.gyms.join(gym.id);
+    if (next === 'clientSignUp') await continueClientSignUpAfterGym(gym);
+    return true;
+  } catch (err) {
+    console.error('No se pudo unir por código de invitación:', err);
+    return false;
+  }
 }
 
 // Trae la lista de gimnasios y muestra la pantalla de selección. `next`

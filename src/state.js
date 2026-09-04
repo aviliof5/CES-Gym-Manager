@@ -13,7 +13,13 @@ export const state = {
   screen: 'boot',
   session: null,
   myProfile: null,   // {id, role, gym_id, name, email, phone}
-  gym: null,          // {id, name, address, hours}
+  gym: null,          // {id, name, address, hours, invite_code}
+  // Código de invitación leído de la URL al arrancar (?invite=XXXXX, ver
+  // router.js) — sección 10 del pedido original ("Invitación de clientes").
+  // No es un token de acceso, solo evita el selector manual de gimnasio
+  // cuando el cliente llegó desde el link/QR que compartió su gimnasio.
+  inviteCode: null,
+  inviteLinkCopied: false, // feedback transitorio del botón "Copiar link" del dueño
   busy: false,
   error: '',
   offline: !navigator.onLine,

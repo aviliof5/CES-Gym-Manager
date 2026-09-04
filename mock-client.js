@@ -49,7 +49,7 @@
 
   (function seed() {
     const gymId = 'gym-1';
-    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00' });
+    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234' });
 
     const mkUser = (id, role, name, email, phone, extra) => {
       db.profiles.push({ id, role, gym_id: gymId, name, email, phone, password: extra.password });
@@ -174,6 +174,9 @@
   const gyms = {
     async listAll() { await wait(); return [...db.gyms]; },
     async get(gymId) { await wait(); return db.gyms.find(g => g.id === gymId) || null; },
+    // Espeja supabase-client.js: no es un chequeo de seguridad (gyms ya es
+    // público), solo la resolución del link/código de invitación.
+    async getByInviteCode(code) { await wait(); return db.gyms.find(g => g.invite_code === code) || null; },
     async create({ name, address, hours }) {
       await wait();
       const s = requireAuth();
@@ -181,7 +184,7 @@
       const me = profileOf(s.id);
       if (me.gym_id) throw new Error('Esta cuenta ya tiene un gimnasio asignado.');
       const id = uid('gym');
-      db.gyms.push({ id, name, address, hours });
+      db.gyms.push({ id, name, address, hours, invite_code: Math.random().toString(36).slice(2, 10) });
       me.gym_id = id;
       return id;
     },
