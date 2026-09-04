@@ -64,7 +64,7 @@ Con esto, el rediseño Fight Club sustancial (Fases 2-8) queda completo: paleta,
 
 **Fase 11 — Entrenadores: regla de 10 clientes interesados.** ✅ Completa (2026-09-04). Tabla `trainer_candidate_interest` + RPCs `mark_trainer_interest()`/`unmark_trainer_interest()` + `approve_trainer()` actualizado para contar interés real server-side. UI: sección "¿Querés que sea tu entrenador?" en la tab Entrenar del cliente (toggle Me interesa/Ya no), progreso "X/10" + botón Aprobar deshabilitado hasta llegar a 10 en la tab Coaches del dueño/admin. Verificado con clicks reales: rechazado en 9, aceptado en 10.
 
-**Fase 12 — Seguridad.** Repetir `SECURITY_AUDIT.md` sobre todo lo nuevo (invitaciones, check-in, regla de entrenadores) antes de dar por cerrada la migración.
+**Fase 12 — Seguridad.** ✅ Completa (2026-09-04). Repetido `SECURITY_AUDIT.md` sobre las 4 migraciones nuevas + un grep completo de `supabase/migrations/*.sql` buscando checks de rol sin migrar. Dos hallazgos reales (ambos de permisos insuficientes para `owner`, no de más acceso del debido): la política de Storage de fotos que ya estaba documentada como pendiente desde la Fase 1 pero nunca se había corregido, y un segundo hallazgo nuevo — la política de lectura de `progress_photos` (la tabla de metadatos, no el archivo) que se le había escapado por completo a la migración de owner-role. Corregidos los dos en `20260904000300_storage_staff_parity.sql`. Los 4 riesgos "a vigilar" que la Fase 1 había dejado para cuando existieran esas features se verificaron: los 4 se implementaron exactamente como se había anticipado.
 
 **Fase 13 — PWA + Capacitor.** Branding de manifest/service worker/iconos + **evaluación explícita** del cambio de `appId`/scheme (ver riesgo abajo) antes de tocarlo.
 
