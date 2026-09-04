@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>CES Gym Manager · Gestión para gimnasios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 
 <!-- PWA instalable -->
@@ -30,7 +33,7 @@
      verificar app.js sin un backend real levantado. -->
 <script src="supabase-client.js?v=2"></script>
 <script src="ads.js"></script>
-<script src="app.js"></script>
+<script type="module" src="src/router.js"></script>
 <script>
 // Registra el service worker para que la app sea instalable (Android/desktop)
 // y funcione offline. No se registra dentro de la app empaquetada con

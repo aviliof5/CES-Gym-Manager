@@ -8,16 +8,25 @@
 // script de supabase-js del CDN: esos siempre van directo a la red, para
 // no arriesgar servir datos o tokens de sesión viejos desde el cache.
 
-const CACHE_NAME = 'ces-gym-shell-v1';
+const CACHE_NAME = 'ces-gym-shell-v3';
 const SHELL_FILES = [
   './',
   './index.html',
   './styles.css',
-  './app.js',
   './config.js',
   './supabase-client.js',
   './ads.js',
   './manifest.webmanifest',
+  './src/router.js',
+  './src/state.js',
+  './src/actions.js',
+  './src/data.js',
+  './src/helpers.js',
+  './src/screens/auth.js',
+  './src/screens/owner.js',
+  './src/screens/admin.js',
+  './src/screens/client.js',
+  './src/screens/trainer.js',
 ];
 
 self.addEventListener('install', (event) => {

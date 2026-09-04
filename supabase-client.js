@@ -43,6 +43,20 @@
   /* ---------------- auth ---------------- */
 
   const auth = {
+    // El dueño crea el gimnasio (create_gym() exige role='owner' en el
+    // servidor) — ver docs/MIGRATION_PLAN.md Fase 4. No inserta fila en
+    // ninguna tabla aparte: su único dato extra (el gimnasio) lo setea
+    // create_gym() en gyms.owner_user_id/profiles.gym_id.
+    async signUpOwner({ name, email, phone, password }) {
+      return unwrap(await client.auth.signUp({
+        email: normalizeEmail(email), password,
+        options: { data: { role: 'owner', name, phone }, emailRedirectTo: isNative() ? NATIVE_AUTH_CALLBACK : undefined },
+      }));
+    },
+
+    // El administrador se une a un gimnasio ya creado por el dueño (igual
+    // que un entrenador) y queda pendiente de aprobación — handle_new_user()
+    // ya inserta la fila en gym_admins con status='pending'.
     async signUpAdmin({ name, email, phone, password }) {
       return unwrap(await client.auth.signUp({
         email: normalizeEmail(email), password,
@@ -201,6 +215,31 @@
     },
     async updateProfile(userId, { specialty, price }) {
       const { error } = await client.from('trainers').update({ specialty, price }).eq('user_id', userId);
+      if (error) throw error;
+    },
+  };
+
+  /* ---------------- administradores (aprobación por el dueño) ---------------- */
+  // Igual patrón que `trainers`: gym_admins no tiene nombre/correo propios —
+  // vienen de `profiles` vía el FK gym_admins.user_id -> profiles.id.
+
+  const ADMIN_SELECT = 'user_id, status, profiles!inner(name, email, phone)';
+
+  function shapeGymAdmin(row) {
+    return { id: row.user_id, name: row.profiles.name, email: row.profiles.email, phone: row.profiles.phone, status: row.status };
+  }
+
+  const admins = {
+    async listForGym(gymId) {
+      const rows = unwrap(await client.from('gym_admins').select(ADMIN_SELECT).eq('gym_id', gymId));
+      return rows.map(shapeGymAdmin);
+    },
+    async approve(userId) {
+      const { error } = await client.rpc('approve_admin', { p_admin_user_id: userId });
+      if (error) throw error;
+    },
+    async reject(userId) {
+      const { error } = await client.rpc('reject_admin', { p_admin_user_id: userId });
       if (error) throw error;
     },
   };
@@ -395,5 +434,5 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, clients, photos, progress, routines, payments, reviews };
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews };
 })();

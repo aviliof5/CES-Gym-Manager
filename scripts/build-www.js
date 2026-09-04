@@ -11,7 +11,10 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const wwwDir = path.join(root, 'www');
 
-const FILES = ['index.html', 'app.js', 'styles.css', 'config.js', 'supabase-client.js', 'ads.js'];
+const FILES = ['index.html', 'styles.css', 'config.js', 'supabase-client.js', 'ads.js'];
+// app.js fue reemplazado por módulos ES bajo src/ (ver docs/MIGRATION_PLAN.md,
+// Fase 3) — se copia el directorio completo, no un archivo suelto.
+const DIRS = ['src'];
 
 fs.rmSync(wwwDir, { recursive: true, force: true });
 fs.mkdirSync(wwwDir, { recursive: true });
@@ -28,4 +31,10 @@ for (const file of FILES) {
   fs.copyFileSync(src, path.join(wwwDir, file));
 }
 
-console.log(`www/ armado con ${FILES.length} archivos.`);
+for (const dir of DIRS) {
+  const src = path.join(root, dir);
+  if (!fs.existsSync(src)) throw new Error(`Falta el directorio ${dir}/, necesario para armar www/.`);
+  fs.cpSync(src, path.join(wwwDir, dir), { recursive: true });
+}
+
+console.log(`www/ armado con ${FILES.length} archivos y ${DIRS.length} directorio(s) (${DIRS.join(', ')}).`);
