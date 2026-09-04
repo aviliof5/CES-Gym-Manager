@@ -2,13 +2,13 @@
 // para la carcasa de la app (HTML/CSS/JS propios). Estrategia
 // "network-first": siempre intenta traer la versión más nueva de la red
 // y solo cae al cache si no hay conexión — así un usuario nunca queda
-// pegado con una versión vieja de app.js por culpa del cache.
+// pegado con una versión vieja de src/router.js por culpa del cache.
 //
 // Deliberadamente NO cachea nada de Supabase (API, Storage, Auth) ni el
 // script de supabase-js del CDN: esos siempre van directo a la red, para
 // no arriesgar servir datos o tokens de sesión viejos desde el cache.
 
-const CACHE_NAME = 'ces-gym-shell-v3';
+const CACHE_NAME = 'fight-club-gym-shell-v4';
 const SHELL_FILES = [
   './',
   './index.html',

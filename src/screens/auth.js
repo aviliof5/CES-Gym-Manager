@@ -21,7 +21,7 @@ export function viewRole() {
     <div class="gym-watermark">${iconSpan('dumbbell')}</div>
     <div>
       <div style="width:56px;height:56px;border-radius:16px;background:var(--lime);margin-bottom:22px;display:flex;align-items:center;justify-content:center">${LOGO_SVG}</div>
-      <div style="font-size:26px;font-weight:900;line-height:1.15;letter-spacing:-0.4px">CES Gym Manager</div>
+      <div style="font-size:26px;font-weight:900;line-height:1.15;letter-spacing:-0.4px">Fight Club Gym Manager</div>
       <div style="font-size:14px;color:var(--muted);margin-top:10px;line-height:1.5">Administra tu gimnasio, entrena a tus clientes o sigue tu plan personalizado, todo en un solo lugar.</div>
     </div>
     ${errorBanner()}
@@ -191,7 +191,7 @@ export function viewGymPicker() {
       ${state.selectedGymId === g.id ? `<div style="width:20px;height:20px;border-radius:50%;background:${accentVar};display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:12px;font-weight:900">✓</div>` : ''}
     </div>`).join('');
 
-  const empty = `<div style="text-align:center;color:var(--muted);font-size:12.5px;padding:40px 20px;line-height:1.6">Todavía no hay ningún gimnasio registrado en CES Gym Manager. Pedile a tu administrador que cree uno primero, y volvé a esta pantalla para unirte.</div>`;
+  const empty = `<div style="text-align:center;color:var(--muted);font-size:12.5px;padding:40px 20px;line-height:1.6">Todavía no hay ningún gimnasio registrado en Fight Club Gym Manager. Pedile a tu dueño que cree uno primero, y volvé a esta pantalla para unirte.</div>`;
 
   return `<div class="col">
     <div class="step-head" style="justify-content:space-between">

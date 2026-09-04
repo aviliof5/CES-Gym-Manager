@@ -66,7 +66,15 @@ Con esto, el rediseño Fight Club sustancial (Fases 2-8) queda completo: paleta,
 
 **Fase 12 — Seguridad.** ✅ Completa (2026-09-04). Repetido `SECURITY_AUDIT.md` sobre las 4 migraciones nuevas + un grep completo de `supabase/migrations/*.sql` buscando checks de rol sin migrar. Dos hallazgos reales (ambos de permisos insuficientes para `owner`, no de más acceso del debido): la política de Storage de fotos que ya estaba documentada como pendiente desde la Fase 1 pero nunca se había corregido, y un segundo hallazgo nuevo — la política de lectura de `progress_photos` (la tabla de metadatos, no el archivo) que se le había escapado por completo a la migración de owner-role. Corregidos los dos en `20260904000300_storage_staff_parity.sql`. Los 4 riesgos "a vigilar" que la Fase 1 había dejado para cuando existieran esas features se verificaron: los 4 se implementaron exactamente como se había anticipado.
 
-**Fase 13 — PWA + Capacitor.** Branding de manifest/service worker/iconos + **evaluación explícita** del cambio de `appId`/scheme (ver riesgo abajo) antes de tocarlo.
+**Fase 13 — PWA + Capacitor.** ✅ Completa (2026-09-04). `appId` sin cambios (`com.ces.gymmanager`, decisión ya confirmada) — solo lo que el usuario ve:
+- Íconos regenerados de verdad, no solo referenciados: `assets/icon-*.svg` (los archivos fuente, editables) tenían el lima/negro viejo hardcodeado — actualizados a la paleta nueva y recorridos por `scripts/build-icons.js` (usa `sharp`, ya en `devDependencies`) para regenerar los 7 PNG que de verdad usan la PWA y el ícono nativo. Antes de esto, el ícono seguía siendo lima aunque toda la UI ya fuera carmesí.
+- `manifest.webmanifest`: `name`/`short_name`/`background_color`/`theme_color`.
+- `index.html`: `<title>`, `theme-color`, `apple-mobile-web-app-title`.
+- `capacitor.config.json`: solo `appName` (lo que ve el usuario en su teléfono) — `appId` intacto.
+- `sw.js`: `CACHE_NAME` con un nombre nuevo (no solo bump de versión) para que un usuario con la PWA ya instalada reciba de verdad los íconos nuevos, no los viejos servidos desde cache.
+- Dos strings de marca que quedaban sueltos en `src/screens/auth.js` (el título de la pantalla de rol, y el estado vacío del selector de gimnasio — este último también corregido de "tu administrador" a "tu dueño", terminología de la Fase 4).
+
+Fuera de esta pasada, a propósito: `package.json` (metadata interna de npm, nunca la ve un usuario), y la prosa de `ANDROID.md`/`IOS.md`/`ads.js` que menciona "CES Gym Manager" solo en comentarios para desarrolladores — no es branding de cara al usuario. El build nativo empaquetado (carpeta separada fuera de este repo, ver `ANDROID.md`) va a necesitar un `npm run cap:sync` ahí para levantar `appName`/íconos nuevos la próxima vez que se compile.
 
 **Fase 14 — Testing.** Manual, por rol, contra `test-harness.html` con `mock-client.js` actualizado a los 4 roles — no hay suite automatizada hoy, se mantiene esa realidad salvo que se pida agregar una.
 
