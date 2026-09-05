@@ -268,14 +268,14 @@ function trainerCandidatesSection() {
       <div style="flex:1">
         <div style="font-size:14px;font-weight:700">${esc(t.name)}</div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)}</div>
-        <div style="font-size:11px;color:${interested.length >= 10 ? 'var(--mint)' : 'var(--muted)'};font-weight:700;margin-top:2px">${interested.length}/10 clientes interesados</div>
+        <div style="font-size:11px;color:var(--muted);font-weight:700;margin-top:2px">${interested.length} ${interested.length === 1 ? 'cliente interesado' : 'clientes interesados'}</div>
       </div>
       <div ${act(iAmInterested ? 'unmarkTrainerInterest' : 'markTrainerInterest', t.id)} class="chip chip--amber${iAmInterested ? ' is-active' : ''}" style="flex-shrink:0">${iAmInterested ? '✓ Te interesa' : 'Me interesa'}</div>
     </div>`;
   }).join('');
 
   return `${sectionTitle('¿Querés que sea tu entrenador?', 'idcard', 'margin:20px 0 4px')}
-    <div class="hint">Un candidato necesita 10 clientes interesados para que el gimnasio lo apruebe</div>
+    <div class="hint">Marcá tu interés — el gimnasio lo tiene en cuenta al aprobar entrenadores</div>
     ${cards}`;
 }
 

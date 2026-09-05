@@ -290,17 +290,16 @@ export function viewOwnerEntrenadores() {
   const approved = state.trainersForGym.filter(t => t.status === 'approved');
   const clientsOf = trainerId => state.clientsForGym.filter(c => c.trainerUserId === trainerId).map(c => c.name);
 
-  // "10 clientes interesados" (sección 11 del pedido original) — el
-  // mínimo real lo exige approve_trainer() en el servidor; acá solo se
-  // deshabilita el botón como ayuda de UX, para no gastar un viaje al
-  // servidor en un intento que ya se sabe que va a fallar.
+  // Los clientes interesados ya NO son requisito para aprobar: la regla de
+  // los 10 se eliminó cuando el entrenador pasó a entrar por el link del
+  // propio dueño (ver migración 20260905000200). Se sigue mostrando como
+  // dato para que el dueño decida con contexto, pero no bloquea nada.
   const interestCountFor = candidateId => state.trainerInterest.filter(i => i.candidate_user_id === candidateId).length;
 
   const pendingBlock = pending.length ? `
     <div class="section-title" style="color:var(--amber);margin-bottom:10px">Solicitudes pendientes (${pending.length})</div>
     ${pending.map(t => {
       const interest = interestCountFor(t.id);
-      const canApprove = interest >= 10;
       return `
       <div class="card" style="border-color:rgba(251,191,36,0.35);margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:12px">
@@ -311,9 +310,9 @@ export function viewOwnerEntrenadores() {
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(t.email)} · ${esc(t.phone)}</div>
           </div>
         </div>
-        <div style="margin-top:10px;font-size:11.5px;font-weight:700;color:${canApprove ? 'var(--mint)' : 'var(--muted)'}">${interest}/10 clientes interesados${canApprove ? ' ✓' : ''}</div>
+        <div style="margin-top:10px;font-size:11.5px;font-weight:700;color:var(--muted)">${interest} ${interest === 1 ? 'cliente interesado' : 'clientes interesados'}</div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button ${act('approveTrainer', t.id)} ${canApprove ? '' : 'disabled'} style="flex:1;background:${canApprove ? 'var(--mint)' : 'var(--surface-2)'};border:none;border-radius:10px;padding:10px;color:${canApprove ? 'var(--bg)' : 'var(--muted-dim)'};font-weight:700;font-size:12.5px;cursor:${canApprove ? 'pointer' : 'not-allowed'}">Aprobar</button>
+          <button ${act('approveTrainer', t.id)} style="flex:1;background:var(--action);border:none;border-radius:10px;padding:10px;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">Aprobar</button>
           <button ${act('rejectTrainer', t.id)} style="flex:1;background:var(--surface-2);border:none;border-radius:10px;padding:10px;color:var(--red);font-weight:700;font-size:12.5px;cursor:pointer">Rechazar</button>
         </div>
       </div>`;

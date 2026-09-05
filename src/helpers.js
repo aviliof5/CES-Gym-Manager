@@ -5,6 +5,16 @@
 import { state } from './state.js';
 import { iconSpan, COUNTRY_CODES, HOUR_VALUES, EXERCISE_LIB } from './data.js';
 
+// Formatea un importe con la moneda del gimnasio (gyms.currency, migración
+// 20260905000200). USD lleva el símbolo delante ($50); cualquier otra moneda
+// va con el código detrás (1000 CUP), que es como el propio gimnasio los
+// muestra en sus carteles. Si todavía no se cargó el gym, cae a USD.
+export function money(amount, currency) {
+  const code = currency || (state.gym && state.gym.currency) || 'USD';
+  const n = Number(amount) || 0;
+  return code === 'USD' ? `$${n}` : `${n} ${code}`;
+}
+
 export function esc(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')

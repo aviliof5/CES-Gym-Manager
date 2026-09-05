@@ -292,8 +292,6 @@
       await wait();
       const s = requireAuth();
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio aprueban entrenadores.');
-      const interestCount = db.trainerInterest.filter(i => i.candidate_user_id === userId).length;
-      if (interestCount < 10) throw new Error(`Este candidato todavía no llega a los 10 clientes interesados mínimos (tiene ${interestCount}).`);
       const me = profileOf(s.id);
       const t = db.trainers.find(x => x.user_id === userId && x.gym_id === me.gym_id);
       if (t) t.status = 'approved';

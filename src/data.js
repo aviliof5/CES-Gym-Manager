@@ -56,12 +56,30 @@ export const DURATION_LABELS = { diario: 'Diario', mensual: 'Mensual', anual: 'A
 
 export const LOGO_SVG = `<svg viewBox="0 0 100 100" width="34" height="34"><path d="M20 18 h60 a12 12 0 0 1 12 12 v28 a12 12 0 0 1 -12 12 H42 L28 84 V70 H20 a12 12 0 0 1 -12 -12 V30 a12 12 0 0 1 12 -12 Z" fill="none" stroke="#0B0D10" stroke-width="7" stroke-linejoin="round"/><rect x="34" y="40" width="32" height="7" rx="3.5" fill="#0B0D10"/><rect x="26" y="33" width="8" height="21" rx="3" fill="#0B0D10"/><rect x="66" y="33" width="8" height="21" rx="3" fill="#0B0D10"/></svg>`;
 
+// Lockup de marca "FIGHT CLUB GYM". Tipográfico a propósito: escala sin
+// perder nitidez, respeta los tokens (--brand para CLUB) y no depende de
+// cargar una imagen. El logo ilustrado completo se usa solo en el ícono
+// de la app y en materiales de marketing, no dentro de la interfaz.
+export const BRAND_MARK_SIZES = { sm: 18, md: 26, lg: 40, xl: 56 };
+
+export function brandMark(size = 'md', opts = {}) {
+  const px = BRAND_MARK_SIZES[size] || BRAND_MARK_SIZES.md;
+  const sub = opts.sub === false ? '' : '<div class="brand-mark__sub">Gym</div>';
+  return `<div class="brand-mark">
+    <div>
+      <div class="brand-mark__word" style="font-size:${px}px">Fight<em>Club</em></div>
+      ${sub}
+    </div>
+  </div>`;
+}
+
 export const ICON_PATHS = {
   home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
   dumbbell: '<path d="M4 9v6M2 10v4M20 9v6M22 10v4M8 8v8M16 8v8M8 12h8"/>',
   users: '<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6"/><circle cx="17" cy="8" r="2.5"/><path d="M17 14c2.8 0 5 2.3 5 6"/>',
   receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/>',
   bars: '<path d="M4 20V10M12 20V4M20 20v-7"/>',
+  crown: '<path d="M4 17l-1.6-9L8 12l4-7 4 7 5.6-4-1.6 9z"/><path d="M4 19.5h16"/>',
   star: '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6L3.3 9.2l6.1-.6L12 3z"/>',
   zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
   camera: '<path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.2"/>',
