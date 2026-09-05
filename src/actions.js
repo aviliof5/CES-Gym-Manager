@@ -22,6 +22,14 @@ function clearRestTimer() {
   if (restTimerId) { clearInterval(restTimerId); restTimerId = null; }
 }
 
+// ex.reps es texto ("8", "20 min", "circuito" — ver routine_exercises.reps)
+// — el campo de "reps hechas" del modo entrenamiento solo se precarga
+// cuando es puramente una cifra; si no, se deja vacío (ese ejercicio se
+// mide en tiempo o rondas, no en repeticiones).
+function defaultReps(ex) {
+  return /^\d+$/.test(String((ex && ex.reps) || '').trim()) ? ex.reps : '';
+}
+
 export const ACTIONS = {
   goto: v => setState({ screen: v, error: '' }),
   togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
@@ -30,39 +38,34 @@ export const ACTIONS = {
     await BolaAPI.auth.signOut();
     if (window.CesAds) window.CesAds.hideBanner();
     Object.assign(state, {
-      screen: 'role', session: null, myProfile: null, gym: null, error: '',
+      screen: 'landing', session: null, myProfile: null, gym: null, error: '',
       myClient: null, myClientPlan: null, myClientTrainer: null, myTrainer: null,
       activeCharge: null, trainerSelectedClientId: null, trainerSelectedClientDetail: null,
     });
     render();
   },
 
-  /* ---- owner auth ---- */
-  setOwnerAuthMode: v => setState({ ownerAuthMode: v, ownerLoginError: '' }),
-  ownerSignIn: async () => {
-    setState({ busy: true, ownerLoginError: '' });
+  // Login único (Etapa 1 del rediseño) — reemplaza ownerSignIn/adminSignIn/
+  // clientSignIn/trainerSignIn, que eran el mismo BolaAPI.auth.signIn()
+  // cuatro veces con cuatro campos de error separados. Ahora se loguea
+  // primero y se rutea SEGÚN el rol que ya trae la cuenta — nadie elige de
+  // antemano en qué formulario escribir su contraseña.
+  login: async () => {
+    setState({ busy: true, loginError: '' });
     try {
-      await BolaAPI.auth.signIn({ email: state.ownerLoginEmail, password: state.ownerLoginPassword });
+      await BolaAPI.auth.signIn({ email: state.loginEmail, password: state.loginPassword });
     } catch (err) {
-      setState({ busy: false, ownerLoginError: friendlyError(err) });
+      setState({ busy: false, loginError: friendlyError(err) });
       return;
     }
     const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'owner') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, ownerLoginError: 'Esta cuenta no es de dueño.' });
-      return;
-    }
-    state.myProfile = profile;
-    state.ownerLoginEmail = ''; state.ownerLoginPassword = '';
-    await resumeOwnerSession(profile);
+    setState({ loginEmail: '', loginPassword: '' });
+    await routeAfterLogin(profile);
   },
 
-  /* ---- admin auth (se une a un gimnasio ya creado, como un entrenador) ---- */
-  setAdminAuthMode: v => setState({ adminAuthMode: v, adminLoginError: '' }),
   // Fase 16: el alta de administrador ya es solo por link de invitación de
-  // un gimnasio (viewAdminAuth ni siquiera muestra "Registrarme" sin uno
-  // resuelto) — ya no cae al selector público de gimnasios.
+  // un gimnasio (viewAdminReg solo se llega desde viewInviteWelcome con el
+  // rol ya resuelto) — nunca cae al selector público de gimnasios.
   adminSignUp: async () => {
     setState({ busy: true, error: '' });
     const a = state.adminReg;
@@ -73,49 +76,6 @@ export const ACTIONS = {
     }
     if (await tryJoinViaGymInvite('adminSignUp', 'admin')) return;
     setState({ busy: false, error: 'Necesitás un link de invitación de administrador de un gimnasio para registrarte — pedíselo al dueño.' });
-  },
-  adminSignIn: async () => {
-    setState({ busy: true, adminLoginError: '' });
-    try {
-      await BolaAPI.auth.signIn({ email: state.adminLoginEmail, password: state.adminLoginPassword });
-    } catch (err) {
-      setState({ busy: false, adminLoginError: friendlyError(err) });
-      return;
-    }
-    const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'admin') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, adminLoginError: 'Esta cuenta no es de administrador.' });
-      return;
-    }
-    // Igual que el entrenador: si el signUp quedó interrumpido por la
-    // confirmación de correo, el join al gimnasio nunca se ejecutó.
-    if (!profile.gym_id) {
-      await loadGymPicker('adminResume');
-      return;
-    }
-    await continueAdminSignIn(profile);
-  },
-
-  /* ---- client auth ---- */
-  setClientAuthMode: v => setState({ clientAuthMode: v, clientLoginError: '' }),
-  clientSignIn: async () => {
-    setState({ busy: true, clientLoginError: '' });
-    try {
-      await BolaAPI.auth.signIn({ email: state.clientLoginEmail, password: state.clientLoginPassword });
-    } catch (err) {
-      setState({ busy: false, clientLoginError: friendlyError(err) });
-      return;
-    }
-    const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'client') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, clientLoginError: 'Esta cuenta no es de cliente.' });
-      return;
-    }
-    state.myProfile = profile;
-    state.clientLoginEmail = ''; state.clientLoginPassword = '';
-    await resumeClientSession(profile);
   },
 
   /* ---- owner registration (crea el gimnasio) ---- */
@@ -263,9 +223,12 @@ export const ACTIONS = {
   // más abajo, y src/qr.js) para cuando no hay cámara a mano o el cliente
   // no tiene el código a la vista. Mismo RPC en ambos casos.
   checkInClient: async clientId => {
-    await BolaAPI.checkins.checkIn(clientId);
+    const row = await BolaAPI.checkins.checkIn(clientId);
     const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
-    setState({ todayCheckins });
+    // También se agrega a attendanceEvents (Asistencia), cargado una sola
+    // vez al entrar al panel — si no, un check-in hecho durante la misma
+    // sesión no aparecería en el calendario hasta volver a entrar.
+    setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: clientId, created_at: row.created_at }] });
   },
   clearScanStatus: () => setState({ scanStatus: null }),
   // Limpia el error/toast de una visita anterior a esta pantalla antes de
@@ -290,6 +253,47 @@ export const ACTIONS = {
     await BolaAPI.payments.confirm(state.activeCharge.paymentId);
     const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
     setState({ clientsForGym, activeCharge: null });
+  },
+
+  /* ---- Etapa 2: "Socios" — buscar/filtrar + suspender/reactivar ---- */
+  setOwnerClientStatusFilter: v => setState({ ownerClientStatusFilter: v }),
+  promptSuspendClient: clientId => setState({ ownerSuspendingClientId: clientId, ownerSuspendReason: '' }),
+  cancelSuspendClient: () => setState({ ownerSuspendingClientId: null, ownerSuspendReason: '' }),
+  confirmSuspendClient: async () => {
+    if (!state.ownerSuspendingClientId) return;
+    await BolaAPI.clients.suspend(state.ownerSuspendingClientId, state.ownerSuspendReason);
+    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+    setState({ clientsForGym, ownerSuspendingClientId: null, ownerSuspendReason: '' });
+  },
+  unsuspendClient: async clientId => {
+    await BolaAPI.clients.unsuspend(clientId);
+    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+    setState({ clientsForGym });
+  },
+
+  /* ---- Etapa 2: "Entrenadores" — activar/desactivar ---- */
+  toggleTrainerActive: async trainerId => {
+    const t = state.trainersForGym.find(x => x.id === trainerId);
+    if (!t) return;
+    await BolaAPI.trainers.setActive(trainerId, !t.isActive);
+    const trainersForGym = await BolaAPI.trainers.listForGym(state.gym.id);
+    setState({ trainersForGym });
+  },
+
+  /* ---- Etapa 2: "Asistencia" (calendario, reemplaza el "Tráfico" inventado) ---- */
+  setAttendanceSelectedDay: day => setState({ attendanceSelectedDay: Number(day) }),
+
+  /* ---- Etapa 2: "Configuración" (moneda, marca) ---- */
+  saveGymConfig: async () => {
+    const d = state.gymConfigDraft;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.gyms.updateSettings(state.gym.id, { currency: d.currency, brandName: d.brandName, brandColor: d.brandColor });
+      const gym = await BolaAPI.gyms.get(state.gym.id);
+      setState({ busy: false, gym });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
   },
 
   /* ---- selección de gimnasio (cliente y entrenador) ---- */
@@ -399,8 +403,8 @@ export const ACTIONS = {
   },
   generateRoutine: async () => {
     setState({ busy: true });
-    const exerciseTexts = buildRoutine(state.aiGoal, state.equipment.map(e => e.name));
-    await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, exerciseTexts);
+    const entries = buildRoutine(state.aiGoal, state.equipment.map(e => e.name));
+    await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, entries);
     const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, state.aiGoal);
     setState({ busy: false, aiRoutine });
   },
@@ -420,17 +424,30 @@ export const ACTIONS = {
   },
 
   /* ---- workout: temporizador de descanso + marcar series (sección 8 del
-     pedido original) ---- */
-  startWorkout: source => {
-    const exercises = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
-    if (!exercises.exercises.length) return;
+     pedido original) — Etapa 2: ahora abre una fila real en
+     workout_sessions y cada serie marcada se guarda en exercise_logs (peso
+     y reps reales), no solo un check en memoria. ---- */
+  startWorkout: async source => {
+    const routine = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
+    if (!routine.exercises.length) return;
     clearRestTimer();
+    const sessionId = await BolaAPI.workouts.start(state.myClient.id, state.gym.id, source);
+    const first = routine.exercises[0] || {};
     setState({
       screen: 'workout',
-      workout: { exercises: exercises.exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false },
+      workout: {
+        sessionId, exercises: routine.exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false,
+        weightInput: first.weightKg != null ? String(first.weightKg) : '', repsInput: defaultReps(first),
+      },
     });
   },
-  toggleSet: setNum => {
+  // El campo de peso/reps es UNO por ejercicio (no por serie): se precarga
+  // con el último peso conocido y se puede ajustar antes de marcar cada
+  // serie (data-f="workout.weightInput"/"workout.repsInput", el setPath
+  // genérico de router.js ya sabe fusionar 2 niveles) — así "Modo
+  // entrenamiento" registra lo que de verdad se levantó, no solo un check,
+  // sin necesitar un formulario por serie.
+  toggleSet: async setNum => {
     const w = state.workout;
     if (!w) return;
     const num = Number(setNum); // data-v siempre llega como string
@@ -439,22 +456,34 @@ export const ACTIONS = {
     const marking = !current.has(num); // true = se está marcando, false = desmarcando
     if (marking) current.add(num); else current.delete(num);
     setState({ workout: { ...w, doneSets: { ...w.doneSets, [key]: current } } });
-    // Descanso después de CADA serie que se marca (no al desmarcarla) —
-    // así funciona igual entre la serie 1→2 que entre la 3→4.
-    if (marking) ACTIONS.startRest();
+    // Descanso después de CADA serie que se marca (no al desmarcarla) — con
+    // el descanso propio de ESE ejercicio (rest_seconds), ya no 60s fijos.
+    if (marking) {
+      const ex = w.exercises[key] || {};
+      const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
+      const repsNum = w.repsInput !== '' && w.repsInput != null ? Number(w.repsInput) : null;
+      await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, num, repsNum, weightKg);
+      ACTIONS.startRest(ex.restSeconds);
+    }
   },
-  toggleSimpleDone: () => {
+  toggleSimpleDone: async () => {
     const w = state.workout;
     if (!w) return;
     const key = w.index;
     const wasDone = w.doneSets[key] === true;
     setState({ workout: { ...w, doneSets: { ...w.doneSets, [key]: !wasDone } } });
+    if (!wasDone) {
+      const ex = w.exercises[key] || {};
+      const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
+      await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, 1, null, weightKg);
+    }
   },
-  startRest: () => {
+  startRest: seconds => {
     clearRestTimer();
     const w = state.workout;
     if (!w) return;
-    setState({ workout: { ...w, restSecondsLeft: 60 } });
+    const secs = Number(seconds) || 60;
+    setState({ workout: { ...w, restSecondsLeft: secs } });
     restTimerId = setInterval(() => {
       const cur = state.workout;
       if (!cur || cur.restSecondsLeft <= 1) {
@@ -470,25 +499,99 @@ export const ACTIONS = {
     const w = state.workout;
     if (w) setState({ workout: { ...w, restSecondsLeft: 0 } });
   },
-  nextExercise: () => {
+  nextExercise: async () => {
     const w = state.workout;
     if (!w) return;
     clearRestTimer();
     if (w.index + 1 >= w.exercises.length) {
-      setState({ workout: { ...w, finished: true, restSecondsLeft: 0 } });
+      await BolaAPI.workouts.finish(w.sessionId, state.myClient.id);
+      // Refresca lo que "Progreso"/"Logros" muestran, para que al volver ya
+      // reflejen este entrenamiento recién cerrado sin recargar toda la app.
+      const [personalRecords, workoutsThisMonth, myAchievements] = await Promise.all([
+        BolaAPI.workouts.getPersonalRecords(state.myClient.id),
+        BolaAPI.workouts.countThisMonth(state.myClient.id),
+        BolaAPI.achievements.listForClient(state.myClient.id),
+      ]);
+      setState({ workout: { ...w, finished: true, restSecondsLeft: 0 }, personalRecords, workoutsThisMonth, myAchievements });
     } else {
-      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0 } });
+      const next = w.exercises[w.index + 1] || {};
+      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0, weightInput: next.weightKg != null ? String(next.weightKg) : '', repsInput: defaultReps(next) } });
     }
   },
   prevExercise: () => {
     const w = state.workout;
     if (!w || w.index === 0) return;
     clearRestTimer();
-    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0 } });
+    const prev = w.exercises[w.index - 1] || {};
+    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0, weightInput: prev.weightKg != null ? String(prev.weightKg) : '', repsInput: defaultReps(prev) } });
   },
   exitWorkout: () => {
     clearRestTimer();
     setState({ screen: 'clientHome', workout: null });
+  },
+
+  /* ---- Etapa 2: reservas de clases ---- */
+  selectReservasDay: day => setState({ reservasSelectedDay: Number(day) }),
+  bookClass: async sessionId => {
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.classes.book(sessionId);
+      const myBookings = await BolaAPI.classes.listMyBookings(state.myClient.id);
+      setState({ busy: false, myBookings });
+    } catch (e) {
+      setState({ busy: false, error: friendlyError(e) });
+    }
+  },
+  cancelBooking: async bookingId => {
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.classes.cancelBooking(bookingId);
+      const myBookings = await BolaAPI.classes.listMyBookings(state.myClient.id);
+      setState({ busy: false, myBookings });
+    } catch (e) {
+      setState({ busy: false, error: friendlyError(e) });
+    }
+  },
+
+  /* ---- Etapa 2: medidas corporales (Progreso) ---- */
+  saveMeasurement: async () => {
+    const d = state.measurementDraft;
+    const values = {
+      weight_kg: d.weight_kg ? Number(d.weight_kg) : null,
+      body_fat_pct: d.body_fat_pct ? Number(d.body_fat_pct) : null,
+      waist_cm: d.waist_cm ? Number(d.waist_cm) : null,
+      chest_cm: d.chest_cm ? Number(d.chest_cm) : null,
+      arm_cm: d.arm_cm ? Number(d.arm_cm) : null,
+      thigh_cm: d.thigh_cm ? Number(d.thigh_cm) : null,
+    };
+    await BolaAPI.measurements.recordToday(state.myClient.id, values);
+    const bodyMeasurements = await BolaAPI.measurements.listForClient(state.myClient.id);
+    setState({ bodyMeasurements, measurementDraft: { weight_kg: '', body_fat_pct: '', waist_cm: '', chest_cm: '', arm_cm: '', thigh_cm: '' } });
+  },
+
+  /* ---- Etapa 2: calificar a mi entrenador (Perfil) ---- */
+  setTrainerRatingStars: n => setState({ trainerRatingDraft: { ...state.trainerRatingDraft, rating: Number(n) } }),
+  saveTrainerRating: async () => {
+    if (!state.myClientTrainer || !state.trainerRatingDraft.rating) return;
+    await BolaAPI.trainerReviews.rate(state.myClientTrainer.id, state.trainerRatingDraft.rating, state.trainerRatingDraft.text.trim());
+    const myTrainerRating = (await BolaAPI.trainerReviews.listForTrainer(state.myClientTrainer.id)).find(r => r.client_user_id === state.myClient.id) || null;
+    setState({ myTrainerRating });
+  },
+
+  /* ---- Etapa 2: mensajes con mi entrenador (Perfil) ---- */
+  openTrainerChat: async () => {
+    if (!state.myClientTrainer) return;
+    const conversationId = await BolaAPI.messages.getOrCreateConversation(state.myClientTrainer.id);
+    const messages = await BolaAPI.messages.list(conversationId);
+    setState({ screen: 'clientChat', conversationId, messages });
+  },
+  closeTrainerChat: () => setState({ screen: 'clientHome' }),
+  sendMessage: async () => {
+    const text = state.messageDraft.trim();
+    if (!text || !state.conversationId) return;
+    await BolaAPI.messages.send(state.conversationId, text);
+    const messages = await BolaAPI.messages.list(state.conversationId);
+    setState({ messages, messageDraft: '' });
   },
 
   addProgress: async () => {
@@ -510,7 +613,6 @@ export const ACTIONS = {
   pickPhoto: v => openPhotoPicker(v),
 
   /* ---- trainer auth ---- */
-  setTrainerAuthMode: v => setState({ trainerAuthMode: v, trainerLoginError: '' }),
   // Fase 16: mismo cambio que adminSignUp — solo por link, ya no cae al
   // selector público de gimnasios.
   trainerSignUp: async () => {
@@ -524,57 +626,85 @@ export const ACTIONS = {
     if (await tryJoinViaGymInvite('trainerSignUp', 'trainer')) return;
     setState({ busy: false, error: 'Necesitás un link de invitación de entrenador de un gimnasio para registrarte — pedíselo al dueño o a un administrador.' });
   },
-  trainerSignIn: async () => {
-    setState({ busy: true, trainerLoginError: '' });
-    try {
-      await BolaAPI.auth.signIn({ email: state.trainerLoginEmail, password: state.trainerLoginPassword });
-    } catch (err) {
-      setState({ busy: false, trainerLoginError: friendlyError(err) });
-      return;
-    }
-    const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'trainer') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, trainerLoginError: 'Esta cuenta no es de entrenador.' });
-      return;
-    }
-    // Igual que el cliente: si el signUp quedó interrumpido por la
-    // confirmación de correo, el join al gimnasio nunca se ejecutó.
-    if (!profile.gym_id) {
-      await loadGymPicker('trainerResume');
-      return;
-    }
-    await continueTrainerSignIn(profile);
-  },
-
   /* ---- trainer dashboard ---- */
   trainerTab: v => setState({ trainerTab: v }),
+  setTrainerSelectedDay: day => setState({ trainerSelectedDay: Number(day) }),
   openClientDetail: async clientId => {
-    setState({ trainerSelectedClientId: clientId, trainerRoutineDraftText: '' });
-    const [progressRaw, routine] = await Promise.all([
+    const emptyDraft = { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' };
+    setState({ trainerSelectedClientId: clientId, trainerRoutineDraft: emptyDraft });
+    const [progressRaw, routine, measurements, prs] = await Promise.all([
       BolaAPI.progress.listForClient(clientId),
       BolaAPI.routines.getTrainer(clientId),
+      BolaAPI.measurements.listForClient(clientId),
+      BolaAPI.workouts.getPersonalRecords(clientId),
     ]);
     const progress = await attachSignedUrls(progressRaw);
-    setState({ trainerSelectedClientDetail: { progress, routine } });
+    setState({ trainerSelectedClientDetail: { progress, routine, measurements, prs } });
   },
   closeClientDetail: () => setState({ trainerSelectedClientId: null, trainerSelectedClientDetail: null }),
+  // Elegir un ejercicio de la biblioteca precarga su nombre en `text` (el
+  // resumen de respaldo) — el entrenador puede seguir editando sets/reps/
+  // peso/descanso libremente antes de agregarlo.
+  selectRoutineExercise: exerciseId => {
+    const ex = state.exercisesLib.find(e => e.id === exerciseId);
+    setState({ trainerRoutineDraft: { ...state.trainerRoutineDraft, exerciseId, text: ex ? ex.name : '' } });
+  },
   addTrainerRoutineExercise: async () => {
-    const text = state.trainerRoutineDraftText.trim();
+    const d = state.trainerRoutineDraft;
+    const text = d.text.trim();
     if (!text || !state.trainerSelectedClientId) return;
-    await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, text);
+    await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, {
+      text, exerciseId: d.exerciseId || null,
+      sets: d.sets ? Number(d.sets) : null, reps: d.reps ? d.reps : null,
+      weightKg: d.weightKg ? Number(d.weightKg) : null, restSeconds: d.restSeconds ? Number(d.restSeconds) : 60,
+    });
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
-    setState({ trainerRoutineDraftText: '', trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
+    setState({ trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' }, trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
   },
   removeTrainerRoutineExercise: async exerciseId => {
     await BolaAPI.routines.removeExercise(exerciseId);
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
     setState({ trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
   },
+
+  /* ---- Etapa 2: mensajes con clientes asignados ---- */
+  openTrainerConversation: async clientId => {
+    const conv = state.trainerConversations.find(c => c.clientId === clientId);
+    if (!conv) return;
+    const trainerMessages = await BolaAPI.messages.list(conv.conversationId);
+    setState({ trainerActiveConversationId: conv.conversationId, trainerMessages, trainerMessageDraft: '' });
+  },
+  closeTrainerConversation: () => setState({ trainerActiveConversationId: null, trainerMessages: [] }),
+  sendTrainerMessage: async () => {
+    const text = state.trainerMessageDraft.trim();
+    if (!text || !state.trainerActiveConversationId) return;
+    await BolaAPI.messages.send(state.trainerActiveConversationId, text);
+    const trainerMessages = await BolaAPI.messages.list(state.trainerActiveConversationId);
+    setState({ trainerMessages, trainerMessageDraft: '' });
+  },
+
   saveTrainerProfile: async () => {
     const { specialty, price } = state.trainerProfileDraft;
     await BolaAPI.trainers.updateProfile(state.myTrainer.id, { specialty: specialty.trim() || state.myTrainer.specialty, price: Number(price) || 0 });
     setState({ myTrainer: { ...state.myTrainer, specialty: specialty.trim() || state.myTrainer.specialty, price: Number(price) || 0 } });
+  },
+
+  /* ---- Etapa 2: "Biblioteca de ejercicios" (pantalla transversal #23,
+     compartida por los 3 roles) ---- */
+  openExerciseLibrary: () => setState({ libraryReturn: state.screen, screen: 'exerciseLibrary', libraryQuery: '', libraryMuscleFilter: 'todos' }),
+  closeExerciseLibrary: () => setState({ screen: state.libraryReturn || 'clientHome', libraryReturn: null }),
+  setLibraryMuscleFilter: v => setState({ libraryMuscleFilter: v }),
+  addLibraryExercise: async () => {
+    const d = state.libraryDraft;
+    if (!d.name.trim()) return;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.exercisesLib.add(state.gym.id, { name: d.name.trim(), muscleGroup: d.muscleGroup.trim() || 'General', equipmentName: d.equipmentName.trim(), description: d.description.trim() });
+      const exercisesLib = await BolaAPI.exercisesLib.list(state.gym.id);
+      setState({ busy: false, exercisesLib, libraryDraft: { name: '', muscleGroup: '', equipmentName: '', description: '' } });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
   },
 };
 
@@ -582,6 +712,28 @@ export const ACTIONS = {
 // Cada una de estas junta los datos que la pantalla necesita ANTES de
 // cambiar `screen`, así las funciones de vista no tienen que lidiar con
 // datos a medio cargar.
+
+// Rutea después de ACTIONS.login (Etapa 1) según el rol que ya trae la
+// cuenta — el reemplazo de tener 4 acciones de sign-in casi idénticas, cada
+// una comprobando "¿sos vos, dueño/admin/cliente/entrenador?" a mano. Cada
+// rama reutiliza exactamente la misma función de reanudación que ya usaba
+// su propio sign-in, así que el comportamiento (incluyendo los flujos
+// interrumpidos por confirmación de correo) no cambia, solo cómo se llega.
+export async function routeAfterLogin(profile) {
+  state.myProfile = profile;
+  if (profile.role === 'owner') { await resumeOwnerSession(profile); return; }
+  if (profile.role === 'admin') { await resumeAdminSession(profile); return; }
+  if (profile.role === 'client') { await resumeClientSession(profile); return; }
+  if (profile.role === 'trainer') {
+    if (!profile.gym_id) { await loadGymPicker('trainerResume'); return; }
+    await continueTrainerSignIn(profile);
+    return;
+  }
+  // No debería pasar — todo profile real tiene uno de los 4 roles — pero
+  // ante un dato inesperado, no dejar a nadie logueado sin panel a donde ir.
+  await BolaAPI.auth.signOut();
+  setState({ busy: false, screen: 'login', loginError: 'No pudimos identificar el rol de esta cuenta.' });
+}
 
 // Reanuda la sesión de un dueño ya logueado. Si se quedó a mitad del
 // asistente (tiene cuenta pero nunca llamó a create_gym), lo manda al paso
@@ -696,7 +848,6 @@ export function continueAdminSignUpAfterGym() {
   setState({
     busy: false, screen: 'adminPending', pendingAdminName: r.name,
     adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
-    adminAuthMode: 'login',
   });
 }
 
@@ -710,7 +861,7 @@ export async function continueAdminSignIn(profile) {
   }
   if (myEntry.status === 'rejected') {
     await BolaAPI.auth.signOut();
-    setState({ busy: false, adminLoginError: 'Tu solicitud fue rechazada. Contacta al dueño del gimnasio.' });
+    setState({ busy: false, screen: 'login', loginError: 'Tu solicitud fue rechazada. Contacta al dueño del gimnasio.' });
     return;
   }
   state.myProfile = profile;
@@ -723,7 +874,6 @@ export function continueTrainerSignUpAfterGym() {
   setState({
     busy: false, screen: 'trainerPending', pendingTrainerName: r.name,
     trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
-    trainerAuthMode: 'login',
   });
 }
 
@@ -737,7 +887,7 @@ export async function continueTrainerSignIn(profile) {
   }
   if (myTrainer.status === 'rejected') {
     await BolaAPI.auth.signOut();
-    setState({ busy: false, trainerLoginError: 'Tu solicitud fue rechazada. Contacta al administrador.' });
+    setState({ busy: false, screen: 'login', loginError: 'Tu solicitud fue rechazada. Contacta al administrador.' });
     return;
   }
   await enterTrainerDash(profile, gym, myTrainer);
@@ -773,10 +923,10 @@ export async function handleCheckinScan(payload) {
     return;
   }
   try {
-    await BolaAPI.checkins.checkIn(client.id);
+    const row = await BolaAPI.checkins.checkIn(client.id);
     const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
     if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
-    setState({ todayCheckins, scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
+    setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: client.id, created_at: row.created_at }], scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
   } catch (err) {
     setState({ scanStatus: { ok: false, text: friendlyError(err) } });
   }
@@ -797,7 +947,32 @@ export async function enterOwnerDash() {
     BolaAPI.trainers.listInterestForGym(state.gym.id),
     BolaAPI.gyms.getInvites(state.gym.id),
   ]);
-  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites, busy: false });
+
+  // Etapa 2 — rating real por entrenador aprobado (Entrenadores/Reportes),
+  // asistencia del mes actual (Asistencia, reemplaza el "Tráfico" inventado)
+  // y el borrador de Configuración precargado con lo que el gimnasio ya tiene.
+  const approvedTrainers = trainersForGym.filter(t => t.status === 'approved');
+  const ratingsEntries = await Promise.all(approvedTrainers.map(async t => {
+    const rows = await BolaAPI.trainerReviews.listForTrainer(t.id);
+    const count = rows.length;
+    const avg = count ? rows.reduce((sum, r) => sum + r.rating, 0) / count : null;
+    return [t.id, { avg, count }];
+  }));
+  const trainerRatingsById = Object.fromEntries(ratingsEntries);
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+  const attendanceEvents = await BolaAPI.checkins.listRangeForGym(state.gym.id, monthStart, monthEnd);
+  const exercisesLib = await BolaAPI.exercisesLib.list(state.gym.id);
+
+  Object.assign(state, {
+    screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
+    trainerRatingsById, attendanceEvents, attendanceSelectedDay: null, exercisesLib,
+    ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
+    gymConfigDraft: { currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '' },
+    busy: false,
+  });
   if (window.CesAds) window.CesAds.hideBanner();
   render();
 }
@@ -819,11 +994,30 @@ export async function enterClientHome() {
   const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
   const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
 
+  // Etapa 2 — clases/reservas, logros, medidas/récords y (si tiene
+  // entrenador asignado) su propia calificación existente sobre él.
+  const [classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth] = await Promise.all([
+    BolaAPI.classes.listForGym(state.gym.id),
+    BolaAPI.classes.listSessions(state.gym.id, new Date().toISOString()),
+    BolaAPI.classes.listMyBookings(client.id),
+    BolaAPI.achievements.listCatalog(),
+    BolaAPI.achievements.listForClient(client.id),
+    BolaAPI.measurements.listForClient(client.id),
+    BolaAPI.workouts.getPersonalRecords(client.id),
+    BolaAPI.workouts.countThisMonth(client.id),
+  ]);
+  const myTrainerRating = trainer
+    ? (await BolaAPI.trainerReviews.listForTrainer(trainer.id)).find(r => r.client_user_id === client.id) || null
+    : null;
+
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
     plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
+    classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth,
+    myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
+    conversationId: null, messages: [], messageDraft: '',
     pendingPayment: null, busy: false,
   });
   if (window.CesAds) window.CesAds.showBanner();
@@ -837,10 +1031,28 @@ export async function enterTrainerDash(profile, gym, myTrainer) {
     ...c,
     plan: (plans.find(p => p.id === c.planId) || { name: '—' }).name,
   }));
+
+  // Etapa 2 — biblioteca de ejercicios (para "Crear rutina"), las sesiones
+  // de las clases que este entrenador dicta (Panel/Calendario), una
+  // conversación por cliente asignado (Mensajes) y su propio rating (Perfil).
+  const [exercisesLib, allClasses, allSessions, trainerReviewsList] = await Promise.all([
+    BolaAPI.exercisesLib.list(gym.id),
+    BolaAPI.classes.listForGym(gym.id),
+    BolaAPI.classes.listSessions(gym.id, new Date().toISOString()),
+    BolaAPI.trainerReviews.listForTrainer(myTrainer.id),
+  ]);
+  const myClassIds = new Set(allClasses.filter(c => c.trainer_user_id === myTrainer.id).map(c => c.id));
+  const trainerClassSessions = allSessions.filter(s => myClassIds.has(s.class_id));
+  const trainerConversations = await Promise.all(
+    trainerClients.map(async c => ({ clientId: c.id, clientName: c.name, conversationId: await BolaAPI.messages.getOrCreateConversation(c.id) }))
+  );
+
   Object.assign(state, {
-    screen: 'trainerDash', trainerTab: 'clientes', myProfile: profile, gym, myTrainer, trainerClients,
+    screen: 'trainerDash', trainerTab: 'panel', myProfile: profile, gym, myTrainer, trainerClients,
     trainerProfileDraft: { specialty: myTrainer.specialty, price: String(myTrainer.price) },
-    trainerSelectedClientId: null, trainerSelectedClientDetail: null, busy: false,
+    trainerSelectedClientId: null, trainerSelectedClientDetail: null, trainerClientQuery: '', busy: false,
+    exercisesLib, trainerClassSessions, trainerReviewsList, trainerConversations,
+    trainerActiveConversationId: null, trainerMessages: [], trainerMessageDraft: '',
   });
   if (window.CesAds) window.CesAds.hideBanner();
   render();

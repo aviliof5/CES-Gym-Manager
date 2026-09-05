@@ -5,13 +5,7 @@
 'use strict';
 
 export const EQUIPMENT_SUGGESTIONS = ['Caminadora', 'Bicicleta estática', 'Rack de sentadillas', 'Banco de press', 'Mancuernas', 'Máquina de poleas', 'Remo'];
-export const HOUR_VALUES = [15, 25, 35, 30, 40, 55, 70, 60, 50, 65, 80, 90, 78, 58, 42, 28, 18];
 export const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-export const HEATMAP = {
-  'Mañana': [0.3, 0.4, 0.3, 0.4, 0.5, 0.7, 0.5],
-  'Tarde': [0.5, 0.5, 0.6, 0.5, 0.6, 0.8, 0.6],
-  'Noche': [0.8, 0.75, 0.8, 0.85, 0.9, 0.55, 0.35],
-};
 export const GOALS = [
   { id: 'perder_peso', label: 'Perder peso' },
   { id: 'ganar_musculo', label: 'Ganar músculo' },
@@ -25,30 +19,36 @@ export const LEVELS = [
   { id: 'intermedio', label: 'Intermedio' },
   { id: 'avanzado', label: 'Avanzado' },
 ];
+// Etapa 2 — cada entrada trae ya sets/reps/restSeconds estructurados (no solo
+// el texto libre de antes) para que el modo entrenamiento pueda mostrar y
+// registrar series reales. `reps` es texto (no número): admite "20 min" o
+// "circuito" además de una cifra — mismo criterio que routine_exercises.reps
+// del backend. weightKg queda null: el peso de partida lo define cada quien
+// la primera vez que entrena ese ejercicio, no lo inventa la IA.
 export const EXERCISE_LIB = {
   perder_peso: [
-    { text: 'Cardio en caminadora - 20 min', kw: 'caminadora' },
-    { text: 'Bicicleta estática - 15 min', kw: 'bicicleta' },
-    { text: 'Circuito funcional - 3 rondas', kw: null },
-    { text: 'Remo - 10 min', kw: 'remo' },
+    { text: 'Cardio en caminadora - 20 min', kw: 'caminadora', sets: 1, reps: '20 min', weightKg: null, restSeconds: 0 },
+    { text: 'Bicicleta estática - 15 min', kw: 'bicicleta', sets: 1, reps: '15 min', weightKg: null, restSeconds: 0 },
+    { text: 'Circuito funcional - 3 rondas', kw: null, sets: 3, reps: 'circuito', weightKg: null, restSeconds: 45 },
+    { text: 'Remo - 10 min', kw: 'remo', sets: 1, reps: '10 min', weightKg: null, restSeconds: 0 },
   ],
   ganar_musculo: [
-    { text: 'Sentadilla en rack - 4x8', kw: 'rack' },
-    { text: 'Press banca - 4x8', kw: 'banco' },
-    { text: 'Peso muerto - 3x6', kw: 'rack' },
-    { text: 'Máquina de poleas - 3x12', kw: 'poleas' },
+    { text: 'Sentadilla en rack - 4x8', kw: 'rack', sets: 4, reps: '8', weightKg: null, restSeconds: 90 },
+    { text: 'Press banca - 4x8', kw: 'banco', sets: 4, reps: '8', weightKg: null, restSeconds: 90 },
+    { text: 'Peso muerto - 3x6', kw: 'rack', sets: 3, reps: '6', weightKg: null, restSeconds: 120 },
+    { text: 'Máquina de poleas - 3x12', kw: 'poleas', sets: 3, reps: '12', weightKg: null, restSeconds: 60 },
   ],
   resistencia: [
-    { text: 'Caminadora - 30 min', kw: 'caminadora' },
-    { text: 'Bicicleta estática - 20 min', kw: 'bicicleta' },
-    { text: 'Remo - 15 min', kw: 'remo' },
-    { text: 'Circuito funcional - 4 rondas', kw: null },
+    { text: 'Caminadora - 30 min', kw: 'caminadora', sets: 1, reps: '30 min', weightKg: null, restSeconds: 0 },
+    { text: 'Bicicleta estática - 20 min', kw: 'bicicleta', sets: 1, reps: '20 min', weightKg: null, restSeconds: 0 },
+    { text: 'Remo - 15 min', kw: 'remo', sets: 1, reps: '15 min', weightKg: null, restSeconds: 0 },
+    { text: 'Circuito funcional - 4 rondas', kw: null, sets: 4, reps: 'circuito', weightKg: null, restSeconds: 45 },
   ],
   tonificar: [
-    { text: 'Mancuernas - 3x15', kw: 'mancuernas' },
-    { text: 'Máquina de poleas - 3x15', kw: 'poleas' },
-    { text: 'Circuito funcional - 3 rondas', kw: null },
-    { text: 'Bicicleta estática - 10 min', kw: 'bicicleta' },
+    { text: 'Mancuernas - 3x15', kw: 'mancuernas', sets: 3, reps: '15', weightKg: null, restSeconds: 60 },
+    { text: 'Máquina de poleas - 3x15', kw: 'poleas', sets: 3, reps: '15', weightKg: null, restSeconds: 60 },
+    { text: 'Circuito funcional - 3 rondas', kw: null, sets: 3, reps: 'circuito', weightKg: null, restSeconds: 45 },
+    { text: 'Bicicleta estática - 10 min', kw: 'bicicleta', sets: 1, reps: '10 min', weightKg: null, restSeconds: 0 },
   ],
 };
 export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -56,12 +56,30 @@ export const DURATION_LABELS = { diario: 'Diario', mensual: 'Mensual', anual: 'A
 
 export const LOGO_SVG = `<svg viewBox="0 0 100 100" width="34" height="34"><path d="M20 18 h60 a12 12 0 0 1 12 12 v28 a12 12 0 0 1 -12 12 H42 L28 84 V70 H20 a12 12 0 0 1 -12 -12 V30 a12 12 0 0 1 12 -12 Z" fill="none" stroke="#0B0D10" stroke-width="7" stroke-linejoin="round"/><rect x="34" y="40" width="32" height="7" rx="3.5" fill="#0B0D10"/><rect x="26" y="33" width="8" height="21" rx="3" fill="#0B0D10"/><rect x="66" y="33" width="8" height="21" rx="3" fill="#0B0D10"/></svg>`;
 
+// Lockup de marca "FIGHT CLUB GYM". Tipográfico a propósito: escala sin
+// perder nitidez, respeta los tokens (--brand para CLUB) y no depende de
+// cargar una imagen. El logo ilustrado completo se usa solo en el ícono
+// de la app y en materiales de marketing, no dentro de la interfaz.
+export const BRAND_MARK_SIZES = { sm: 18, md: 26, lg: 40, xl: 56 };
+
+export function brandMark(size = 'md', opts = {}) {
+  const px = BRAND_MARK_SIZES[size] || BRAND_MARK_SIZES.md;
+  const sub = opts.sub === false ? '' : '<div class="brand-mark__sub">Gym</div>';
+  return `<div class="brand-mark">
+    <div>
+      <div class="brand-mark__word" style="font-size:${px}px">Fight<em>Club</em></div>
+      ${sub}
+    </div>
+  </div>`;
+}
+
 export const ICON_PATHS = {
   home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
   dumbbell: '<path d="M4 9v6M2 10v4M20 9v6M22 10v4M8 8v8M16 8v8M8 12h8"/>',
   users: '<circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3-6 7-6s7 2.7 7 6"/><circle cx="17" cy="8" r="2.5"/><path d="M17 14c2.8 0 5 2.3 5 6"/>',
   receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/>',
   bars: '<path d="M4 20V10M12 20V4M20 20v-7"/>',
+  crown: '<path d="M4 17l-1.6-9L8 12l4-7 4 7 5.6-4-1.6 9z"/><path d="M4 19.5h16"/>',
   star: '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2-5.4 3.2 1.3-6L3.3 9.2l6.1-.6L12 3z"/>',
   zap: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
   camera: '<path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.2"/>',
@@ -76,6 +94,13 @@ export const ICON_PATHS = {
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6 0 10 7 10 7a17.6 17.6 0 0 1-3.1 3.9M6.3 6.3A17.9 17.9 0 0 0 2 12s4 7 10 7a10.5 10.5 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   wifiOff: '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 3.5-2.3M19 12.5a10 10 0 0 0-3-2.1M2 8.5a15 15 0 0 1 4.5-2.8M22 8.5a15 15 0 0 0-6-3.4"/><circle cx="12" cy="20" r="1"/>',
+  // Etapa 2 — Reservas (calendario), Modo entrenamiento (check) y Rutina (plus).
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  check: '<path d="M4 12l5 5 11-11"/>',
+  plus: '<path d="M12 4v16M4 12h16"/>',
+  chevronRight: '<path d="M9 5l7 7-7 7"/>',
+  // Etapa 2 — "Configuración" (dueño/admin).
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H10a1.6 1.6 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V10a1.6 1.6 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1z"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de

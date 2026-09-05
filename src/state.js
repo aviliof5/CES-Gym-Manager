@@ -35,21 +35,27 @@ export const state = {
   offline: !navigator.onLine,
   showPassword: false,
 
-  ownerTab: 'clientes',
+  ownerTab: 'panel',
   clientTab: 'inicio',
   trainerTab: 'clientes',
 
+  // Etapa 1 del rediseño (ver docs/plans, "aqui-esta-el-logo"): login único
+  // para los 4 roles — signIn() ya era el mismo RPC para todos, la única
+  // diferencia era 4 pantallas separadas repitiendo el mismo formulario.
+  // La app lee profile.role después de loguear y rutea sola (ver
+  // routeAfterLogin en actions.js). Reemplaza ownerLoginEmail/adminLoginEmail/
+  // clientLoginEmail/trainerLoginEmail + sus *AuthMode (el toggle
+  // login/registro también desaparece: el registro ahora es siempre por
+  // invitación — o sin ella solo para cliente — nunca un modo de esta pantalla).
+  loginEmail: '', loginPassword: '', loginError: '',
+
   // Dueño: crea el gimnasio — antes lo hacía "admin", ver docs/MIGRATION_PLAN.md Fase 4.
-  ownerAuthMode: 'login',
-  ownerLoginEmail: '', ownerLoginPassword: '', ownerLoginError: '',
   ownerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   gymReg: { name: '', address: '', hours: '' },
 
-  // Administrador: ahora se une a un gimnasio YA creado por el dueño y queda
+  // Administrador: se une a un gimnasio YA creado por el dueño y queda
   // pendiente de aprobación — mismo patrón que un entrenador (ver trainerReg
   // más abajo). adminReg no necesita specialty/price, a diferencia de trainerReg.
-  adminAuthMode: 'login',
-  adminLoginEmail: '', adminLoginPassword: '', adminLoginError: '',
   adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   pendingAdminName: '',
   gymAdminsForGym: [],   // gym_admins de ESTE gimnasio — lo carga el dueño para aprobar/rechazar
@@ -73,11 +79,22 @@ export const state = {
   billingFilter: 'mensual',
   activeCharge: null,   // {paymentId, clientId, clientName, amount, status}
 
+  // Etapa 2 — "Socios" (buscador + filtro + suspender).
+  ownerClientQuery: '', ownerClientStatusFilter: 'todos',
+  ownerSuspendingClientId: null, ownerSuspendReason: '',
+  // Etapa 2 — "Entrenadores": rating real por entrenador (trainer_reviews).
+  trainerRatingsById: {},   // {[trainerUserId]: {avg, count}}
+  // Etapa 2 — "Asistencia" (pantalla nueva, reemplaza el "Tráfico" inventado
+  // — lee checkin_events de verdad). Mes actual cargado entero al entrar al
+  // panel; el día elegido solo filtra en memoria, sin otro viaje al server.
+  attendanceEvents: [], attendanceSelectedDay: null,
+  // Etapa 2 — "Configuración" (moneda, marca; los links de invitación viven
+  // acá, ya no repartidos en cada tab).
+  gymConfigDraft: { currency: 'USD', brandName: '', brandColor: '' },
+
   reviews: [],
   newCommentText: '', newCommentRating: 5,
 
-  clientAuthMode: 'login',
-  clientLoginEmail: '', clientLoginPassword: '', clientLoginError: '',
   clientReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', photoFile: null, photoPreviewUrl: null },
   clientPhysicalReg: { weight: '', height: '', age: '', level: 'principiante', goal: 'perder_peso' },
   approvedTrainersForReg: [],
@@ -94,27 +111,54 @@ export const state = {
   aiRoutine: null,          // {id, exercises:[{id,text}]}
   trainerRoutineForMe: null,
   pendingPayment: null,     // {id, amount, status}
-  clientVisitHour: null,
-
-  // Sesión de entrenamiento en curso (pantalla "workout" — ver
-  // docs/ARCHITECTURE_AUDIT.md gap de rutinas). Vive solo en memoria: no hay
-  // tabla de sesiones/sets en el backend todavía, así que no se persiste
-  // nada acá — es honesto mostrarlo como progreso de ESTA sesión, no
-  // guardarlo como si existiera esa tabla.
-  // { exercises:[{id,text}], source:'ia'|'trainer', index, doneSets:{[exerciseIndex]: Set<number>|true}, restSecondsLeft, finished }
+  // Sesión de entrenamiento en curso (pantalla "workout"). Etapa 2: además
+  // del estado en memoria de siempre, ahora abre una fila real en
+  // workout_sessions al arrancar (`sessionId`) y cada serie marcada se
+  // guarda con exercise_logs (peso/reps reales, no solo un check) — ver
+  // ACTIONS.startWorkout/toggleSet/nextExercise.
+  // { sessionId, exercises:[{id,text,sets,reps,weightKg,restSeconds}], source:'ia'|'trainer', index, doneSets:{[exerciseIndex]: Set<number>|true}, restSecondsLeft, finished }
   workout: null,
 
-  trainerAuthMode: 'login',
-  trainerLoginEmail: '', trainerLoginPassword: '', trainerLoginError: '',
+  // Etapa 2 — Reservas y calendario de clases (pantalla nueva del plan).
+  classesForGym: [], classSessions: [], myBookings: [], reservasSelectedDay: null,
+  // Etapa 2 — Logros / medallas (pantalla nueva del plan).
+  achievementsCatalog: [], myAchievements: [],
+  // Etapa 2 — Progreso real: serie histórica de medidas + récords
+  // personales + entrenamientos del mes (antes era solo fotos).
+  bodyMeasurements: [], personalRecords: [], workoutsThisMonth: 0,
+  measurementDraft: { weight_kg: '', body_fat_pct: '', waist_cm: '', chest_cm: '', arm_cm: '', thigh_cm: '' },
+  // Etapa 2 — calificar al propio entrenador asignado (distinto de
+  // `reviews`, que son reseñas del gimnasio).
+  myTrainerRating: null, trainerRatingDraft: { rating: 0, text: '' },
+  // Etapa 2 — mensajes con el propio entrenador asignado.
+  conversationId: null, messages: [], messageDraft: '',
+  // Etapa 2 — "Biblioteca de ejercicios" (pantalla transversal del plan,
+  // #23): un solo `screen` compartido por los 3 roles. `libraryReturn`
+  // guarda a qué screen volver (clientHome/trainerDash/ownerDash) — las
+  // tabs de cada dashboard (clientTab/trainerTab/ownerTab) no se tocan al
+  // entrar, así que vuelven solas a como estaban.
+  libraryReturn: null, libraryQuery: '', libraryMuscleFilter: 'todos',
+  libraryDraft: { name: '', muscleGroup: '', equipmentName: '', description: '' },
+
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
 
   myTrainer: null,
   trainerClients: [],
+  trainerClientQuery: '',    // buscador de la tab "Mis clientes"
   trainerSelectedClientId: null,
-  trainerSelectedClientDetail: null,   // {progress:[], routine:{id,exercises}}
-  trainerRoutineDraftText: '',
+  trainerSelectedClientDetail: null,   // {progress:[], routine:{id,exercises}, measurements:[], prs:[]}
+  // Etapa 2 — "Crear rutina" ahora arma un ejercicio estructurado (biblioteca
+  // + sets/reps/peso/descanso), no un string suelto.
+  trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' },
   trainerProfileDraft: { specialty: '', price: '' },
+  // Etapa 2 — Panel (citas de hoy) y Calendario/agenda: sesiones de las
+  // clases que este entrenador dicta (classes.trainer_user_id === myTrainer.id).
+  trainerClassSessions: [], trainerSelectedDay: null,
+  // Etapa 2 — Mensajes con clientes: una conversación por cliente asignado.
+  trainerConversations: [], trainerActiveConversationId: null, trainerMessages: [], trainerMessageDraft: '',
+  // Etapa 2 — Perfil: rating recibido (trainer_reviews), de solo lectura.
+  trainerReviewsList: [],
 };
 
 export function setState(patch) {

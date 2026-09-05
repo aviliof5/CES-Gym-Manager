@@ -3,7 +3,17 @@
 'use strict';
 
 import { state } from './state.js';
-import { iconSpan, COUNTRY_CODES, HOUR_VALUES, EXERCISE_LIB } from './data.js';
+import { iconSpan, COUNTRY_CODES, EXERCISE_LIB } from './data.js';
+
+// Formatea un importe con la moneda del gimnasio (gyms.currency, migración
+// 20260905000200). USD lleva el símbolo delante ($50); cualquier otra moneda
+// va con el código detrás (1000 CUP), que es como el propio gimnasio los
+// muestra en sus carteles. Si todavía no se cargó el gym, cae a USD.
+export function money(amount, currency) {
+  const code = currency || (state.gym && state.gym.currency) || 'USD';
+  const n = Number(amount) || 0;
+  return code === 'USD' ? `$${n}` : `${n} ${code}`;
+}
 
 export function esc(v) {
   return String(v == null ? '' : v)
@@ -15,16 +25,24 @@ export function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
 
+// Devuelve entradas estructuradas {text, sets, reps, weightKg, restSeconds} —
+// ver EXERCISE_LIB en data.js. routines.generateAi() las guarda tal cual en
+// las columnas nuevas de routine_exercises (Etapa 2); `text` sigue yendo
+// como resumen de respaldo para lo que todavía no las lee estructuradas.
 export function buildRoutine(goal, equipmentNames) {
   const lib = EXERCISE_LIB[goal] || [];
   const eqLower = equipmentNames.map(e => e.toLowerCase());
   const matched = lib.filter(ex => ex.kw === null || eqLower.some(e => e.includes(ex.kw)));
-  return (matched.length ? matched : lib).map(ex => ex.text);
+  return (matched.length ? matched : lib).map(ex => ({ text: ex.text, sets: ex.sets, reps: ex.reps, weightKg: ex.weightKg, restSeconds: ex.restSeconds }));
 }
 
 export function statusMeta(st) {
   if (st === 'al_dia') return { label: 'Al día', cls: 'badge badge--al_dia' };
   if (st === 'pendiente') return { label: 'Pendiente', cls: 'badge badge--pendiente' };
+  // 'suspendido' — migración 20260905000200 (gate de 10 clientes) — antes de
+  // esto caía a "Vencido", que es engañoso: un socio suspendido a mano no es
+  // lo mismo que uno con el pago atrasado.
+  if (st === 'suspendido') return { label: 'Suspendido', cls: 'badge badge--suspendido' };
   return { label: 'Vencido', cls: 'badge badge--vencido' };
 }
 
@@ -125,14 +143,14 @@ export function textField(field, placeholder, value, opts) {
 
 export function errorBanner() {
   if (!state.error) return '';
-  return `<div style="margin:0 22px 12px;background:rgba(255,92,92,0.12);border:1px solid rgba(255,92,92,0.4);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--red)">${esc(state.error)}</div>`;
+  return `<div style="margin:0 22px 12px;background:var(--danger-dim);border:1px solid rgba(var(--danger-rgb),0.4);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--danger)">${esc(state.error)}</div>`;
 }
 
 // Banner persistente que se prepende a cualquier pantalla mientras el
 // navegador no tiene conexión (ver listeners online/offline en router.js) —
 // así el usuario lo ve apenas se corta, sin necesidad de tocar nada primero.
 export function offlineBanner() {
-  return `<div style="background:var(--red);color:var(--bg);font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 14)}<span>Sin conexión a internet</span></div>`;
+  return `<div style="background:var(--danger);color:#fff;font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 14)}<span>Sin conexión a internet</span></div>`;
 }
 
 // Input de correo que solo captura la parte local — el sufijo @gmail.com se
@@ -165,7 +183,7 @@ export function passwordStrength(pw) {
 export function passwordStrengthMeter(pw) {
   const level = passwordStrength(pw);
   const labels = ['', 'Débil', 'Media', 'Fuerte'];
-  const colors = ['var(--surface-2)', 'var(--red)', 'var(--amber)', 'var(--mint)'];
+  const colors = ['var(--surface-2)', 'var(--danger)', 'var(--warn)', 'var(--ok)'];
   const barColor = colors[level] || colors[0];
   const bars = [1, 2, 3].map(i => `<div style="flex:1;height:4px;border-radius:2px;background:${i <= level ? barColor : 'var(--surface-2)'}"></div>`).join('');
   const hint = pw
@@ -224,28 +242,14 @@ export function devCredit() {
   return `<div style="text-align:center;padding:8px 0 2px;font-size:9.5px;color:var(--muted-dim);letter-spacing:0.02em">Desarrollado por Cuban Enterprise Solution (CES)</div>`;
 }
 
-// Compartidos entre las pantallas de admin y cliente (tráfico/reseñas) —
-// antes duplicados solo por vivir en el mismo archivo, movidos acá para que
-// ningún screens/*.js dependa de otro.
-export function barChart(variant) {
-  const max = Math.max.apply(null, HOUR_VALUES);
-  const cols = HOUR_VALUES.map((v, i) => {
-    const h = Math.round(v / max * 100);
-    const bg = variant === 'admin'
-      ? 'var(--lime)'
-      : (state.clientVisitHour === i ? 'var(--mint)' : `rgba(228,0,58,${0.3 + 0.6 * (v / max)})`);
-    return `<div class="chart-col"><i style="height:${h}%;background:${bg}"></i></div>`;
-  }).join('');
-  return `<div class="chart">${cols}</div>
-    <div class="chart-axis"><span>6h</span><span>14h</span><span>22h</span></div>`;
-}
-
+// Compartido entre Perfil (cliente) y Reportes (dueño/admin) — antes vivía
+// duplicado por estar en el mismo archivo que su única llamadora.
 export function commentCards(list) {
   return list.map(cm => `
     <div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between">
         <div style="font-size:13.5px;font-weight:700">${esc(cm.name)}</div>
-        <div style="font-size:12px;color:var(--amber)">${'★'.repeat(cm.rating)}${'☆'.repeat(5 - cm.rating)}</div>
+        <div style="font-size:12px;color:var(--action)">${'★'.repeat(cm.rating)}${'☆'.repeat(5 - cm.rating)}</div>
       </div>
       <div style="font-size:13px;color:var(--text-soft);margin-top:6px;line-height:1.5">${esc(cm.text)}</div>
       <div style="font-size:10.5px;color:var(--muted);margin-top:8px">${esc(cm.date)}</div>
