@@ -109,3 +109,39 @@ entrenador con gate de 10) comportándose como se diseñó, y ningún estado
 inventado en ninguna pantalla — todo lo que se muestra viene de datos
 reales cargados en el flujo de prueba. El único hallazgo (menor, de UX, sin
 impacto en seguridad ni en datos) ya está corregido.
+
+## Re-verificación tras Fase 15/16 (2026-09-05)
+
+Las Fases 15 (QR real + cámara) y 16 (alta de dueño interna + invitación por
+rol) cambiaron justo las pantallas de auth/registro que este documento
+cubría — ameritaba repetir el pase, esta vez sobre `main` ya con las 3
+migraciones de esas fases mergeadas. Pase corto, enfocado en lo que
+realmente cambió (no se repitió lo que Fase 15/16 no tocaron: pagos,
+progreso, reseñas, etc. — eso sigue tal cual se documentó arriba):
+
+- **Alta de dueño gateada**: sin `?owner_invite=`, `viewOwnerAuth` muestra
+  solo "Iniciar sesión" + el aviso — confirmado en el código ya mergeado a
+  `main` (no solo en la rama de feature). Login como la cuenta semilla
+  `is_platform_admin` → tab "Plataforma" → generó un token real → habilitó
+  "Registrarme" → alta completa de un gimnasio nuevo (`create_gym` con el
+  token) → generó los 3 códigos de invitación distintos, tal como en la
+  verificación original de la Fase 16.
+- **Entrenador por link**: código de invitación de entrenador del gimnasio
+  recién creado → `viewTrainerAuth` habilitó "Registrarme" solo con ese
+  link resuelto → alta se unió directo al gimnasio (sin selector público)
+  → cayó en "Perfil en revisión" → el dueño lo vio en Coaches con
+  "0/10 clientes interesados" y "Aprobar" deshabilitado — el gate de la
+  Fase 11 sigue intacto, no lo tocó la Fase 16.
+- **Cliente por link**: código de invitación de cliente del mismo gimnasio
+  → alta con foto de rostro obligatoria (verificado que sigue bloqueando
+  sin foto) → se unió directo al gimnasio (mismo comportamiento que ya
+  tenía desde antes de la Fase 16, sin cambios) → llegó honestamente a un
+  selector de plan vacío (no se había creado ningún plan para este
+  gimnasio de prueba — esperado, no es un bug).
+- **Consola limpia**: cero errores nuevos en todo el pase (alta de dueño,
+  alta de entrenador, aprobación, alta de cliente).
+
+No se repitió la prueba de escaneo de QR por cámara real (el entorno de
+prueba la sigue bloqueando, igual que en la Fase 15) ni la rotación de
+código de invitación (ya verificada en `MIGRATION_PLAN.md` Fase 16 contra
+producción real, verificación más fuerte que repetirla acá contra el mock).
