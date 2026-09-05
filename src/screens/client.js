@@ -9,6 +9,13 @@ import {
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
   devCredit, initials, daysUntil, barChart, commentCards,
 } from '../helpers.js';
+// Fase 16 — la tab "Plataforma" (generar invitación de dueño) no depende del
+// rol: is_platform_admin puede caer en una cuenta de cualquier rol (ver
+// docs/MIGRATION_PLAN.md Fase 16 seguimiento — el alta de cliente es la
+// única sin invitación, así que en la práctica termina siendo la más usada
+// para esto). Se reutiliza la misma vista que ya usa el panel de
+// dueño/admin en vez de duplicar el formulario acá.
+import { viewOwnerPlatform } from './owner.js';
 
 /* ---------------- cliente: registro ---------------- */
 
@@ -508,10 +515,15 @@ export function viewClientComentarios() {
   </div>`;
 }
 
-export const CLIENT_TABS = [['inicio', 'Inicio', 'home'], ['ia', 'Entrenar', 'zap'], ['progreso', 'Progreso', 'camera'], ['trafico', 'Tráfico', 'clock'], ['pago', 'Pago', 'card'], ['comentarios', 'Reseñas', 'chat']];
+// "Plataforma" (Fase 16) se agrega condicionalmente en viewClientHome, solo
+// para is_platform_admin — ver el comentario del import de viewOwnerPlatform
+// más arriba.
+const CLIENT_BASE_TABS = [['inicio', 'Inicio', 'home'], ['ia', 'Entrenar', 'zap'], ['progreso', 'Progreso', 'camera'], ['trafico', 'Tráfico', 'clock'], ['pago', 'Pago', 'card'], ['comentarios', 'Reseñas', 'chat']];
 
 export function viewClientHome() {
   const client = state.myClient;
+  const isPlatformAdmin = !!(state.myProfile && state.myProfile.is_platform_admin);
+  const tabs = isPlatformAdmin ? [...CLIENT_BASE_TABS, ['plataforma', 'Plataforma', 'shield']] : CLIENT_BASE_TABS;
   const panes = {
     inicio: viewClientInicio,
     ia: viewClientEntrenar,
@@ -519,7 +531,9 @@ export function viewClientHome() {
     trafico: viewClientTrafico,
     pago: viewClientPago,
     comentarios: viewClientComentarios,
+    plataforma: viewOwnerPlatform,
   };
+  const activeTab = (state.clientTab === 'plataforma' && !isPlatformAdmin) ? 'inicio' : state.clientTab;
 
   const days = daysUntil(client.membershipExpiresAt);
   const urgent = days !== null && days <= 1;
@@ -543,9 +557,9 @@ export function viewClientHome() {
         <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
       ${alert}
-      ${(panes[state.clientTab] || panes.inicio)()}
+      ${(panes[activeTab] || panes.inicio)()}
       ${devCredit()}
     </div>
-    <div class="tabbar tabbar--client">${tabsMarkup(CLIENT_TABS, state.clientTab, 'selectClientTab')}</div>
+    <div class="tabbar tabbar--client">${tabsMarkup(tabs, activeTab, 'selectClientTab')}</div>
   </div>`;
 }

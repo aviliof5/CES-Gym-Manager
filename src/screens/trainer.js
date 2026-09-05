@@ -5,6 +5,10 @@
 import { state } from '../state.js';
 import { GOALS, iconSpan } from '../data.js';
 import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials } from '../helpers.js';
+// Fase 16 — is_platform_admin puede caer en una cuenta de cualquier rol
+// (ver src/screens/client.js, mismo comentario) — se reutiliza la misma
+// vista que ya usa el panel de dueño/admin en vez de duplicar el formulario.
+import { viewOwnerPlatform } from './owner.js';
 
 export function viewTrainerPending() {
   return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;position:relative;z-index:0">
@@ -107,10 +111,13 @@ export function viewTrainerPerfil() {
   </div>`;
 }
 
-export const TRAINER_TABS = [['clientes', 'Mis clientes', 'users'], ['perfil', 'Perfil', 'idcard']];
+const TRAINER_BASE_TABS = [['clientes', 'Mis clientes', 'users'], ['perfil', 'Perfil', 'idcard']];
 
 export function viewTrainerDash() {
-  const panes = { clientes: viewTrainerClientes, perfil: viewTrainerPerfil };
+  const isPlatformAdmin = !!(state.myProfile && state.myProfile.is_platform_admin);
+  const tabs = isPlatformAdmin ? [...TRAINER_BASE_TABS, ['plataforma', 'Plataforma', 'shield']] : TRAINER_BASE_TABS;
+  const panes = { clientes: viewTrainerClientes, perfil: viewTrainerPerfil, plataforma: viewOwnerPlatform };
+  const activeTab = (state.trainerTab === 'plataforma' && !isPlatformAdmin) ? 'clientes' : state.trainerTab;
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">
@@ -120,9 +127,9 @@ export function viewTrainerDash() {
         </div>
         <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
-      ${(panes[state.trainerTab] || panes.clientes)()}
+      ${(panes[activeTab] || panes.clientes)()}
       ${devCredit()}
     </div>
-    <div class="tabbar tabbar--trainer">${tabsMarkup(TRAINER_TABS, state.trainerTab, 'trainerTab')}</div>
+    <div class="tabbar tabbar--trainer">${tabsMarkup(tabs, activeTab, 'trainerTab')}</div>
   </div>`;
 }
