@@ -113,6 +113,14 @@ root.addEventListener('change', e => {
     setState({ clientVisitHour: el.value === '' ? null : Number(el.value) });
     return;
   }
+  // Elegir un ejercicio de la biblioteca en "Crear rutina" (Etapa 2, panel
+  // de entrenador) también precarga el nombre en el campo `text` — un
+  // setPath genérico solo tocaría `exerciseId`, así que pasa por su propia
+  // acción en vez del setPath de abajo (mismo patrón que clientVisitHour).
+  if (el.dataset.f === 'trainerRoutineDraft.exerciseId') {
+    ACTIONS.selectRoutineExercise(el.value);
+    return;
+  }
   if (el.tagName === 'SELECT') setPath(el.dataset.f, el.value);
 });
 

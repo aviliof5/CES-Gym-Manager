@@ -127,10 +127,20 @@ export const state = {
 
   myTrainer: null,
   trainerClients: [],
+  trainerClientQuery: '',    // buscador de la tab "Mis clientes"
   trainerSelectedClientId: null,
-  trainerSelectedClientDetail: null,   // {progress:[], routine:{id,exercises}}
-  trainerRoutineDraftText: '',
+  trainerSelectedClientDetail: null,   // {progress:[], routine:{id,exercises}, measurements:[], prs:[]}
+  // Etapa 2 — "Crear rutina" ahora arma un ejercicio estructurado (biblioteca
+  // + sets/reps/peso/descanso), no un string suelto.
+  trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' },
   trainerProfileDraft: { specialty: '', price: '' },
+  // Etapa 2 — Panel (citas de hoy) y Calendario/agenda: sesiones de las
+  // clases que este entrenador dicta (classes.trainer_user_id === myTrainer.id).
+  trainerClassSessions: [], trainerSelectedDay: null,
+  // Etapa 2 — Mensajes con clientes: una conversación por cliente asignado.
+  trainerConversations: [], trainerActiveConversationId: null, trainerMessages: [], trainerMessageDraft: '',
+  // Etapa 2 — Perfil: rating recibido (trainer_reviews), de solo lectura.
+  trainerReviewsList: [],
 };
 
 export function setState(patch) {

@@ -584,33 +584,61 @@ export const ACTIONS = {
   },
   /* ---- trainer dashboard ---- */
   trainerTab: v => setState({ trainerTab: v }),
+  setTrainerSelectedDay: day => setState({ trainerSelectedDay: Number(day) }),
   openClientDetail: async clientId => {
-    setState({ trainerSelectedClientId: clientId, trainerRoutineDraftText: '' });
-    const [progressRaw, routine] = await Promise.all([
+    const emptyDraft = { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' };
+    setState({ trainerSelectedClientId: clientId, trainerRoutineDraft: emptyDraft });
+    const [progressRaw, routine, measurements, prs] = await Promise.all([
       BolaAPI.progress.listForClient(clientId),
       BolaAPI.routines.getTrainer(clientId),
+      BolaAPI.measurements.listForClient(clientId),
+      BolaAPI.workouts.getPersonalRecords(clientId),
     ]);
     const progress = await attachSignedUrls(progressRaw);
-    setState({ trainerSelectedClientDetail: { progress, routine } });
+    setState({ trainerSelectedClientDetail: { progress, routine, measurements, prs } });
   },
   closeClientDetail: () => setState({ trainerSelectedClientId: null, trainerSelectedClientDetail: null }),
+  // Elegir un ejercicio de la biblioteca precarga su nombre en `text` (el
+  // resumen de respaldo) — el entrenador puede seguir editando sets/reps/
+  // peso/descanso libremente antes de agregarlo.
+  selectRoutineExercise: exerciseId => {
+    const ex = state.exercisesLib.find(e => e.id === exerciseId);
+    setState({ trainerRoutineDraft: { ...state.trainerRoutineDraft, exerciseId, text: ex ? ex.name : '' } });
+  },
   addTrainerRoutineExercise: async () => {
-    const text = state.trainerRoutineDraftText.trim();
+    const d = state.trainerRoutineDraft;
+    const text = d.text.trim();
     if (!text || !state.trainerSelectedClientId) return;
-    // Etapa 2: addTrainerExercise() ahora espera un objeto estructurado, no
-    // un string — este campo sigue siendo texto libre hasta que la pantalla
-    // #11 del plan ("Crear rutina" con selector de ejercicios +
-    // series/reps/peso/descanso) se reconstruya; mientras tanto se manda
-    // solo `text`, con el resto en null/default.
-    await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, { text, sets: null, reps: null, weightKg: null, restSeconds: 60 });
+    await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, {
+      text, exerciseId: d.exerciseId || null,
+      sets: d.sets ? Number(d.sets) : null, reps: d.reps ? d.reps : null,
+      weightKg: d.weightKg ? Number(d.weightKg) : null, restSeconds: d.restSeconds ? Number(d.restSeconds) : 60,
+    });
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
-    setState({ trainerRoutineDraftText: '', trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
+    setState({ trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' }, trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
   },
   removeTrainerRoutineExercise: async exerciseId => {
     await BolaAPI.routines.removeExercise(exerciseId);
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
     setState({ trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
   },
+
+  /* ---- Etapa 2: mensajes con clientes asignados ---- */
+  openTrainerConversation: async clientId => {
+    const conv = state.trainerConversations.find(c => c.clientId === clientId);
+    if (!conv) return;
+    const trainerMessages = await BolaAPI.messages.list(conv.conversationId);
+    setState({ trainerActiveConversationId: conv.conversationId, trainerMessages, trainerMessageDraft: '' });
+  },
+  closeTrainerConversation: () => setState({ trainerActiveConversationId: null, trainerMessages: [] }),
+  sendTrainerMessage: async () => {
+    const text = state.trainerMessageDraft.trim();
+    if (!text || !state.trainerActiveConversationId) return;
+    await BolaAPI.messages.send(state.trainerActiveConversationId, text);
+    const trainerMessages = await BolaAPI.messages.list(state.trainerActiveConversationId);
+    setState({ trainerMessages, trainerMessageDraft: '' });
+  },
+
   saveTrainerProfile: async () => {
     const { specialty, price } = state.trainerProfileDraft;
     await BolaAPI.trainers.updateProfile(state.myTrainer.id, { specialty: specialty.trim() || state.myTrainer.specialty, price: Number(price) || 0 });
@@ -916,10 +944,28 @@ export async function enterTrainerDash(profile, gym, myTrainer) {
     ...c,
     plan: (plans.find(p => p.id === c.planId) || { name: '—' }).name,
   }));
+
+  // Etapa 2 — biblioteca de ejercicios (para "Crear rutina"), las sesiones
+  // de las clases que este entrenador dicta (Panel/Calendario), una
+  // conversación por cliente asignado (Mensajes) y su propio rating (Perfil).
+  const [exercisesLib, allClasses, allSessions, trainerReviewsList] = await Promise.all([
+    BolaAPI.exercisesLib.list(gym.id),
+    BolaAPI.classes.listForGym(gym.id),
+    BolaAPI.classes.listSessions(gym.id, new Date().toISOString()),
+    BolaAPI.trainerReviews.listForTrainer(myTrainer.id),
+  ]);
+  const myClassIds = new Set(allClasses.filter(c => c.trainer_user_id === myTrainer.id).map(c => c.id));
+  const trainerClassSessions = allSessions.filter(s => myClassIds.has(s.class_id));
+  const trainerConversations = await Promise.all(
+    trainerClients.map(async c => ({ clientId: c.id, clientName: c.name, conversationId: await BolaAPI.messages.getOrCreateConversation(c.id) }))
+  );
+
   Object.assign(state, {
-    screen: 'trainerDash', trainerTab: 'clientes', myProfile: profile, gym, myTrainer, trainerClients,
+    screen: 'trainerDash', trainerTab: 'panel', myProfile: profile, gym, myTrainer, trainerClients,
     trainerProfileDraft: { specialty: myTrainer.specialty, price: String(myTrainer.price) },
-    trainerSelectedClientId: null, trainerSelectedClientDetail: null, busy: false,
+    trainerSelectedClientId: null, trainerSelectedClientDetail: null, trainerClientQuery: '', busy: false,
+    exercisesLib, trainerClassSessions, trainerReviewsList, trainerConversations,
+    trainerActiveConversationId: null, trainerMessages: [], trainerMessageDraft: '',
   });
   if (window.CesAds) window.CesAds.hideBanner();
   render();

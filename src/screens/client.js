@@ -348,8 +348,10 @@ function trainerCandidatesSection() {
 
 // Fila de un ejercicio de rutina con sus datos estructurados (Etapa 2 —
 // antes esto era un string libre tipo "Sentadilla en rack - 4x8"; ahora
-// routine_exercises trae sets/reps/weightKg/restSeconds de verdad).
-function exerciseRow(ex) {
+// routine_exercises trae sets/reps/weightKg/restSeconds de verdad). Se
+// exporta porque trainer.js (pantalla "Mis clientes" → rutina del cliente)
+// muestra exactamente la misma fila.
+export function exerciseRow(ex) {
   const detail = [
     ex.sets ? `${ex.sets} series` : null,
     ex.reps ? `${esc(String(ex.reps))} reps` : null,
