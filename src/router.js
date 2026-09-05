@@ -18,11 +18,13 @@ import { offlineBanner, friendlyError } from './helpers.js';
 import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan } from './actions.js';
 import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
 
-import { viewBoot, viewRole, viewOwnerAuth, viewClientAuth, viewTrainerAuth, viewGymPicker } from './screens/auth.js';
+import {
+  viewBoot, viewLanding, viewLogin, viewInviteWelcome, viewTrainerReg, viewGymPicker,
+} from './screens/auth.js';
 import {
   viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash, viewScanCheckin,
 } from './screens/owner.js';
-import { viewAdminAuth, viewAdminPending } from './screens/admin.js';
+import { viewAdminReg, viewAdminPending } from './screens/admin.js';
 import {
   viewClientReg1, viewClientReg2, viewClientReg3, viewClientReg4,
   viewClientHome, viewClientPhotoRequired, viewWorkout,
@@ -33,10 +35,11 @@ const root = document.getElementById('app');
 
 const SCREENS = {
   boot: viewBoot,
-  role: viewRole,
-  ownerAuth: viewOwnerAuth,
-  adminAuth: viewAdminAuth,
-  clientAuth: viewClientAuth,
+  landing: viewLanding,
+  login: viewLogin,
+  inviteWelcome: viewInviteWelcome,
+  adminReg: viewAdminReg,
+  trainerReg: viewTrainerReg,
   ownerReg1: viewOwnerReg1,
   ownerReg2: viewOwnerReg2,
   ownerReg3: viewOwnerReg3,
@@ -50,7 +53,6 @@ const SCREENS = {
   clientReg4: viewClientReg4,
   clientHome: viewClientHome,
   workout: viewWorkout,
-  trainerAuth: viewTrainerAuth,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,
@@ -150,7 +152,7 @@ function cameraErrorMessage(err) {
 
 export function render() {
   const snapshot = captureFocus();
-  root.innerHTML = (state.offline ? offlineBanner() : '') + (SCREENS[state.screen] || viewRole)();
+  root.innerHTML = (state.offline ? offlineBanner() : '') + (SCREENS[state.screen] || viewLanding)();
   restoreFocus(snapshot);
   paintQrCodes(root);
 
@@ -182,7 +184,13 @@ window.addEventListener('online', () => setState({ offline: false }));
 /* ============================ boot ============================ */
 // Al cargar: si hay sesión guardada, saltar directo al panel que
 // corresponda según el rol — así no hay que loguearse de nuevo en cada
-// visita. Sin sesión, se muestra el selector de rol.
+// visita. Sin sesión: si hay una invitación válida ya resuelta (ver
+// resolveOwnerInviteFromUrl/resolveGymInviteFromUrl más abajo, corren ANTES
+// de boot()), va directo a la bienvenida de esa invitación; si no, a la
+// portada (Etapa 1 del rediseño — reemplaza el selector de 4 roles).
+function entryScreen() {
+  return (state.ownerInviteToken || state.inviteRole) ? 'inviteWelcome' : 'landing';
+}
 
 async function boot() {
   render();
@@ -191,11 +199,11 @@ async function boot() {
     session = await BolaAPI.auth.getSession();
   } catch (err) {
     console.error(err);
-    setState({ screen: 'role', error: friendlyError(err) });
+    setState({ screen: entryScreen(), error: friendlyError(err) });
     return;
   }
   if (!session) {
-    setState({ screen: 'role' });
+    setState({ screen: entryScreen() });
     return;
   }
 
@@ -206,7 +214,7 @@ async function boot() {
       // getMyProfile() sí valida contra el servidor y puede devolver null
       // si el token quedó vencido/inválido — ahí no hay nada que resumir.
       await BolaAPI.auth.signOut();
-      setState({ screen: 'role' });
+      setState({ screen: entryScreen() });
       return;
     }
     state.session = session;
@@ -222,7 +230,7 @@ async function boot() {
       if (!profile.gym_id) {
         // No debería pasar tras el registro (signUpTrainer ya se une al
         // gimnasio), pero por si acaso no hay de dónde leer trainers.
-        setState({ screen: 'role' });
+        setState({ screen: entryScreen() });
         return;
       }
       const gym = await BolaAPI.gyms.get(profile.gym_id);
@@ -235,11 +243,11 @@ async function boot() {
         await enterTrainerDash(profile, gym, myTrainer);
       }
     } else {
-      setState({ screen: 'role' });
+      setState({ screen: entryScreen() });
     }
   } catch (err) {
     console.error(err);
-    setState({ screen: 'role', error: friendlyError(err) });
+    setState({ screen: entryScreen(), error: friendlyError(err) });
   }
 }
 
@@ -258,7 +266,7 @@ async function handleAuthDeepLink(url) {
   try {
     await BolaAPI.auth.setSessionFromUrl(url);
   } catch (err) {
-    setState({ screen: 'role', error: friendlyError(err) });
+    setState({ screen: 'landing', error: friendlyError(err) });
     return;
   }
   boot();
@@ -271,17 +279,18 @@ async function handleAuthDeepLink(url) {
 // falta manejarlos acá como el deep link de confirmación de correo (ese sí
 // reabre la app nativa, por el esquema com.ces.gymmanager:// registrado
 // aparte). Se resuelven ANTES de boot() (ver initDeepLinksAndBoot) para que
-// el primer render ya sepa si el modo "Registrarme" del rol/dueño
-// correspondiente debe estar habilitado — ver viewOwnerAuth/viewAdminAuth/
-// viewTrainerAuth. Cuando el query param no está presente, cada uno vuelve
-// al toque sin pegarle a la red — un arranque normal no paga ningún costo
-// extra por esto.
+// el primer render ya sepa a qué pantalla entrar — entryScreen() más abajo
+// manda directo a viewInviteWelcome (Etapa 1 del rediseño) si alguno de los
+// dos resolvió algo. Cuando el query param no está presente, cada uno
+// vuelve al toque sin pegarle a la red — un arranque normal no paga ningún
+// costo extra por esto.
 
 // Fase 16 — cierra el hueco de "cualquiera puede registrarse como dueño":
-// sin un ?owner_invite=TOKEN válido y sin usar, viewOwnerAuth no muestra el
-// modo "Registrarme" (y aunque alguien lo forzara, create_gym() lo rechaza
-// igual del lado servidor — ver docs/SECURITY_AUDIT.md). check_owner_invite
-// solo devuelve un booleano, nunca expone la tabla de tokens.
+// sin un ?owner_invite=TOKEN válido y sin usar, entryScreen() manda a la
+// portada en vez de a la bienvenida de invitación de dueño (y aunque
+// alguien la forzara a mano, create_gym() rechaza igual del lado servidor
+// — ver docs/SECURITY_AUDIT.md). check_owner_invite solo devuelve un
+// booleano, nunca expone la tabla de tokens.
 async function resolveOwnerInviteFromUrl() {
   let token;
   try { token = new URLSearchParams(window.location.search).get('owner_invite'); }

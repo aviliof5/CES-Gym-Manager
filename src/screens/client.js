@@ -26,8 +26,11 @@ export function viewClientReg1() {
     ? `<img src="${esc(c.photoPreviewUrl)}" alt="Foto de rostro"/>`
     : 'Foto de rostro *';
 
+  // Llega desde viewInviteWelcome (con link) o directo desde viewLanding
+  // ("¿Sos cliente nuevo?", sin invitación) — el back vuelve adonde vino.
+  const backTo = state.inviteRole === 'client' ? 'goto:inviteWelcome' : 'goto:landing';
   return `<div class="col">
-    ${stepHead('Paso 1 de 4 · Registro Cliente', 'goto:clientAuth')}
+    ${stepHead('Paso 1 de 4 · Registro Cliente', backTo)}
     ${stepBars(1, 4, 'mint')}
     <div class="form-body">
       <div class="title">Tus datos personales</div>

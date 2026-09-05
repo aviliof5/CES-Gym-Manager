@@ -21,7 +21,7 @@ export function viewOwnerReg1() {
   const a = state.ownerReg;
   const invalid = !(a.name.trim() && a.email.trim() && a.phone.trim() && passwordStrength(a.password) >= 2) || state.busy;
   return `<div class="col">
-    ${stepHead('Paso 1 de 4 · Registro Dueño', 'goto:ownerAuth')}
+    ${stepHead('Paso 1 de 4 · Registro Dueño', 'goto:inviteWelcome')}
     ${stepBars(1, 4, 'lime')}
     <div class="form-body">
       <div class="title">Tus datos personales</div>

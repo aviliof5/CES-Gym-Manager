@@ -17,7 +17,7 @@ export function viewTrainerPending() {
     <div style="font-size:19px;font-weight:800">Perfil en revisión</div>
     <div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;max-width:280px">Hola ${esc(state.pendingTrainerName)}, tu perfil como entrenador fue enviado. El administrador del gimnasio debe aprobarlo antes de que puedas acceder a tu panel.</div>
     <button class="btn btn--ghost" style="margin-top:28px" ${act('signOut')}>Volver al inicio</button>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:14px;cursor:pointer;text-decoration:underline" ${act('goto', 'trainerAuth')}>Ya fui aprobado, iniciar sesión</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-top:14px;cursor:pointer;text-decoration:underline" ${act('goto', 'login')}>Ya fui aprobado, iniciar sesión</div>
   </div>`;
 }
 

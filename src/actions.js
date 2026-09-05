@@ -30,39 +30,34 @@ export const ACTIONS = {
     await BolaAPI.auth.signOut();
     if (window.CesAds) window.CesAds.hideBanner();
     Object.assign(state, {
-      screen: 'role', session: null, myProfile: null, gym: null, error: '',
+      screen: 'landing', session: null, myProfile: null, gym: null, error: '',
       myClient: null, myClientPlan: null, myClientTrainer: null, myTrainer: null,
       activeCharge: null, trainerSelectedClientId: null, trainerSelectedClientDetail: null,
     });
     render();
   },
 
-  /* ---- owner auth ---- */
-  setOwnerAuthMode: v => setState({ ownerAuthMode: v, ownerLoginError: '' }),
-  ownerSignIn: async () => {
-    setState({ busy: true, ownerLoginError: '' });
+  // Login único (Etapa 1 del rediseño) — reemplaza ownerSignIn/adminSignIn/
+  // clientSignIn/trainerSignIn, que eran el mismo BolaAPI.auth.signIn()
+  // cuatro veces con cuatro campos de error separados. Ahora se loguea
+  // primero y se rutea SEGÚN el rol que ya trae la cuenta — nadie elige de
+  // antemano en qué formulario escribir su contraseña.
+  login: async () => {
+    setState({ busy: true, loginError: '' });
     try {
-      await BolaAPI.auth.signIn({ email: state.ownerLoginEmail, password: state.ownerLoginPassword });
+      await BolaAPI.auth.signIn({ email: state.loginEmail, password: state.loginPassword });
     } catch (err) {
-      setState({ busy: false, ownerLoginError: friendlyError(err) });
+      setState({ busy: false, loginError: friendlyError(err) });
       return;
     }
     const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'owner') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, ownerLoginError: 'Esta cuenta no es de dueño.' });
-      return;
-    }
-    state.myProfile = profile;
-    state.ownerLoginEmail = ''; state.ownerLoginPassword = '';
-    await resumeOwnerSession(profile);
+    setState({ loginEmail: '', loginPassword: '' });
+    await routeAfterLogin(profile);
   },
 
-  /* ---- admin auth (se une a un gimnasio ya creado, como un entrenador) ---- */
-  setAdminAuthMode: v => setState({ adminAuthMode: v, adminLoginError: '' }),
   // Fase 16: el alta de administrador ya es solo por link de invitación de
-  // un gimnasio (viewAdminAuth ni siquiera muestra "Registrarme" sin uno
-  // resuelto) — ya no cae al selector público de gimnasios.
+  // un gimnasio (viewAdminReg solo se llega desde viewInviteWelcome con el
+  // rol ya resuelto) — nunca cae al selector público de gimnasios.
   adminSignUp: async () => {
     setState({ busy: true, error: '' });
     const a = state.adminReg;
@@ -73,49 +68,6 @@ export const ACTIONS = {
     }
     if (await tryJoinViaGymInvite('adminSignUp', 'admin')) return;
     setState({ busy: false, error: 'Necesitás un link de invitación de administrador de un gimnasio para registrarte — pedíselo al dueño.' });
-  },
-  adminSignIn: async () => {
-    setState({ busy: true, adminLoginError: '' });
-    try {
-      await BolaAPI.auth.signIn({ email: state.adminLoginEmail, password: state.adminLoginPassword });
-    } catch (err) {
-      setState({ busy: false, adminLoginError: friendlyError(err) });
-      return;
-    }
-    const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'admin') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, adminLoginError: 'Esta cuenta no es de administrador.' });
-      return;
-    }
-    // Igual que el entrenador: si el signUp quedó interrumpido por la
-    // confirmación de correo, el join al gimnasio nunca se ejecutó.
-    if (!profile.gym_id) {
-      await loadGymPicker('adminResume');
-      return;
-    }
-    await continueAdminSignIn(profile);
-  },
-
-  /* ---- client auth ---- */
-  setClientAuthMode: v => setState({ clientAuthMode: v, clientLoginError: '' }),
-  clientSignIn: async () => {
-    setState({ busy: true, clientLoginError: '' });
-    try {
-      await BolaAPI.auth.signIn({ email: state.clientLoginEmail, password: state.clientLoginPassword });
-    } catch (err) {
-      setState({ busy: false, clientLoginError: friendlyError(err) });
-      return;
-    }
-    const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'client') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, clientLoginError: 'Esta cuenta no es de cliente.' });
-      return;
-    }
-    state.myProfile = profile;
-    state.clientLoginEmail = ''; state.clientLoginPassword = '';
-    await resumeClientSession(profile);
   },
 
   /* ---- owner registration (crea el gimnasio) ---- */
@@ -510,7 +462,6 @@ export const ACTIONS = {
   pickPhoto: v => openPhotoPicker(v),
 
   /* ---- trainer auth ---- */
-  setTrainerAuthMode: v => setState({ trainerAuthMode: v, trainerLoginError: '' }),
   // Fase 16: mismo cambio que adminSignUp — solo por link, ya no cae al
   // selector público de gimnasios.
   trainerSignUp: async () => {
@@ -524,29 +475,6 @@ export const ACTIONS = {
     if (await tryJoinViaGymInvite('trainerSignUp', 'trainer')) return;
     setState({ busy: false, error: 'Necesitás un link de invitación de entrenador de un gimnasio para registrarte — pedíselo al dueño o a un administrador.' });
   },
-  trainerSignIn: async () => {
-    setState({ busy: true, trainerLoginError: '' });
-    try {
-      await BolaAPI.auth.signIn({ email: state.trainerLoginEmail, password: state.trainerLoginPassword });
-    } catch (err) {
-      setState({ busy: false, trainerLoginError: friendlyError(err) });
-      return;
-    }
-    const profile = await BolaAPI.auth.getMyProfile();
-    if (profile.role !== 'trainer') {
-      await BolaAPI.auth.signOut();
-      setState({ busy: false, trainerLoginError: 'Esta cuenta no es de entrenador.' });
-      return;
-    }
-    // Igual que el cliente: si el signUp quedó interrumpido por la
-    // confirmación de correo, el join al gimnasio nunca se ejecutó.
-    if (!profile.gym_id) {
-      await loadGymPicker('trainerResume');
-      return;
-    }
-    await continueTrainerSignIn(profile);
-  },
-
   /* ---- trainer dashboard ---- */
   trainerTab: v => setState({ trainerTab: v }),
   openClientDetail: async clientId => {
@@ -582,6 +510,28 @@ export const ACTIONS = {
 // Cada una de estas junta los datos que la pantalla necesita ANTES de
 // cambiar `screen`, así las funciones de vista no tienen que lidiar con
 // datos a medio cargar.
+
+// Rutea después de ACTIONS.login (Etapa 1) según el rol que ya trae la
+// cuenta — el reemplazo de tener 4 acciones de sign-in casi idénticas, cada
+// una comprobando "¿sos vos, dueño/admin/cliente/entrenador?" a mano. Cada
+// rama reutiliza exactamente la misma función de reanudación que ya usaba
+// su propio sign-in, así que el comportamiento (incluyendo los flujos
+// interrumpidos por confirmación de correo) no cambia, solo cómo se llega.
+export async function routeAfterLogin(profile) {
+  state.myProfile = profile;
+  if (profile.role === 'owner') { await resumeOwnerSession(profile); return; }
+  if (profile.role === 'admin') { await resumeAdminSession(profile); return; }
+  if (profile.role === 'client') { await resumeClientSession(profile); return; }
+  if (profile.role === 'trainer') {
+    if (!profile.gym_id) { await loadGymPicker('trainerResume'); return; }
+    await continueTrainerSignIn(profile);
+    return;
+  }
+  // No debería pasar — todo profile real tiene uno de los 4 roles — pero
+  // ante un dato inesperado, no dejar a nadie logueado sin panel a donde ir.
+  await BolaAPI.auth.signOut();
+  setState({ busy: false, screen: 'login', loginError: 'No pudimos identificar el rol de esta cuenta.' });
+}
 
 // Reanuda la sesión de un dueño ya logueado. Si se quedó a mitad del
 // asistente (tiene cuenta pero nunca llamó a create_gym), lo manda al paso
@@ -696,7 +646,6 @@ export function continueAdminSignUpAfterGym() {
   setState({
     busy: false, screen: 'adminPending', pendingAdminName: r.name,
     adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
-    adminAuthMode: 'login',
   });
 }
 
@@ -710,7 +659,7 @@ export async function continueAdminSignIn(profile) {
   }
   if (myEntry.status === 'rejected') {
     await BolaAPI.auth.signOut();
-    setState({ busy: false, adminLoginError: 'Tu solicitud fue rechazada. Contacta al dueño del gimnasio.' });
+    setState({ busy: false, screen: 'login', loginError: 'Tu solicitud fue rechazada. Contacta al dueño del gimnasio.' });
     return;
   }
   state.myProfile = profile;
@@ -723,7 +672,6 @@ export function continueTrainerSignUpAfterGym() {
   setState({
     busy: false, screen: 'trainerPending', pendingTrainerName: r.name,
     trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
-    trainerAuthMode: 'login',
   });
 }
 
@@ -737,7 +685,7 @@ export async function continueTrainerSignIn(profile) {
   }
   if (myTrainer.status === 'rejected') {
     await BolaAPI.auth.signOut();
-    setState({ busy: false, trainerLoginError: 'Tu solicitud fue rechazada. Contacta al administrador.' });
+    setState({ busy: false, screen: 'login', loginError: 'Tu solicitud fue rechazada. Contacta al administrador.' });
     return;
   }
   await enterTrainerDash(profile, gym, myTrainer);

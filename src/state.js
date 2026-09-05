@@ -39,17 +39,23 @@ export const state = {
   clientTab: 'inicio',
   trainerTab: 'clientes',
 
+  // Etapa 1 del rediseño (ver docs/plans, "aqui-esta-el-logo"): login único
+  // para los 4 roles — signIn() ya era el mismo RPC para todos, la única
+  // diferencia era 4 pantallas separadas repitiendo el mismo formulario.
+  // La app lee profile.role después de loguear y rutea sola (ver
+  // routeAfterLogin en actions.js). Reemplaza ownerLoginEmail/adminLoginEmail/
+  // clientLoginEmail/trainerLoginEmail + sus *AuthMode (el toggle
+  // login/registro también desaparece: el registro ahora es siempre por
+  // invitación — o sin ella solo para cliente — nunca un modo de esta pantalla).
+  loginEmail: '', loginPassword: '', loginError: '',
+
   // Dueño: crea el gimnasio — antes lo hacía "admin", ver docs/MIGRATION_PLAN.md Fase 4.
-  ownerAuthMode: 'login',
-  ownerLoginEmail: '', ownerLoginPassword: '', ownerLoginError: '',
   ownerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   gymReg: { name: '', address: '', hours: '' },
 
-  // Administrador: ahora se une a un gimnasio YA creado por el dueño y queda
+  // Administrador: se une a un gimnasio YA creado por el dueño y queda
   // pendiente de aprobación — mismo patrón que un entrenador (ver trainerReg
   // más abajo). adminReg no necesita specialty/price, a diferencia de trainerReg.
-  adminAuthMode: 'login',
-  adminLoginEmail: '', adminLoginPassword: '', adminLoginError: '',
   adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   pendingAdminName: '',
   gymAdminsForGym: [],   // gym_admins de ESTE gimnasio — lo carga el dueño para aprobar/rechazar
@@ -76,8 +82,6 @@ export const state = {
   reviews: [],
   newCommentText: '', newCommentRating: 5,
 
-  clientAuthMode: 'login',
-  clientLoginEmail: '', clientLoginPassword: '', clientLoginError: '',
   clientReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', photoFile: null, photoPreviewUrl: null },
   clientPhysicalReg: { weight: '', height: '', age: '', level: 'principiante', goal: 'perder_peso' },
   approvedTrainersForReg: [],
@@ -104,8 +108,6 @@ export const state = {
   // { exercises:[{id,text}], source:'ia'|'trainer', index, doneSets:{[exerciseIndex]: Set<number>|true}, restSecondsLeft, finished }
   workout: null,
 
-  trainerAuthMode: 'login',
-  trainerLoginEmail: '', trainerLoginPassword: '', trainerLoginError: '',
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
 

@@ -260,7 +260,7 @@ input,textarea,select,button{font-family:inherit}
 
 .form-body{padding:0 24px;flex:1}
 .form-foot{padding:16px 24px 28px}
-.title{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:0.2px;margin-bottom:6px;text-transform:uppercase}
+.title{font-family:var(--font-display);font-size:24px;font-weight:400;letter-spacing:0.2px;margin-bottom:6px;text-transform:uppercase}
 .subtitle{font-size:13px;color:var(--muted);margin-bottom:24px}
 .stack{display:flex;flex-direction:column;gap:14px}
 
@@ -282,7 +282,7 @@ input,textarea,select,button{font-family:inherit}
 
 /* ---------- app header ---------- */
 .app-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px}
-.app-title{font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:0.2px;text-transform:uppercase}
+.app-title{font-family:var(--font-display);font-size:19px;font-weight:400;letter-spacing:0.2px;text-transform:uppercase}
 .app-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
 .link-muted{font-size:12px;color:var(--muted);cursor:pointer}
 
@@ -336,7 +336,7 @@ input,textarea,select,button{font-family:inherit}
 .slot--circle{border-radius:50%}
 .slot img{width:100%;height:100%;object-fit:cover;display:block}
 
-.section-title{font-family:var(--font-display);font-size:14px;font-weight:600;letter-spacing:0.02em;text-transform:uppercase;margin-bottom:10px}
+.section-title{font-family:var(--font-display);font-size:14px;font-weight:400;letter-spacing:0.02em;text-transform:uppercase;margin-bottom:10px}
 .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
 
 /* ---------- icon system (hand-rolled, no external assets) ---------- */
