@@ -100,6 +100,11 @@ export const ICON_PATHS = {
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   eyeOff: '<path d="M3 3l18 18"/><path d="M10.6 5.1A10.9 10.9 0 0 1 12 5c6 0 10 7 10 7a17.6 17.6 0 0 1-3.1 3.9M6.3 6.3A17.9 17.9 0 0 0 2 12s4 7 10 7a10.5 10.5 0 0 0 4.2-.9"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   wifiOff: '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 3.5-2.3M19 12.5a10 10 0 0 0-3-2.1M2 8.5a15 15 0 0 1 4.5-2.8M22 8.5a15 15 0 0 0-6-3.4"/><circle cx="12" cy="20" r="1"/>',
+  // Etapa 2 — Reservas (calendario), Modo entrenamiento (check) y Rutina (plus).
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  check: '<path d="M4 12l5 5 11-11"/>',
+  plus: '<path d="M12 4v16M4 12h16"/>',
+  chevronRight: '<path d="M9 5l7 7-7 7"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de

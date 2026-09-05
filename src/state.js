@@ -100,13 +100,27 @@ export const state = {
   pendingPayment: null,     // {id, amount, status}
   clientVisitHour: null,
 
-  // Sesión de entrenamiento en curso (pantalla "workout" — ver
-  // docs/ARCHITECTURE_AUDIT.md gap de rutinas). Vive solo en memoria: no hay
-  // tabla de sesiones/sets en el backend todavía, así que no se persiste
-  // nada acá — es honesto mostrarlo como progreso de ESTA sesión, no
-  // guardarlo como si existiera esa tabla.
-  // { exercises:[{id,text}], source:'ia'|'trainer', index, doneSets:{[exerciseIndex]: Set<number>|true}, restSecondsLeft, finished }
+  // Sesión de entrenamiento en curso (pantalla "workout"). Etapa 2: además
+  // del estado en memoria de siempre, ahora abre una fila real en
+  // workout_sessions al arrancar (`sessionId`) y cada serie marcada se
+  // guarda con exercise_logs (peso/reps reales, no solo un check) — ver
+  // ACTIONS.startWorkout/toggleSet/nextExercise.
+  // { sessionId, exercises:[{id,text,sets,reps,weightKg,restSeconds}], source:'ia'|'trainer', index, doneSets:{[exerciseIndex]: Set<number>|true}, restSecondsLeft, finished }
   workout: null,
+
+  // Etapa 2 — Reservas y calendario de clases (pantalla nueva del plan).
+  classesForGym: [], classSessions: [], myBookings: [], reservasSelectedDay: null,
+  // Etapa 2 — Logros / medallas (pantalla nueva del plan).
+  achievementsCatalog: [], myAchievements: [],
+  // Etapa 2 — Progreso real: serie histórica de medidas + récords
+  // personales + entrenamientos del mes (antes era solo fotos).
+  bodyMeasurements: [], personalRecords: [], workoutsThisMonth: 0,
+  measurementDraft: { weight_kg: '', body_fat_pct: '', waist_cm: '', chest_cm: '', arm_cm: '', thigh_cm: '' },
+  // Etapa 2 — calificar al propio entrenador asignado (distinto de
+  // `reviews`, que son reseñas del gimnasio).
+  myTrainerRating: null, trainerRatingDraft: { rating: 0, text: '' },
+  // Etapa 2 — mensajes con el propio entrenador asignado.
+  conversationId: null, messages: [], messageDraft: '',
 
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',

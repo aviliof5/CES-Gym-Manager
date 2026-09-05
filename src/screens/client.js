@@ -1,13 +1,16 @@
-/* Bolá — panel de cliente (registro + home con sus 6 tabs).
-   Movido 1:1 desde app.js (Fase 3, ver docs/MIGRATION_PLAN.md). */
+/* Bolá — panel de cliente (registro + home con sus tabs).
+   Movido 1:1 desde app.js (Fase 3, ver docs/MIGRATION_PLAN.md); home
+   rediseñado y ampliado en la Etapa 2 (ver docs/plans,
+   "aqui-esta-el-logo") — Rutina/Progreso/Logros/Reservas/Pago/Perfil ahora
+   leen datos reales en vez de mock estático. */
 'use strict';
 
 import { state } from '../state.js';
-import { LEVELS, GOALS, DURATION_LABELS, HOUR_VALUES } from '../data.js';
+import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan } from '../data.js';
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
-  devCredit, initials, daysUntil, barChart, commentCards,
+  devCredit, initials, daysUntil, commentCards, money, statusMeta,
 } from '../helpers.js';
 // Fase 16 — la tab "Plataforma" (generar invitación de dueño) no depende del
 // rol: is_platform_admin puede caer en una cuenta de cualquier rol (ver
@@ -187,6 +190,15 @@ export function viewClientReg4() {
 
 /* ---------------- cliente: home ---------------- */
 
+const WEEKDAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+function formatSessionWhen(iso) {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]} · ${hh}:${mm}`;
+}
+
 // "Mi QR" (sección 13 del pedido original) — el QR es real (Fase 15, ver
 // src/qr.js): codifica {t:'checkin', gym, u} en JSON, y la pantalla
 // "Escanear QR" del staff (viewScanCheckin en owner.js) lo lee con la
@@ -202,50 +214,102 @@ function formatCheckinTime(iso) {
 function qrCard() {
   const history = state.checkinHistory;
   const payload = JSON.stringify({ t: 'checkin', gym: state.gym.id, u: state.myClient.id });
-  return `<div class="card" style="margin-bottom:16px">
+  return `<div class="card" style="margin-bottom:12px">
     <div style="display:flex;align-items:center;gap:14px">
       <canvas class="qr-canvas" data-qr="${esc(payload)}" data-qr-size="64"></canvas>
       <div style="flex:1">
-        <div style="font-size:13.5px;font-weight:700">Mi QR</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">Mostrá este código en recepción al llegar al gym</div>
+        <div class="eyebrow">Mi QR</div>
+        <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:2px">Mostrá este código en recepción al llegar al gym</div>
       </div>
     </div>
-    ${history.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06)">
-      <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Últimos check-ins</div>
-      ${history.map(h => `<div style="font-size:12px;color:var(--text-soft);padding:3px 0">${esc(formatCheckinTime(h.created_at))}</div>`).join('')}
-    </div>` : `<div style="font-size:11px;color:var(--muted);margin-top:10px">Todavía no tenés check-ins registrados.</div>`}
+    ${history.length ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+      <div class="eyebrow" style="margin-bottom:6px">Últimos check-ins</div>
+      ${history.map(h => `<div style="font-size:var(--fs-sm);color:var(--text-soft);padding:3px 0">${esc(formatCheckinTime(h.created_at))}</div>`).join('')}
+    </div>` : `<div style="font-size:var(--fs-xs);color:var(--muted);margin-top:10px">Todavía no tenés check-ins registrados.</div>`}
+  </div>`;
+}
+
+// "Próxima clase" (pantalla #1 del plan) — la reserva más próxima entre las
+// activas de este cliente, cruzada con las sesiones ya cargadas en
+// enterClientHome(). Vacío cuando no reservó nada: manda directo a Reservas.
+function nextClassCard() {
+  const now = Date.now();
+  const upcoming = state.myBookings
+    .map(b => ({ booking: b, session: state.classSessions.find(s => s.id === b.session_id) }))
+    .filter(x => x.session && new Date(x.session.starts_at).getTime() >= now)
+    .sort((a, b) => new Date(a.session.starts_at) - new Date(b.session.starts_at));
+
+  if (!upcoming.length) {
+    return `<div class="row">
+      <div class="row__body">
+        <div class="row__title">Sin clases reservadas</div>
+        <div class="row__meta">Reservá tu próxima clase en la pestaña Reservas</div>
+      </div>
+      <div class="row__action" ${act('selectClientTab', 'reservas')}>Ver clases</div>
+    </div>`;
+  }
+  const { session } = upcoming[0];
+  const cls = session.class || {};
+  return `<div class="row">
+    <div class="avatar avatar--sq avatar--brand">${iconSpan('calendar', 18)}</div>
+    <div class="row__body">
+      <div class="row__title">${esc(cls.name || 'Clase')}</div>
+      <div class="row__meta">${esc(formatSessionWhen(session.starts_at))}</div>
+    </div>
+    <div class="row__action" ${act('selectClientTab', 'reservas')}>Ver</div>
+  </div>`;
+}
+
+// "Entrenamiento de hoy" — cuál de las dos rutinas (la del entrenador si
+// tiene una cargada, si no la de IA) tiene ejercicios listos para arrancar.
+function todayWorkoutCard() {
+  const trainer = state.myClientTrainer;
+  const trainerEx = (state.trainerRoutineForMe && state.trainerRoutineForMe.exercises) || [];
+  const aiEx = (state.aiRoutine && state.aiRoutine.exercises) || [];
+  const useTrainer = trainer && trainerEx.length > 0;
+  const exercises = useTrainer ? trainerEx : aiEx;
+
+  if (!exercises.length) {
+    return `<div class="row">
+      <div class="row__body">
+        <div class="row__title">Sin rutina todavía</div>
+        <div class="row__meta">Generá una con IA en la pestaña Rutina</div>
+      </div>
+      <div class="row__action" ${act('selectClientTab', 'rutina')}>Ir</div>
+    </div>`;
+  }
+  return `<div class="row">
+    <div class="avatar avatar--sq avatar--action">${iconSpan('dumbbell', 18)}</div>
+    <div class="row__body">
+      <div class="row__title">${useTrainer ? `Rutina de ${esc(trainer.name.split(' ')[0])}` : 'Rutina con IA'}</div>
+      <div class="row__meta">${exercises.length} ${exercises.length === 1 ? 'ejercicio' : 'ejercicios'}</div>
+    </div>
+    <div class="row__action" ${act('startWorkout', useTrainer ? 'trainer' : 'ia')}>Comenzar</div>
   </div>`;
 }
 
 export function viewClientInicio() {
-  const plan = state.myClientPlan || { name: '—', price: 0, duration: 'mensual' };
-  const trainer = state.myClientTrainer;
-  const total = plan.price + (trainer ? trainer.price : 0);
+  const achievementsEarned = state.myAchievements.filter(a => a.earned_at).length;
+  const lastMeasure = state.bodyMeasurements[state.bodyMeasurements.length - 1];
   return `<div class="pane">
     ${errorBanner()}
-    <div style="background:linear-gradient(135deg,#1a0d0f,var(--surface));border:1px solid rgba(228,0,58,0.3);border-radius:16px;padding:18px;margin-bottom:16px">
-      <div style="font-size:12px;color:var(--muted)">Tu plan</div>
-      <div style="font-size:17px;font-weight:800;margin-top:4px">${esc(plan.name)}</div>
-      <div style="font-size:12.5px;color:var(--muted);margin-top:6px">$${esc(plan.price)} · ${esc(DURATION_LABELS[plan.duration] || plan.duration)}</div>
-      ${trainer ? `<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:12px;color:var(--muted)">+ Entrenador (${esc(trainer.name)})</div>
-        <div style="font-size:13px;font-weight:700;color:var(--lime)">$${esc(trainer.price)}</div>
+    <div class="eyebrow" style="margin-bottom:8px">Próxima clase</div>
+    ${nextClassCard()}
+    <div class="eyebrow" style="margin:16px 0 8px">Entrenamiento de hoy</div>
+    ${todayWorkoutCard()}
+    <div class="stat-grid" style="margin:16px 0">
+      <div class="stat rise" ${act('selectClientTab', 'logros')} style="cursor:pointer">
+        <div class="stat__label">Logros</div>
+        <div class="stat__value">${achievementsEarned}<span style="font-size:16px;color:var(--muted)">/${state.achievementsCatalog.length}</span></div>
+        <div class="stat__hint">Medallas conseguidas</div>
       </div>
-      <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:12.5px;font-weight:700">Total mensual</div>
-        <div style="font-size:17px;font-weight:900;color:var(--lime)">$${esc(total)}</div>
-      </div>` : ''}
+      <div class="stat rise" ${act('selectClientTab', 'progreso')} style="cursor:pointer">
+        <div class="stat__label">Peso actual</div>
+        <div class="stat__value">${lastMeasure && lastMeasure.weight_kg != null ? lastMeasure.weight_kg : '—'}<span style="font-size:14px;color:var(--muted)">kg</span></div>
+        <div class="stat__hint">${state.workoutsThisMonth} ${state.workoutsThisMonth === 1 ? 'entreno' : 'entrenos'} este mes</div>
+      </div>
     </div>
     ${qrCard()}
-    ${trainer ? `<div class="card" style="border-color:rgba(52,211,153,0.25);margin-bottom:16px;display:flex;align-items:center;gap:12px">
-      <div class="avatar avatar--sq avatar--mint" style="width:40px;height:40px;font-size:14px">${esc(initials(trainer.name))}</div>
-      <div style="flex:1">
-        <div style="font-size:11px;color:var(--muted)">Tu entrenador</div>
-        <div style="font-size:14px;font-weight:700">${esc(trainer.name)}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(trainer.specialty)}</div>
-      </div>
-      <div style="font-size:14px;font-weight:800;color:var(--mint)">$${esc(trainer.price)}/mes</div>
-    </div>` : ''}
     ${sectionTitle('Máquinas disponibles en tu gym', 'dumbbell')}
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       ${state.equipment.map(e => `<div class="pill">${esc(e.name)}</div>`).join('')}
@@ -256,8 +320,9 @@ export function viewClientInicio() {
 // "¿Quieres ser entrenador de Fight Club?" (sección 11 del pedido original)
 // — desde el lado del cliente: candidatos pendientes de SU gimnasio, con el
 // conteo real de interés (state.trainerInterest, cargado junto al resto de
-// enterClientHome) y un toggle para marcar/desmarcar. El mínimo de 10 lo
-// exige el servidor en approve_trainer(), acá solo se informa el progreso.
+// enterClientHome) y un toggle para marcar/desmarcar. Etapa 2: se eliminó
+// la regla de los 10 (el dueño aprueba a mano) — acá solo se informa el
+// conteo, sin gate.
 function trainerCandidatesSection() {
   const pending = state.trainersForGym.filter(t => t.status === 'pending');
   if (!pending.length) return '';
@@ -266,30 +331,46 @@ function trainerCandidatesSection() {
   const cards = pending.map(t => {
     const interested = state.trainerInterest.filter(i => i.candidate_user_id === t.id);
     const iAmInterested = interested.some(i => i.client_user_id === myId);
-    return `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px">
-      <div class="avatar avatar--sq avatar--amber">${esc(initials(t.name))}</div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:700">${esc(t.name)}</div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)}</div>
-        <div style="font-size:11px;color:var(--muted);font-weight:700;margin-top:2px">${interested.length} ${interested.length === 1 ? 'cliente interesado' : 'clientes interesados'}</div>
+    return `<div class="row">
+      <div class="avatar avatar--sq avatar--brand">${esc(initials(t.name))}</div>
+      <div class="row__body">
+        <div class="row__title">${esc(t.name)}</div>
+        <div class="row__meta">${esc(t.specialty)} · ${interested.length} ${interested.length === 1 ? 'interesado' : 'interesados'}</div>
       </div>
-      <div ${act(iAmInterested ? 'unmarkTrainerInterest' : 'markTrainerInterest', t.id)} class="chip chip--amber${iAmInterested ? ' is-active' : ''}" style="flex-shrink:0">${iAmInterested ? '✓ Te interesa' : 'Me interesa'}</div>
+      <div ${act(iAmInterested ? 'unmarkTrainerInterest' : 'markTrainerInterest', t.id)} class="chip chip--brand${iAmInterested ? ' is-active' : ''}">${iAmInterested ? '✓ Te interesa' : 'Me interesa'}</div>
     </div>`;
   }).join('');
 
-  return `${sectionTitle('¿Querés que sea tu entrenador?', 'idcard', 'margin:20px 0 4px')}
-    <div class="hint">Marcá tu interés — el gimnasio lo tiene en cuenta al aprobar entrenadores</div>
+  return `${sectionTitle('¿Querés que sea tu entrenador?', 'idcard', 'margin:20px 0 8px')}
+    <div class="hint" style="margin-bottom:10px">Marcá tu interés — el gimnasio lo tiene en cuenta al aprobar entrenadores</div>
     ${cards}`;
 }
 
-export function viewClientEntrenar() {
+// Fila de un ejercicio de rutina con sus datos estructurados (Etapa 2 —
+// antes esto era un string libre tipo "Sentadilla en rack - 4x8"; ahora
+// routine_exercises trae sets/reps/weightKg/restSeconds de verdad).
+function exerciseRow(ex) {
+  const detail = [
+    ex.sets ? `${ex.sets} series` : null,
+    ex.reps ? `${esc(String(ex.reps))} reps` : null,
+    ex.weightKg != null ? `${ex.weightKg} kg` : null,
+    ex.restSeconds ? `${ex.restSeconds}s descanso` : null,
+  ].filter(Boolean).join(' · ');
+  return `<div class="row">
+    <div class="row__body">
+      <div class="row__title">${esc(ex.text)}</div>
+      ${detail ? `<div class="row__meta">${detail}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+export function viewClientRutina() {
   const trainer = state.myClientTrainer;
   const source = trainer ? state.routineSource : 'ia';
 
-  const toggle = trainer ? `
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <div ${act('setRoutineSource', 'ia')} ${chip(source === 'ia', 'lime', 'flex:1;text-align:center')}>Con IA</div>
-      <div ${act('setRoutineSource', 'trainer')} ${chip(source === 'trainer', 'mint', 'flex:1;text-align:center')}>De ${esc(trainer.name.split(' ')[0])}</div>
+  const toggle = trainer ? `<div class="seg">
+      <div ${act('setRoutineSource', 'ia')} class="seg__item${source === 'ia' ? ' is-active' : ''}">Con IA</div>
+      <div ${act('setRoutineSource', 'trainer')} class="seg__item${source === 'trainer' ? ' is-active' : ''}">De ${esc(trainer.name.split(' ')[0])}</div>
     </div>` : '';
 
   if (source === 'trainer') {
@@ -297,62 +378,34 @@ export function viewClientEntrenar() {
     const exercises = (routine && routine.exercises) || [];
     return `<div class="pane">
       ${errorBanner()}
-      ${sectionTitle('Rutina de tu entrenador', 'zap', 'margin-bottom:4px')}
+      ${sectionTitle('Rutina de tu entrenador', 'dumbbell', 'margin-bottom:4px')}
       <div class="hint">Creada y actualizada por ${esc(trainer.name)}</div>
       ${toggle}
-      ${exercises.length ? `<button class="btn btn--mint" style="padding:14px;font-size:14px;margin-bottom:16px" ${act('startWorkout', 'trainer')}>Comenzar entrenamiento</button>
-      <div class="card" style="border-color:rgba(52,211,153,0.3);padding:16px">
-        <div style="font-size:12.5px;color:var(--mint);font-weight:700;margin-bottom:10px">Rutina personalizada · ${esc(trainer.name)}</div>
-        ${exercises.map(ex => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
-          <div style="width:6px;height:6px;border-radius:50%;background:var(--mint);flex-shrink:0"></div>
-          <div style="font-size:13px">${esc(ex.text)}</div>
-        </div>`).join('')}
-      </div>` : `<div class="card" style="border:1px dashed rgba(255,255,255,0.12);padding:28px 16px;text-align:center">
-        <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Tu entrenador aún no ha creado tu rutina.<br/>Mientras tanto, prueba la rutina con IA.</div>
-      </div>`}
+      ${exercises.length
+        ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin:12px 0 16px;width:100%" ${act('startWorkout', 'trainer')}>Comenzar entrenamiento</button>
+           ${exercises.map(exerciseRow).join('')}`
+        : `<div class="empty"><div class="empty__title">Sin rutina</div>Tu entrenador aún no ha creado tu rutina.<br/>Mientras tanto, probá la rutina con IA.</div>`}
       ${trainerCandidatesSection()}
     </div>`;
   }
 
-  const goals = GOALS.map(g => `<div ${act('setAiGoal', g.id)} ${chip(state.aiGoal === g.id, 'lime')}>${g.label}</div>`).join('');
+  const goals = GOALS.map(g => `<div ${act('setAiGoal', g.id)} ${chip(state.aiGoal === g.id, 'action')}>${g.label}</div>`).join('');
   const goalLabel = (GOALS.find(g => g.id === state.aiGoal) || {}).label || '';
   const exercises = (state.aiRoutine && state.aiRoutine.exercises) || [];
 
   return `<div class="pane">
     ${errorBanner()}
-    ${sectionTitle('Entrenamiento con IA', 'zap', 'margin-bottom:4px')}
+    ${sectionTitle('Rutina con IA', 'zap', 'margin-bottom:4px')}
     <div class="hint">Elige tu meta y generamos una rutina según las máquinas de tu gym</div>
     ${toggle}
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">${goals}</div>
-    <button class="btn btn--lime" style="padding:14px;font-size:14px;margin-bottom:16px" ${act('generateRoutine')}>${state.busy ? 'Generando…' : 'Generar rutina con IA'}</button>
-    ${exercises.length ? `<button class="btn btn--lime" style="padding:14px;font-size:14px;margin-bottom:16px" ${act('startWorkout', 'ia')}>Comenzar entrenamiento</button>
-    <div class="card" style="border-color:rgba(228,0,58,0.3);padding:16px">
-      <div style="font-size:12.5px;color:var(--lime);font-weight:700;margin-bottom:10px">Rutina recomendada · ${esc(goalLabel)}</div>
-      ${exercises.map(ex => `<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06)">
-        <div style="width:6px;height:6px;border-radius:50%;background:var(--lime);flex-shrink:0"></div>
-        <div style="font-size:13px">${esc(ex.text)}</div>
-      </div>`).join('')}
-      <div style="font-size:10.5px;color:var(--muted);margin-top:10px">Basado en el equipo disponible de ${esc(state.gym.name)}</div>
-    </div>` : ''}
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px">${goals}</div>
+    <button class="btn btn--brand" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('generateRoutine')}>${state.busy ? 'Generando…' : 'Generar rutina con IA'}</button>
+    ${exercises.length ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('startWorkout', 'ia')}>Comenzar entrenamiento</button>
+    <div class="eyebrow" style="margin-bottom:8px">Rutina recomendada · ${esc(goalLabel)}</div>
+    ${exercises.map(exerciseRow).join('')}
+    <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:10px">Basado en el equipo disponible de ${esc(state.gym.name)}</div>` : ''}
     ${trainerCandidatesSection()}
   </div>`;
-}
-
-// "Sentadilla en rack - 4x8" -> {name, detail:'4x8', sets:4, reps:8}
-// "Cardio en caminadora - 20 min" -> {name, detail:'20 min', sets:null}
-// El texto es libre (lo escribe el entrenador, o lo arma buildRoutine() para
-// la IA) — no siempre trae "NxM", así que sets/reps quedan null cuando no
-// se puede parsear, y la tarjeta cae a un solo check "Marcar como hecho".
-function parseExercise(text) {
-  const m = /^(.*?)\s*-\s*(.*)$/.exec(text || '');
-  const name = m ? m[1].trim() : (text || '');
-  const detail = m ? m[2].trim() : '';
-  const setsMatch = /(\d+)\s*x\s*(\d+)/i.exec(detail);
-  return {
-    name, detail,
-    sets: setsMatch ? Number(setsMatch[1]) : null,
-    reps: setsMatch ? Number(setsMatch[2]) : null,
-  };
 }
 
 function formatRest(seconds) {
@@ -368,36 +421,45 @@ export function viewWorkout() {
   if (w.finished) {
     const totalSets = Object.values(w.doneSets).reduce((sum, v) => sum + (v instanceof Set ? v.size : (v === true ? 1 : 0)), 0);
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px">
-      <div style="width:64px;height:64px;border-radius:50%;background:rgba(52,211,153,0.15);display:flex;align-items:center;justify-content:center;color:var(--mint);margin-bottom:20px;font-size:28px">✓</div>
+      <div style="width:64px;height:64px;border-radius:50%;background:var(--ok-dim);display:flex;align-items:center;justify-content:center;color:var(--ok);margin-bottom:20px">${iconSpan('check', 28)}</div>
       <div class="title" style="margin-bottom:0">Entrenamiento completado</div>
       <div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6">${w.exercises.length} ${w.exercises.length === 1 ? 'ejercicio' : 'ejercicios'} · ${totalSets} ${totalSets === 1 ? 'serie marcada' : 'series marcadas'}</div>
-      <button class="btn btn--mint" style="margin-top:28px" ${act('exitWorkout')}>Volver</button>
+      <button class="btn btn--action" style="margin-top:28px" ${act('exitWorkout')}>Volver</button>
     </div>`;
   }
 
-  const ex = parseExercise((w.exercises[w.index] || {}).text || '');
-  const accent = w.source === 'trainer' ? 'mint' : 'lime';
+  const ex = w.exercises[w.index] || {};
   const doneForThis = w.doneSets[w.index];
   const isLast = w.index + 1 >= w.exercises.length;
+  const hasSets = Number(ex.sets) > 0;
 
-  const setsBlock = ex.sets
-    ? `<div style="display:flex;flex-direction:column;gap:8px;margin:20px 0">
-        ${Array.from({ length: ex.sets }, (_, i) => i + 1).map(n => {
+  // Un campo de peso/reps por EJERCICIO (no por serie) — se precarga con el
+  // último valor conocido (ver ACTIONS.startWorkout/nextExercise/
+  // prevExercise) y se puede ajustar antes de marcar cada serie: así queda
+  // lo que de verdad se levantó, no solo un check (ver exercise_logs).
+  const inputsRow = `<div style="display:flex;gap:10px;margin-bottom:16px">
+    ${textField('workout.weightInput', 'Peso (kg)', w.weightInput, { style: 'flex:1' })}
+    ${textField('workout.repsInput', 'Reps hechas', w.repsInput, { style: 'flex:1' })}
+  </div>`;
+
+  const setsBlock = hasSets
+    ? `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+        ${Array.from({ length: Number(ex.sets) }, (_, i) => i + 1).map(n => {
           const checked = doneForThis instanceof Set && doneForThis.has(n);
-          return `<div ${act('toggleSet', n)} style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;cursor:pointer;background:${checked ? `rgba(${accent === 'lime' ? '228,0,58' : '52,211,153'},0.12)` : 'var(--surface)'};border:1px solid ${checked ? `var(--${accent})` : 'var(--line)'}">
-            <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${checked ? `var(--${accent})` : 'transparent'};border:1px solid ${checked ? 'transparent' : 'var(--line)'};color:var(--bg);font-size:13px;font-weight:900">${checked ? '✓' : ''}</div>
-            <div style="flex:1;font-size:13.5px;font-weight:600">Serie ${n}${ex.reps ? ` · ${ex.reps} reps` : ''}</div>
+          return `<div ${act('toggleSet', n)} class="row" style="margin-bottom:0;cursor:pointer;${checked ? 'border-color:var(--action);background:var(--action-dim)' : ''}">
+            <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${checked ? 'var(--action)' : 'transparent'};border:1px solid ${checked ? 'transparent' : 'var(--line-strong)'};color:#fff">${checked ? iconSpan('check', 13) : ''}</div>
+            <div class="row__body" style="font-size:13.5px;font-weight:600">Serie ${n}${ex.reps ? ` · ${esc(String(ex.reps))} reps` : ''}</div>
           </div>`;
         }).join('')}
       </div>`
-    : `<div ${act('toggleSimpleDone')} style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:12px;cursor:pointer;margin:20px 0;background:${doneForThis === true ? `rgba(${accent === 'lime' ? '228,0,58' : '52,211,153'},0.12)` : 'var(--surface)'};border:1px solid ${doneForThis === true ? `var(--${accent})` : 'var(--line)'}">
-        <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${doneForThis === true ? `var(--${accent})` : 'transparent'};border:1px solid ${doneForThis === true ? 'transparent' : 'var(--line)'};color:var(--bg);font-size:13px;font-weight:900">${doneForThis === true ? '✓' : ''}</div>
-        <div style="flex:1;font-size:13.5px;font-weight:600">Marcar como completado${ex.detail ? ` · ${esc(ex.detail)}` : ''}</div>
+    : `<div ${act('toggleSimpleDone')} class="row" style="cursor:pointer;margin-bottom:20px;${doneForThis === true ? 'border-color:var(--action);background:var(--action-dim)' : ''}">
+        <div style="width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${doneForThis === true ? 'var(--action)' : 'transparent'};border:1px solid ${doneForThis === true ? 'transparent' : 'var(--line-strong)'};color:#fff">${doneForThis === true ? iconSpan('check', 13) : ''}</div>
+        <div class="row__body" style="font-size:13.5px;font-weight:600">Marcar como completado${ex.reps ? ` · ${esc(String(ex.reps))}` : ''}</div>
       </div>`;
 
   const restBlock = w.restSecondsLeft > 0 ? `<div class="card--dashed" style="align-items:center;text-align:center;margin-bottom:20px">
-      <div style="font-size:11px;color:var(--muted);font-weight:700;letter-spacing:0.04em">DESCANSO</div>
-      <div style="font-size:32px;font-weight:900;color:var(--${accent})">${formatRest(w.restSecondsLeft)}</div>
+      <div class="eyebrow">Descanso</div>
+      <div style="font-family:var(--font-display);font-size:32px;color:var(--action)">${formatRest(w.restSecondsLeft)}</div>
       <div ${act('skipRest')} style="font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline">Saltar descanso</div>
     </div>` : '';
 
@@ -407,74 +469,146 @@ export function viewWorkout() {
       <div class="step-label">Ejercicio ${w.index + 1} de ${w.exercises.length}</div>
       <div style="width:32px"></div>
     </div>
-    ${stepBars(w.index + 1, w.exercises.length, accent)}
+    ${stepBars(w.index + 1, w.exercises.length, '')}
     <div class="form-body">
-      <div class="title">${esc(ex.name)}</div>
-      ${ex.detail ? `<div class="subtitle">${esc(ex.detail)}</div>` : ''}
+      <div class="title">${esc(ex.text)}</div>
       ${restBlock}
+      ${inputsRow}
       ${setsBlock}
     </div>
     <div class="form-foot" style="display:flex;gap:10px">
       ${w.index > 0 ? `<button class="btn btn--ghost" style="flex:1" ${act('prevExercise')}>Anterior</button>` : ''}
-      <button class="btn btn--${accent}" style="flex:2" ${act('nextExercise')}>${isLast ? 'Finalizar' : 'Siguiente'}</button>
+      <button class="btn btn--action" style="flex:2" ${act('nextExercise')}>${isLast ? 'Finalizar' : 'Siguiente'}</button>
     </div>
   </div>`;
 }
 
 export function viewClientProgreso() {
-  const cards = state.progressList.map(p => `
-    <div class="card" style="padding:8px">
-      <div class="slot" style="width:100%;height:130px;border-radius:10px" ${act('pickPhoto', 'progress:' + p.id)}>
+  const photoCards = state.progressList.map(p => `
+    <div>
+      <div class="thumb${p.url ? '' : ' thumb--pending'}" style="width:100%;height:130px" ${act('pickPhoto', 'progress:' + p.id)}>
         ${p.url ? `<img src="${esc(p.url)}" alt="Progreso ${esc(p.taken_at)}"/>` : 'Sube tu foto'}
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center">${esc(p.taken_at)}</div>
+      <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:6px;text-align:center">${esc(p.taken_at)}</div>
     </div>`).join('');
 
+  const last = state.bodyMeasurements[state.bodyMeasurements.length - 1];
+  const d = state.measurementDraft;
   const trainer = state.myClientTrainer;
+
+  const prRows = state.personalRecords.length
+    ? state.personalRecords.map(pr => `<div class="row">
+        <div class="row__body"><div class="row__title">${esc(pr.exerciseName)}</div><div class="row__meta">Récord personal</div></div>
+        <div style="font-family:var(--font-display);font-size:20px">${pr.maxWeightKg}<span style="font-size:12px;color:var(--muted)">kg</span></div>
+      </div>`).join('')
+    : `<div class="empty"><div class="empty__title">Sin récords todavía</div>Se registran solos cuando entrenás con peso</div>`;
+
   return `<div class="pane">
     ${errorBanner()}
-    ${sectionTitle('Progreso día a día', 'camera', 'margin-bottom:4px')}
-    <div class="hint">Registra una foto cada día para ver tu evolución${trainer ? ' · tu entrenador podrá verla' : ''}</div>
-    <button class="btn btn--mint" style="padding:13px;font-size:13.5px;margin-bottom:16px" ${act('addProgress')}>+ Agregar foto de hoy</button>
+    ${sectionTitle('Progreso', 'bars', 'margin-bottom:4px')}
+    <div class="hint" style="margin-bottom:12px">Medidas, récords y fotos — todo lo que registrás de verdad${trainer ? ' · tu entrenador puede verlo' : ''}</div>
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="stat"><div class="stat__label">Peso</div><div class="stat__value">${last && last.weight_kg != null ? last.weight_kg : '—'}<span style="font-size:14px;color:var(--muted)">kg</span></div></div>
+      <div class="stat stat--brand"><div class="stat__label">% Grasa</div><div class="stat__value">${last && last.body_fat_pct != null ? last.body_fat_pct : '—'}<span style="font-size:14px;color:var(--muted)">%</span></div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="eyebrow" style="margin-bottom:10px">Registrar medidas de hoy</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+        ${textField('measurementDraft.weight_kg', 'Peso (kg)', d.weight_kg)}
+        ${textField('measurementDraft.body_fat_pct', '% grasa', d.body_fat_pct)}
+        ${textField('measurementDraft.waist_cm', 'Cintura (cm)', d.waist_cm)}
+        ${textField('measurementDraft.chest_cm', 'Pecho (cm)', d.chest_cm)}
+        ${textField('measurementDraft.arm_cm', 'Brazo (cm)', d.arm_cm)}
+        ${textField('measurementDraft.thigh_cm', 'Muslo (cm)', d.thigh_cm)}
+      </div>
+      <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveMeasurement')}>Guardar medidas de hoy</button>
+    </div>
+    ${sectionTitle('Récords personales', 'crown', 'margin-bottom:8px')}
+    ${prRows}
+    ${sectionTitle('Fotos de progreso', 'camera', 'margin:20px 0 8px')}
+    <button class="btn btn--brand" style="padding:13px;font-size:13.5px;margin-bottom:16px;width:100%" ${act('addProgress')}>+ Agregar foto de hoy</button>
     ${state.progressList.length
-      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${cards}</div>`
-      : `<div class="card" style="border:1px dashed rgba(255,255,255,0.12);padding:28px 16px;text-align:center">
-          <div style="font-size:12.5px;color:var(--muted);line-height:1.6">Aún no tienes fotos de progreso.<br/>Agrega la primera para empezar tu seguimiento.</div>
-        </div>`}
+      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${photoCards}</div>`
+      : `<div class="empty"><div class="empty__title">Sin fotos</div>Agregá la primera para empezar tu seguimiento</div>`}
   </div>`;
 }
 
-export function viewClientTrafico() {
-  const max = Math.max.apply(null, HOUR_VALUES);
-  const h = state.clientVisitHour;
-  let info = '';
-  if (h !== null) {
-    const v = HOUR_VALUES[h];
-    const pct = Math.round(v / max * 100);
-    let level, color, bg;
-    if (v < 35) { level = 'Bajo'; color = '#34D399'; bg = 'rgba(52,211,153,0.1)'; }
-    else if (v < 65) { level = 'Medio'; color = '#FBBF24'; bg = 'rgba(251,191,36,0.1)'; }
-    else { level = 'Alto'; color = '#FF5C5C'; bg = 'rgba(255,92,92,0.1)'; }
-    const tail = v < 35 ? '¡Ideal para entrenar tranquilo!' : v < 65 ? 'Afluencia moderada.' : 'Hora pico, considera otra franja.';
-    info = `<div style="background:${bg};border:1px solid ${color}40;border-radius:12px;padding:12px 14px;margin-top:4px">
-      <div style="font-size:12.5px;font-weight:800;color:${color}">A las ${6 + h}:00 h · tráfico ${level}</div>
-      <div style="font-size:11.5px;color:var(--text-soft);margin-top:3px">Ocupación estimada del ${pct}%. ${tail}</div>
+export function viewClientLogros() {
+  const cards = state.achievementsCatalog.map(a => {
+    const mine = state.myAchievements.find(m => m.achievement_id === a.id) || { progress: 0, earned_at: null };
+    const pct = Math.max(0, Math.min(100, Math.round((mine.progress / a.target) * 100)));
+    return `<div class="medal rise${mine.earned_at ? ' is-earned' : ''}">
+      <div class="medal__disc">${iconSpan(a.icon || 'crown', 28)}</div>
+      <div class="medal__name">${esc(a.name)}</div>
+      <div class="medal__hint">${mine.earned_at ? 'Conseguido' : `${mine.progress}/${a.target}`}</div>
+      ${!mine.earned_at ? `<div class="progress" style="margin-top:6px"><div class="progress__fill" style="width:${pct}%"></div></div>` : ''}
     </div>`;
-  }
-
-  const options = HOUR_VALUES.map((_, i) =>
-    `<option value="${i}"${h === i ? ' selected' : ''}>${6 + i}:00 h</option>`).join('');
+  }).join('');
 
   return `<div class="pane">
-    <div class="section-title" style="margin-bottom:4px">Mejor hora para ir</div>
-    <div class="hint" style="margin-bottom:12px">Elige a qué hora piensas ir y verás el tráfico esperado</div>
-    <select class="field" data-f="clientVisitHour" style="padding:13px 14px;margin-bottom:8px">
-      <option value=""${h === null ? ' selected' : ''}>¿A qué hora irás?</option>
-      ${options}
-    </select>
-    ${info}
-    <div style="margin-top:12px">${barChart('client')}</div>
-    <div style="font-size:11.5px;color:var(--muted);margin-top:16px;line-height:1.6">Recomendación: las mañanas (7h–10h) suelen tener menor afluencia.</div>
+    ${sectionTitle('Logros', 'crown', 'margin-bottom:4px')}
+    <div class="hint" style="margin-bottom:16px">Se desbloquean solos a medida que entrenás y hacés check-in</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 10px">${cards}</div>
+  </div>`;
+}
+
+function dayIndexMon(date) { return (date.getDay() + 6) % 7; }
+
+// "Reservas y calendario de clases" (pantalla nueva del plan) — calendario
+// real del mes actual: los días con `has-event` tienen al menos una sesión
+// cargada por el staff (ver classes/class_sessions, Etapa 2). Elegir un día
+// filtra la lista de abajo; reservar/cancelar pasa por book_class()/
+// cancel_booking() (RPC, valida cupo del lado del servidor).
+export function viewClientReservas() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstOffset = dayIndexMon(new Date(year, month, 1));
+  const todayNum = now.getDate();
+  const selectedDay = state.reservasSelectedDay || todayNum;
+
+  const sessionsByDay = {};
+  state.classSessions.forEach(s => {
+    const d = new Date(s.starts_at);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      (sessionsByDay[d.getDate()] = sessionsByDay[d.getDate()] || []).push(s);
+    }
+  });
+
+  const cells = [];
+  for (let i = 0; i < firstOffset; i++) cells.push('<div class="cal__day is-muted"></div>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cls = ['cal__day'];
+    if (day === todayNum) cls.push('is-today');
+    if (day === selectedDay) cls.push('is-selected');
+    if (sessionsByDay[day]) cls.push('has-event');
+    cells.push(`<div class="${cls.join(' ')}" ${act('selectReservasDay', day)}>${day}</div>`);
+  }
+
+  const daySessions = (sessionsByDay[selectedDay] || []).slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const list = daySessions.length ? daySessions.map(s => {
+    const cls = s.class || {};
+    const booking = state.myBookings.find(b => b.session_id === s.id);
+    return `<div class="row">
+      <div class="avatar avatar--sq avatar--brand">${iconSpan('dumbbell', 18)}</div>
+      <div class="row__body">
+        <div class="row__title">${esc(cls.name || 'Clase')}</div>
+        <div class="row__meta">${esc(formatSessionWhen(s.starts_at))} · ${cls.duration_minutes || 60} min · cupo ${cls.capacity || '—'}</div>
+      </div>
+      ${booking
+        ? `<div class="row__action" style="color:var(--danger)" ${act('cancelBooking', booking.id)}>Cancelar</div>`
+        : `<div class="row__action" ${act('bookClass', s.id)}>Reservar</div>`}
+    </div>`;
+  }).join('') : `<div class="empty"><div class="empty__title">Sin clases este día</div>Elegí otro día del calendario</div>`;
+
+  return `<div class="pane">
+    ${errorBanner()}
+    ${sectionTitle('Reservas', 'calendar', 'margin-bottom:12px')}
+    <div class="cal" style="margin-bottom:16px">
+      <div class="cal__head"><div class="cal__month">${MESES[month]} ${year}</div></div>
+      <div class="cal__grid">${DAY_LABELS.map(d => `<div class="cal__dow">${d}</div>`).join('')}${cells.join('')}</div>
+    </div>
+    ${list}
   </div>`;
 }
 
@@ -487,41 +621,125 @@ export function viewClientPago() {
 
   if (!pending) {
     body = `<div class="card" style="width:100%;border-radius:16px;padding:24px;margin-top:20px">
-      <div style="font-size:13px;color:var(--muted)">Próximo pago</div>
-      <div style="font-size:24px;font-weight:900;margin-top:6px">$${esc(total)}</div>
-      ${trainer ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">Incluye plan ($${esc(plan.price)}) + entrenador ($${esc(trainer.price)})</div>` : ''}
-      <div style="font-size:12px;color:var(--muted);margin-top:10px">Aún no hay un cobro generado. Pide al administrador que genere tu código QR para pagar.</div>
+      <div class="eyebrow">Próximo pago</div>
+      <div style="font-family:var(--font-display);font-size:28px;margin-top:6px">${money(total)}</div>
+      ${trainer ? `<div style="font-size:var(--fs-xs);color:var(--muted);margin-top:6px">Incluye plan (${money(plan.price)}) + entrenador (${money(trainer.price)})</div>` : ''}
+      <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:10px">Aún no hay un cobro generado. Pide al administrador que genere tu código QR para pagar.</div>
     </div>`;
   } else {
-    body = `<div style="margin-top:20px;font-size:13px;font-weight:700">Muestra este código en el mostrador</div>
+    body = `<div style="margin-top:20px;font-size:var(--fs-md);font-weight:700">Muestra este código en el mostrador</div>
       <canvas class="qr-canvas" style="margin-top:16px" data-qr="${esc(JSON.stringify({ t: 'payment', id: pending.id }))}" data-qr-size="180"></canvas>
-      <div style="font-size:12px;color:var(--muted);margin-top:12px">Paga $${esc(pending.amount)} en efectivo. El staff confirmará el cobro desde su panel.</div>
-      <div style="font-size:11.5px;color:var(--amber);margin-top:14px;font-weight:700">Esperando confirmación del gimnasio…</div>
-      <div ${act('refreshPendingPayment')} style="font-size:11.5px;color:var(--muted);margin-top:14px;cursor:pointer;text-decoration:underline">¿Ya te confirmaron? Actualizar</div>`;
+      <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:12px">Paga ${money(pending.amount)} en efectivo. El staff confirmará el cobro desde su panel.</div>
+      <div style="font-size:var(--fs-sm);color:var(--warn);margin-top:14px;font-weight:700">Esperando confirmación del gimnasio…</div>
+      <div ${act('refreshPendingPayment')} style="font-size:var(--fs-sm);color:var(--muted);margin-top:14px;cursor:pointer;text-decoration:underline">¿Ya te confirmaron? Actualizar</div>`;
   }
 
   return `<div class="pane" style="display:flex;flex-direction:column;align-items:center;text-align:center">${errorBanner()}${body}</div>`;
 }
 
-export function viewClientComentarios() {
-  const stars = [1, 2, 3, 4, 5].map(n =>
-    `<div ${act('setStarRating', n)} style="font-size:22px;cursor:pointer;color:${n <= state.newCommentRating ? 'var(--amber)' : '#3a3f45'}">★</div>`).join('');
+// "Perfil" (pantalla nueva del plan) — datos propios + membresía, la
+// calificación al propio entrenador asignado (trainer_reviews, distinto de
+// `reviews` que son del gimnasio) y las reseñas del gimnasio (antes su
+// propia tab "Reseñas", ahora una sección acá).
+export function viewClientPerfil() {
+  const client = state.myClient;
+  const trainer = state.myClientTrainer;
+  const plan = state.myClientPlan || { name: '—', price: 0, duration: 'mensual' };
+  const meta = statusMeta(client.status);
+  const draft = state.trainerRatingDraft;
+  const ratingStars = [1, 2, 3, 4, 5].map(n =>
+    `<span ${act('setTrainerRatingStars', n)} style="cursor:pointer;font-size:22px;color:${n <= draft.rating ? 'var(--action)' : 'var(--muted-dim)'}">★</span>`).join('');
+  const reviewStars = [1, 2, 3, 4, 5].map(n =>
+    `<div ${act('setStarRating', n)} style="font-size:20px;cursor:pointer;color:${n <= state.newCommentRating ? 'var(--action)' : 'var(--muted-dim)'}">★</div>`).join('');
 
   return `<div class="pane">
     ${errorBanner()}
-    ${sectionTitle('Deja tu opinión', 'star', 'margin-bottom:12px')}
-    <div style="display:flex;gap:6px;margin-bottom:12px">${stars}</div>
-    <textarea class="field" data-f="newCommentText" placeholder="¿Cómo ha sido tu experiencia en el gym?" style="min-height:80px;padding:12px 14px;font-size:13.5px;resize:none">${esc(state.newCommentText)}</textarea>
-    <button class="btn btn--lime" style="margin-top:10px;border-radius:12px;padding:13px;font-size:13.5px" ${act('addComment')}>Publicar</button>
+    <div class="row">
+      <div class="avatar avatar--sq avatar--brand" style="width:48px;height:48px;font-size:16px">${esc(initials(client.name))}</div>
+      <div class="row__body">
+        <div class="row__title">${esc(client.name)}</div>
+        <div class="row__meta">${esc(client.email)} · ${esc(client.phone)}</div>
+      </div>
+      <span class="${meta.cls}">${meta.label}</span>
+    </div>
+    <div class="stat-grid" style="margin:12px 0 16px">
+      <div class="stat">
+        <div class="stat__label">Plan</div>
+        <div class="stat__value" style="font-size:18px">${esc(plan.name)}</div>
+        <div class="stat__hint">${money(plan.price)} · ${esc(DURATION_LABELS[plan.duration] || plan.duration)}</div>
+      </div>
+      <div class="stat stat--brand">
+        <div class="stat__label">Nivel</div>
+        <div class="stat__value" style="font-size:18px">${esc((LEVELS.find(l => l.id === client.physical.level) || {}).label || '—')}</div>
+        <div class="stat__hint">${esc((GOALS.find(g => g.id === client.physical.goal) || {}).label || '—')}</div>
+      </div>
+    </div>
+    ${trainer ? `
+      ${sectionTitle('Tu entrenador', 'idcard', 'margin-bottom:8px')}
+      <div class="row">
+        <div class="avatar avatar--sq avatar--action">${esc(initials(trainer.name))}</div>
+        <div class="row__body">
+          <div class="row__title">${esc(trainer.name)}</div>
+          <div class="row__meta">${esc(trainer.specialty)} · ${money(trainer.price)}/mes</div>
+        </div>
+        <div class="row__action" ${act('openTrainerChat')}>${iconSpan('chat', 18)}</div>
+      </div>
+      <div class="card" style="margin:10px 0 16px">
+        <div class="eyebrow" style="margin-bottom:8px">Calificá a tu entrenador</div>
+        <div style="display:flex;gap:4px;margin-bottom:10px">${ratingStars}</div>
+        <textarea class="field" data-f="trainerRatingDraft.text" placeholder="¿Cómo te está yendo con tu entrenador?" style="min-height:64px;padding:12px 14px;font-size:13px;resize:none;margin-bottom:10px">${esc(draft.text)}</textarea>
+        <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveTrainerRating')} ${!draft.rating ? 'disabled' : ''}>${state.myTrainerRating ? 'Actualizar calificación' : 'Enviar calificación'}</button>
+      </div>` : ''}
+    ${sectionTitle('Reseñas del gimnasio', 'star', 'margin-bottom:8px')}
+    <div style="display:flex;gap:6px;margin-bottom:10px">${reviewStars}</div>
+    <textarea class="field" data-f="newCommentText" placeholder="¿Cómo ha sido tu experiencia en el gym?" style="min-height:70px;padding:12px 14px;font-size:13px;resize:none">${esc(state.newCommentText)}</textarea>
+    <button class="btn btn--brand" style="margin-top:10px;padding:12px;font-size:13px;width:100%" ${act('addComment')}>Publicar reseña</button>
     <div class="section-title" style="margin:20px 0 10px">Todas las reseñas</div>
     ${commentCards(state.reviews)}
+    <button class="btn btn--ghost" style="width:100%;margin-top:20px" ${act('signOut')}>Cerrar sesión</button>
+  </div>`;
+}
+
+// Chat con el propio entrenador asignado (get_or_create_conversation +
+// messages, Etapa 2) — pantalla completa, no una tab (se entra desde Perfil).
+export function viewClientChat() {
+  const trainer = state.myClientTrainer;
+  const myId = state.myClient.id;
+  const bubbles = state.messages.map(m => {
+    const mine = m.sender_user_id === myId;
+    return `<div style="display:flex;justify-content:${mine ? 'flex-end' : 'flex-start'};margin-bottom:8px">
+      <div style="max-width:78%;background:${mine ? 'var(--action)' : 'var(--surface-2)'};color:${mine ? '#fff' : 'var(--text)'};padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.4">${esc(m.body)}</div>
+    </div>`;
+  }).join('');
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('closeTrainerChat')}>&lsaquo;</div>
+      <div class="step-label">${esc(trainer ? trainer.name : 'Mensajes')}</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="form-body" style="display:flex;flex-direction:column">
+      ${bubbles || `<div class="empty"><div class="empty__title">Sin mensajes</div>Escribile a tu entrenador</div>`}
+    </div>
+    <div class="form-foot" style="display:flex;gap:8px">
+      <input class="field" style="flex:1" data-f="messageDraft" placeholder="Escribe un mensaje…" value="${esc(state.messageDraft)}"/>
+      <button class="btn btn--action" ${act('sendMessage')}>Enviar</button>
+    </div>
   </div>`;
 }
 
 // "Plataforma" (Fase 16) se agrega condicionalmente en viewClientHome, solo
 // para is_platform_admin — ver el comentario del import de viewOwnerPlatform
 // más arriba.
-const CLIENT_BASE_TABS = [['inicio', 'Inicio', 'home'], ['ia', 'Entrenar', 'zap'], ['progreso', 'Progreso', 'camera'], ['trafico', 'Tráfico', 'clock'], ['pago', 'Pago', 'card'], ['comentarios', 'Reseñas', 'chat']];
+const CLIENT_BASE_TABS = [
+  ['inicio', 'Inicio', 'home'],
+  ['rutina', 'Rutina', 'dumbbell'],
+  ['progreso', 'Progreso', 'bars'],
+  ['logros', 'Logros', 'crown'],
+  ['reservas', 'Reservas', 'calendar'],
+  ['pago', 'Pago', 'card'],
+  ['perfil', 'Perfil', 'idcard'],
+];
 
 export function viewClientHome() {
   const client = state.myClient;
@@ -529,11 +747,12 @@ export function viewClientHome() {
   const tabs = isPlatformAdmin ? [...CLIENT_BASE_TABS, ['plataforma', 'Plataforma', 'shield']] : CLIENT_BASE_TABS;
   const panes = {
     inicio: viewClientInicio,
-    ia: viewClientEntrenar,
+    rutina: viewClientRutina,
     progreso: viewClientProgreso,
-    trafico: viewClientTrafico,
+    logros: viewClientLogros,
+    reservas: viewClientReservas,
     pago: viewClientPago,
-    comentarios: viewClientComentarios,
+    perfil: viewClientPerfil,
     plataforma: viewOwnerPlatform,
   };
   const activeTab = (state.clientTab === 'plataforma' && !isPlatformAdmin) ? 'inicio' : state.clientTab;
@@ -541,13 +760,13 @@ export function viewClientHome() {
   const days = daysUntil(client.membershipExpiresAt);
   const urgent = days !== null && days <= 1;
   const plan = state.myClientPlan || { name: '—', price: 0 };
-  const alert = (days !== null && days <= 5) ? `<div style="margin:0 22px 12px;background:${urgent ? 'rgba(255,92,92,0.12)' : 'rgba(251,191,36,0.1)'};border:1px solid ${urgent ? 'rgba(255,92,92,0.4)' : 'rgba(251,191,36,0.35)'};border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center">
-      <div style="width:30px;height:30px;border-radius:8px;background:${urgent ? 'rgba(255,92,92,0.2)' : 'rgba(251,191,36,0.2)'};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">⏰</div>
+  const alert = (days !== null && days <= 5) ? `<div class="alert${urgent ? '' : ' alert--warn'}" style="margin:0 22px 12px">
+      <div style="width:30px;height:30px;border-radius:8px;background:${urgent ? 'var(--danger-dim)' : 'var(--warn-dim)'};display:flex;align-items:center;justify-content:center;color:${urgent ? 'var(--danger)' : 'var(--warn)'};flex-shrink:0">${iconSpan('clock', 16)}</div>
       <div style="flex:1">
-        <div style="font-size:12.5px;font-weight:800;color:${urgent ? 'var(--red)' : 'var(--amber)'}">${days <= 0 ? '¡Tu plan vence hoy!' : days === 1 ? '¡Tu plan vence mañana!' : 'Tu plan vence en ' + days + ' días'}</div>
-        <div style="font-size:11px;color:var(--text-soft);margin-top:2px">Renueva ${esc(plan.name)} ($${esc(plan.price)}) para no perder tu acceso.</div>
+        <div style="font-size:var(--fs-sm);font-weight:800;color:${urgent ? 'var(--danger)' : 'var(--warn)'}">${days <= 0 ? '¡Tu plan vence hoy!' : days === 1 ? '¡Tu plan vence mañana!' : 'Tu plan vence en ' + days + ' días'}</div>
+        <div class="alert__text">Renová ${esc(plan.name)} (${money(plan.price)}) para no perder tu acceso.</div>
       </div>
-      <div ${act('goPayTab')} style="font-size:11px;font-weight:700;color:${urgent ? 'var(--red)' : 'var(--amber)'};cursor:pointer;white-space:nowrap">Pagar</div>
+      <div ${act('goPayTab')} style="font-size:var(--fs-sm);font-weight:700;color:${urgent ? 'var(--danger)' : 'var(--warn)'};cursor:pointer;white-space:nowrap">Pagar</div>
     </div>` : '';
 
   return `<div class="dash-shell">

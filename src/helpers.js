@@ -39,6 +39,10 @@ export function buildRoutine(goal, equipmentNames) {
 export function statusMeta(st) {
   if (st === 'al_dia') return { label: 'Al día', cls: 'badge badge--al_dia' };
   if (st === 'pendiente') return { label: 'Pendiente', cls: 'badge badge--pendiente' };
+  // 'suspendido' — migración 20260905000200 (gate de 10 clientes) — antes de
+  // esto caía a "Vencido", que es engañoso: un socio suspendido a mano no es
+  // lo mismo que uno con el pago atrasado.
+  if (st === 'suspendido') return { label: 'Suspendido', cls: 'badge badge--suspendido' };
   return { label: 'Vencido', cls: 'badge badge--vencido' };
 }
 

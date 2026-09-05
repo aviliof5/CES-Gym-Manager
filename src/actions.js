@@ -22,6 +22,14 @@ function clearRestTimer() {
   if (restTimerId) { clearInterval(restTimerId); restTimerId = null; }
 }
 
+// ex.reps es texto ("8", "20 min", "circuito" — ver routine_exercises.reps)
+// — el campo de "reps hechas" del modo entrenamiento solo se precarga
+// cuando es puramente una cifra; si no, se deja vacío (ese ejercicio se
+// mide en tiempo o rondas, no en repeticiones).
+function defaultReps(ex) {
+  return /^\d+$/.test(String((ex && ex.reps) || '').trim()) ? ex.reps : '';
+}
+
 export const ACTIONS = {
   goto: v => setState({ screen: v, error: '' }),
   togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
@@ -372,17 +380,30 @@ export const ACTIONS = {
   },
 
   /* ---- workout: temporizador de descanso + marcar series (sección 8 del
-     pedido original) ---- */
-  startWorkout: source => {
-    const exercises = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
-    if (!exercises.exercises.length) return;
+     pedido original) — Etapa 2: ahora abre una fila real en
+     workout_sessions y cada serie marcada se guarda en exercise_logs (peso
+     y reps reales), no solo un check en memoria. ---- */
+  startWorkout: async source => {
+    const routine = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
+    if (!routine.exercises.length) return;
     clearRestTimer();
+    const sessionId = await BolaAPI.workouts.start(state.myClient.id, state.gym.id, source);
+    const first = routine.exercises[0] || {};
     setState({
       screen: 'workout',
-      workout: { exercises: exercises.exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false },
+      workout: {
+        sessionId, exercises: routine.exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false,
+        weightInput: first.weightKg != null ? String(first.weightKg) : '', repsInput: defaultReps(first),
+      },
     });
   },
-  toggleSet: setNum => {
+  // El campo de peso/reps es UNO por ejercicio (no por serie): se precarga
+  // con el último peso conocido y se puede ajustar antes de marcar cada
+  // serie (data-f="workout.weightInput"/"workout.repsInput", el setPath
+  // genérico de router.js ya sabe fusionar 2 niveles) — así "Modo
+  // entrenamiento" registra lo que de verdad se levantó, no solo un check,
+  // sin necesitar un formulario por serie.
+  toggleSet: async setNum => {
     const w = state.workout;
     if (!w) return;
     const num = Number(setNum); // data-v siempre llega como string
@@ -391,22 +412,34 @@ export const ACTIONS = {
     const marking = !current.has(num); // true = se está marcando, false = desmarcando
     if (marking) current.add(num); else current.delete(num);
     setState({ workout: { ...w, doneSets: { ...w.doneSets, [key]: current } } });
-    // Descanso después de CADA serie que se marca (no al desmarcarla) —
-    // así funciona igual entre la serie 1→2 que entre la 3→4.
-    if (marking) ACTIONS.startRest();
+    // Descanso después de CADA serie que se marca (no al desmarcarla) — con
+    // el descanso propio de ESE ejercicio (rest_seconds), ya no 60s fijos.
+    if (marking) {
+      const ex = w.exercises[key] || {};
+      const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
+      const repsNum = w.repsInput !== '' && w.repsInput != null ? Number(w.repsInput) : null;
+      await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, num, repsNum, weightKg);
+      ACTIONS.startRest(ex.restSeconds);
+    }
   },
-  toggleSimpleDone: () => {
+  toggleSimpleDone: async () => {
     const w = state.workout;
     if (!w) return;
     const key = w.index;
     const wasDone = w.doneSets[key] === true;
     setState({ workout: { ...w, doneSets: { ...w.doneSets, [key]: !wasDone } } });
+    if (!wasDone) {
+      const ex = w.exercises[key] || {};
+      const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
+      await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, 1, null, weightKg);
+    }
   },
-  startRest: () => {
+  startRest: seconds => {
     clearRestTimer();
     const w = state.workout;
     if (!w) return;
-    setState({ workout: { ...w, restSecondsLeft: 60 } });
+    const secs = Number(seconds) || 60;
+    setState({ workout: { ...w, restSecondsLeft: secs } });
     restTimerId = setInterval(() => {
       const cur = state.workout;
       if (!cur || cur.restSecondsLeft <= 1) {
@@ -422,25 +455,99 @@ export const ACTIONS = {
     const w = state.workout;
     if (w) setState({ workout: { ...w, restSecondsLeft: 0 } });
   },
-  nextExercise: () => {
+  nextExercise: async () => {
     const w = state.workout;
     if (!w) return;
     clearRestTimer();
     if (w.index + 1 >= w.exercises.length) {
-      setState({ workout: { ...w, finished: true, restSecondsLeft: 0 } });
+      await BolaAPI.workouts.finish(w.sessionId, state.myClient.id);
+      // Refresca lo que "Progreso"/"Logros" muestran, para que al volver ya
+      // reflejen este entrenamiento recién cerrado sin recargar toda la app.
+      const [personalRecords, workoutsThisMonth, myAchievements] = await Promise.all([
+        BolaAPI.workouts.getPersonalRecords(state.myClient.id),
+        BolaAPI.workouts.countThisMonth(state.myClient.id),
+        BolaAPI.achievements.listForClient(state.myClient.id),
+      ]);
+      setState({ workout: { ...w, finished: true, restSecondsLeft: 0 }, personalRecords, workoutsThisMonth, myAchievements });
     } else {
-      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0 } });
+      const next = w.exercises[w.index + 1] || {};
+      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0, weightInput: next.weightKg != null ? String(next.weightKg) : '', repsInput: defaultReps(next) } });
     }
   },
   prevExercise: () => {
     const w = state.workout;
     if (!w || w.index === 0) return;
     clearRestTimer();
-    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0 } });
+    const prev = w.exercises[w.index - 1] || {};
+    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0, weightInput: prev.weightKg != null ? String(prev.weightKg) : '', repsInput: defaultReps(prev) } });
   },
   exitWorkout: () => {
     clearRestTimer();
     setState({ screen: 'clientHome', workout: null });
+  },
+
+  /* ---- Etapa 2: reservas de clases ---- */
+  selectReservasDay: day => setState({ reservasSelectedDay: Number(day) }),
+  bookClass: async sessionId => {
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.classes.book(sessionId);
+      const myBookings = await BolaAPI.classes.listMyBookings(state.myClient.id);
+      setState({ busy: false, myBookings });
+    } catch (e) {
+      setState({ busy: false, error: friendlyError(e) });
+    }
+  },
+  cancelBooking: async bookingId => {
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.classes.cancelBooking(bookingId);
+      const myBookings = await BolaAPI.classes.listMyBookings(state.myClient.id);
+      setState({ busy: false, myBookings });
+    } catch (e) {
+      setState({ busy: false, error: friendlyError(e) });
+    }
+  },
+
+  /* ---- Etapa 2: medidas corporales (Progreso) ---- */
+  saveMeasurement: async () => {
+    const d = state.measurementDraft;
+    const values = {
+      weight_kg: d.weight_kg ? Number(d.weight_kg) : null,
+      body_fat_pct: d.body_fat_pct ? Number(d.body_fat_pct) : null,
+      waist_cm: d.waist_cm ? Number(d.waist_cm) : null,
+      chest_cm: d.chest_cm ? Number(d.chest_cm) : null,
+      arm_cm: d.arm_cm ? Number(d.arm_cm) : null,
+      thigh_cm: d.thigh_cm ? Number(d.thigh_cm) : null,
+    };
+    await BolaAPI.measurements.recordToday(state.myClient.id, values);
+    const bodyMeasurements = await BolaAPI.measurements.listForClient(state.myClient.id);
+    setState({ bodyMeasurements, measurementDraft: { weight_kg: '', body_fat_pct: '', waist_cm: '', chest_cm: '', arm_cm: '', thigh_cm: '' } });
+  },
+
+  /* ---- Etapa 2: calificar a mi entrenador (Perfil) ---- */
+  setTrainerRatingStars: n => setState({ trainerRatingDraft: { ...state.trainerRatingDraft, rating: Number(n) } }),
+  saveTrainerRating: async () => {
+    if (!state.myClientTrainer || !state.trainerRatingDraft.rating) return;
+    await BolaAPI.trainerReviews.rate(state.myClientTrainer.id, state.trainerRatingDraft.rating, state.trainerRatingDraft.text.trim());
+    const myTrainerRating = (await BolaAPI.trainerReviews.listForTrainer(state.myClientTrainer.id)).find(r => r.client_user_id === state.myClient.id) || null;
+    setState({ myTrainerRating });
+  },
+
+  /* ---- Etapa 2: mensajes con mi entrenador (Perfil) ---- */
+  openTrainerChat: async () => {
+    if (!state.myClientTrainer) return;
+    const conversationId = await BolaAPI.messages.getOrCreateConversation(state.myClientTrainer.id);
+    const messages = await BolaAPI.messages.list(conversationId);
+    setState({ screen: 'clientChat', conversationId, messages });
+  },
+  closeTrainerChat: () => setState({ screen: 'clientHome' }),
+  sendMessage: async () => {
+    const text = state.messageDraft.trim();
+    if (!text || !state.conversationId) return;
+    await BolaAPI.messages.send(state.conversationId, text);
+    const messages = await BolaAPI.messages.list(state.conversationId);
+    setState({ messages, messageDraft: '' });
   },
 
   addProgress: async () => {
@@ -772,11 +879,30 @@ export async function enterClientHome() {
   const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
   const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
 
+  // Etapa 2 — clases/reservas, logros, medidas/récords y (si tiene
+  // entrenador asignado) su propia calificación existente sobre él.
+  const [classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth] = await Promise.all([
+    BolaAPI.classes.listForGym(state.gym.id),
+    BolaAPI.classes.listSessions(state.gym.id, new Date().toISOString()),
+    BolaAPI.classes.listMyBookings(client.id),
+    BolaAPI.achievements.listCatalog(),
+    BolaAPI.achievements.listForClient(client.id),
+    BolaAPI.measurements.listForClient(client.id),
+    BolaAPI.workouts.getPersonalRecords(client.id),
+    BolaAPI.workouts.countThisMonth(client.id),
+  ]);
+  const myTrainerRating = trainer
+    ? (await BolaAPI.trainerReviews.listForTrainer(trainer.id)).find(r => r.client_user_id === client.id) || null
+    : null;
+
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
     plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
+    classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth,
+    myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
+    conversationId: null, messages: [], messageDraft: '',
     pendingPayment: null, busy: false,
   });
   if (window.CesAds) window.CesAds.showBanner();

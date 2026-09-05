@@ -235,6 +235,10 @@ input,textarea,select,button{font-family:inherit}
 .chip--mint.is-active{background:var(--mint);color:var(--bg)}
 .chip--amber.is-active{background:var(--amber);color:var(--bg)}
 .chip--sky.is-active{background:var(--sky);color:var(--bg)}
+/* Semánticos nuevos (ver nota de --btn arriba) */
+.chip--action.is-active{background:var(--action);color:#fff}
+.chip--brand.is-active{background:var(--brand);color:#fff}
+.chip--ok.is-active{background:var(--ok);color:var(--bg)}
 
 .badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px}
 .badge--al_dia{background:var(--ok-dim);color:var(--ok)}
@@ -297,6 +301,8 @@ input,textarea,select,button{font-family:inherit}
 .avatar--lime{background:rgba(228,0,58,0.15);color:var(--lime)}
 .avatar--mint{background:rgba(52,211,153,0.15);color:var(--mint)}
 .avatar--amber{background:rgba(251,191,36,0.15);color:var(--amber)}
+.avatar--action{background:var(--action-dim);color:var(--action)}
+.avatar--brand{background:var(--brand-dim);color:var(--brand)}
 .avatar--sky{background:rgba(56,189,248,0.15);color:var(--sky)}
 
 .pill{background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:7px 14px;font-size:12px}
@@ -340,10 +346,12 @@ input,textarea,select,button{font-family:inherit}
 .hint{font-size:12px;color:var(--muted);margin-bottom:14px}
 
 /* ---------- icon system (hand-rolled, no external assets) ---------- */
-.icon{display:inline-flex;flex-shrink:0}
+.icon{display:inline-flex;flex-shrink:0;width:16px;height:16px}
 .icon svg{width:100%;height:100%;display:block}
+.icon--13{width:13px;height:13px}
 .icon--14{width:14px;height:14px}
 .icon--16{width:16px;height:16px}
+.icon--18{width:18px;height:18px}
 .icon--22{width:22px;height:22px}
 .icon--28{width:28px;height:28px}
 

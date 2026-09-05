@@ -27,7 +27,7 @@ import {
 import { viewAdminReg, viewAdminPending } from './screens/admin.js';
 import {
   viewClientReg1, viewClientReg2, viewClientReg3, viewClientReg4,
-  viewClientHome, viewClientPhotoRequired, viewWorkout,
+  viewClientHome, viewClientPhotoRequired, viewWorkout, viewClientChat,
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 
@@ -53,6 +53,7 @@ const SCREENS = {
   clientReg4: viewClientReg4,
   clientHome: viewClientHome,
   workout: viewWorkout,
+  clientChat: viewClientChat,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,
