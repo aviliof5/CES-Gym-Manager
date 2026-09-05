@@ -264,21 +264,50 @@ async function handleAuthDeepLink(url) {
   boot();
 }
 
-// Link de invitación de gimnasio (?invite=XXXXX) — solo tiene sentido en la
-// web (un click abre el navegador directo con la query string); en la app
-// nativa alguien que toca ese mismo link simplemente abre el navegador del
-// teléfono, no esta app empaquetada, así que no hace falta manejarlo acá
-// como el deep link de confirmación de correo (ese sí reabre la app nativa,
-// por el esquema com.ces.gymmanager:// registrado aparte).
-function readInviteCodeFromUrl() {
+// Links de invitación (?invite=XXXXX / ?owner_invite=XXXXX) — solo tienen
+// sentido en la web (un click abre el navegador directo con la query
+// string); en la app nativa alguien que toca ese mismo link simplemente
+// abre el navegador del teléfono, no esta app empaquetada, así que no hace
+// falta manejarlos acá como el deep link de confirmación de correo (ese sí
+// reabre la app nativa, por el esquema com.ces.gymmanager:// registrado
+// aparte). Se resuelven ANTES de boot() (ver initDeepLinksAndBoot) para que
+// el primer render ya sepa si el modo "Registrarme" del rol/dueño
+// correspondiente debe estar habilitado — ver viewOwnerAuth/viewAdminAuth/
+// viewTrainerAuth. Cuando el query param no está presente, cada uno vuelve
+// al toque sin pegarle a la red — un arranque normal no paga ningún costo
+// extra por esto.
+
+// Fase 16 — cierra el hueco de "cualquiera puede registrarse como dueño":
+// sin un ?owner_invite=TOKEN válido y sin usar, viewOwnerAuth no muestra el
+// modo "Registrarme" (y aunque alguien lo forzara, create_gym() lo rechaza
+// igual del lado servidor — ver docs/SECURITY_AUDIT.md). check_owner_invite
+// solo devuelve un booleano, nunca expone la tabla de tokens.
+async function resolveOwnerInviteFromUrl() {
+  let token;
+  try { token = new URLSearchParams(window.location.search).get('owner_invite'); }
+  catch (_) { return; }
+  if (!token) return;
   try {
-    const code = new URLSearchParams(window.location.search).get('invite');
-    if (code) state.inviteCode = code;
-  } catch (_) { /* URL/URLSearchParams no disponible, no es crítico */ }
+    if (await BolaAPI.platform.checkOwnerInvite(token)) state.ownerInviteToken = token;
+  } catch (err) { console.error('No se pudo validar el link de invitación de dueño:', err); }
+}
+
+// Generalizado en la Fase 16: antes resolvía siempre "cliente" (único rol
+// con invite-code); ahora gym_invites.role dice para qué rol es cada
+// código, así que un mismo link ya no sirve para cualquier rol.
+async function resolveGymInviteFromUrl() {
+  let code;
+  try { code = new URLSearchParams(window.location.search).get('invite'); }
+  catch (_) { return; }
+  if (!code) return;
+  try {
+    const resolved = await BolaAPI.gyms.getByInviteCode(code);
+    if (resolved) { state.inviteGym = resolved.gym; state.inviteRole = resolved.role; }
+  } catch (err) { console.error('No se pudo resolver el link de invitación de gimnasio:', err); }
 }
 
 async function initDeepLinksAndBoot() {
-  readInviteCodeFromUrl();
+  await Promise.all([resolveOwnerInviteFromUrl(), resolveGymInviteFromUrl()]);
   const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
   if (App) {
     App.addListener('appUrlOpen', ({ url }) => handleAuthDeepLink(url));

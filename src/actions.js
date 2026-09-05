@@ -60,6 +60,9 @@ export const ACTIONS = {
 
   /* ---- admin auth (se une a un gimnasio ya creado, como un entrenador) ---- */
   setAdminAuthMode: v => setState({ adminAuthMode: v, adminLoginError: '' }),
+  // Fase 16: el alta de administrador ya es solo por link de invitación de
+  // un gimnasio (viewAdminAuth ni siquiera muestra "Registrarme" sin uno
+  // resuelto) — ya no cae al selector público de gimnasios.
   adminSignUp: async () => {
     setState({ busy: true, error: '' });
     const a = state.adminReg;
@@ -68,7 +71,8 @@ export const ACTIONS = {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
     }
-    await loadGymPicker('adminSignUp');
+    if (await tryJoinViaGymInvite('adminSignUp', 'admin')) return;
+    setState({ busy: false, error: 'Necesitás un link de invitación de administrador de un gimnasio para registrarte — pedíselo al dueño.' });
   },
   adminSignIn: async () => {
     setState({ busy: true, adminLoginError: '' });
@@ -130,7 +134,10 @@ export const ACTIONS = {
   },
   ownerCreateGym: async () => {
     setState({ busy: true, error: '' });
-    const gymId = await BolaAPI.gyms.create(state.gymReg);
+    // Fase 16: create_gym() ahora exige un owner_invite válido y sin usar
+    // (ver docs/SECURITY_AUDIT.md) — sin state.ownerInviteToken el RPC
+    // rechaza con un error claro que se muestra igual que cualquier otro.
+    const gymId = await BolaAPI.gyms.create({ ...state.gymReg, ownerInviteToken: state.ownerInviteToken });
     const gym = await BolaAPI.gyms.get(gymId);
     setState({ busy: false, gym, screen: 'ownerReg3', equipment: [], plans: [] });
   },
@@ -199,6 +206,32 @@ export const ACTIONS = {
     setState({ inviteLinkCopied: true });
     setTimeout(() => setState({ inviteLinkCopied: false }), 2000);
   },
+
+  // Fase 16 — rota el código de invitación de un rol (ej. si se filtró) sin
+  // afectar a los otros dos. El gate real es regenerate_gym_invite() en el
+  // servidor (exige app_role_is_staff()) — acá solo se refleja el nuevo
+  // código en la tarjeta correspondiente.
+  regenerateGymInvite: async role => {
+    const code = await BolaAPI.gyms.regenerateInvite(role);
+    setState({ gymInvites: { ...state.gymInvites, [role]: code } });
+  },
+
+  // Tab "Plataforma" (solo visible si myProfile.is_platform_admin) — genera
+  // el link de un solo uso para que un dueño nuevo pueda registrarse. El
+  // gate real es create_owner_invite() en el servidor (exige
+  // app_is_platform_admin()); acá solo se arma el link para copiar/mostrar
+  // como QR (ver src/qr.js).
+  generatePlatformInvite: async () => {
+    setState({ busy: true, error: '' });
+    try {
+      const token = await BolaAPI.platform.createOwnerInvite(state.platformInviteNote);
+      const link = `${window.location.origin}${window.location.pathname}?owner_invite=${token}`;
+      setState({ busy: false, platformInviteLink: link, platformInviteNote: '' });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
+
   setBillingFilter: v => setState({ billingFilter: v }),
 
   approveTrainer: async v => {
@@ -315,11 +348,12 @@ export const ACTIONS = {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
     }
-    // Si llegó desde un link/QR de invitación (?invite=XXXXX), se une
-    // directo a ESE gimnasio sin pasar por el selector manual. Cualquier
-    // problema con el código (no existe, ya expiró el rol, etc.) cae al
-    // selector de siempre — nunca deja a alguien varado por un link roto.
-    if (await tryJoinViaInviteCode('clientSignUp')) return;
+    // Si llegó desde un link/QR de invitación (?invite=XXXXX) de rol
+    // cliente, se une directo a ESE gimnasio sin pasar por el selector
+    // manual. Cualquier problema (código de otro rol, ya no válido, etc.)
+    // cae al selector de siempre — nunca deja a alguien varado por un link
+    // roto. Sin cambios de comportamiento respecto a antes de la Fase 16.
+    if (await tryJoinViaGymInvite('clientSignUp', 'client')) return;
     await loadGymPicker('clientSignUp');
   },
   setLevel: v => setState({ clientPhysicalReg: { ...state.clientPhysicalReg, level: v } }),
@@ -477,6 +511,8 @@ export const ACTIONS = {
 
   /* ---- trainer auth ---- */
   setTrainerAuthMode: v => setState({ trainerAuthMode: v, trainerLoginError: '' }),
+  // Fase 16: mismo cambio que adminSignUp — solo por link, ya no cae al
+  // selector público de gimnasios.
   trainerSignUp: async () => {
     setState({ busy: true, error: '' });
     const r = state.trainerReg;
@@ -485,7 +521,8 @@ export const ACTIONS = {
       setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
       return;
     }
-    await loadGymPicker('trainerSignUp');
+    if (await tryJoinViaGymInvite('trainerSignUp', 'trainer')) return;
+    setState({ busy: false, error: 'Necesitás un link de invitación de entrenador de un gimnasio para registrarte — pedíselo al dueño o a un administrador.' });
   },
   trainerSignIn: async () => {
     setState({ busy: true, trainerLoginError: '' });
@@ -611,22 +648,27 @@ export async function continueAfterFacePhoto(client) {
   await enterClientHome();
 }
 
-// Intenta unirse directo al gimnasio del link/QR de invitación (ver
-// router.js:readInviteCodeFromUrl), sin pasar por el selector manual.
-// Devuelve true si se unió (y ya avanzó a la pantalla que corresponde),
-// false si no había código, no existía ese gimnasio, o falló el join por
-// cualquier motivo — en cuyo caso el llamador cae al selector de siempre.
-async function tryJoinViaInviteCode(next) {
-  const code = state.inviteCode;
-  if (!code) return false;
+// Intenta unirse directo al gimnasio/rol resuelto en el arranque (ver
+// router.js resolveGymInviteFromUrl), sin pasar por el selector manual. Ya
+// no vuelve a pegarle al servidor para resolver el código — eso ya pasó
+// antes del primer render — solo usa lo que quedó en
+// state.inviteGym/inviteRole. `expectedRole` deja afuera un link de otro
+// rol (ej. alguien abre un link de entrenador pero se registró como
+// cliente) — cae al llamador de siempre en ese caso. Devuelve true si se
+// unió (y ya avanzó a la pantalla que corresponde), false si no había
+// invitación válida para este rol o falló el join — en cuyo caso el
+// llamador decide qué hacer (cliente cae al selector manual; admin/
+// entrenador ya no tienen ese selector, ver ACTIONS.adminSignUp/trainerSignUp).
+async function tryJoinViaGymInvite(next, expectedRole) {
+  if (!state.inviteGym || state.inviteRole !== expectedRole) return false;
   try {
-    const gym = await BolaAPI.gyms.getByInviteCode(code);
-    if (!gym) return false;
-    await BolaAPI.gyms.join(gym.id);
-    if (next === 'clientSignUp') await continueClientSignUpAfterGym(gym);
+    await BolaAPI.gyms.join(state.inviteGym.id);
+    if (next === 'clientSignUp') await continueClientSignUpAfterGym(state.inviteGym);
+    else if (next === 'adminSignUp') continueAdminSignUpAfterGym();
+    else if (next === 'trainerSignUp') continueTrainerSignUpAfterGym();
     return true;
   } catch (err) {
-    console.error('No se pudo unir por código de invitación:', err);
+    console.error('No se pudo unir por link de invitación:', err);
     return false;
   }
 }
@@ -744,7 +786,7 @@ export async function handleCheckinScan(payload) {
 // paridad total (ver docs/ROLES_AND_PERMISSIONS.md). viewOwnerDash decide
 // internamente si muestra la tab de aprobar administradores según el rol.
 export async function enterOwnerDash() {
-  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest] = await Promise.all([
+  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites] = await Promise.all([
     BolaAPI.clients.listForGym(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
     BolaAPI.plans.list(state.gym.id),
@@ -753,8 +795,9 @@ export async function enterOwnerDash() {
     BolaAPI.admins.listForGym(state.gym.id),
     BolaAPI.checkins.listTodayForGym(state.gym.id),
     BolaAPI.trainers.listInterestForGym(state.gym.id),
+    BolaAPI.gyms.getInvites(state.gym.id),
   ]);
-  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, busy: false });
+  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites, busy: false });
   if (window.CesAds) window.CesAds.hideBanner();
   render();
 }

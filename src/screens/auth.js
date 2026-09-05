@@ -61,14 +61,24 @@ export function viewRole() {
 
 // El dueño crea el gimnasio — antes lo hacía "admin" (ver src/screens/admin.js,
 // que ahora es un flujo de unión+aprobación como el de entrenador).
+//
+// Fase 16: el alta de dueño dejó de ser pública — "Registrarme" solo se
+// muestra si se resolvió un ?owner_invite=TOKEN válido al arrancar (ver
+// router.js resolveOwnerInviteFromUrl). El gate real está en create_gym()
+// del lado servidor (ver docs/SECURITY_AUDIT.md); esto es solo para no
+// mostrarle el asistente de 4 pasos a alguien que de entrada no puede
+// terminarlo. Las cuentas de dueño existentes siguen entrando normal por
+// "Iniciar sesión", que nunca se oculta.
 export function viewOwnerAuth() {
   const mode = state.ownerAuthMode;
+  const canRegister = !!state.ownerInviteToken;
   const toggle = `<div style="display:flex;gap:8px;margin-bottom:20px">
-    <div ${act('setOwnerAuthMode', 'login')} ${chip(mode === 'login', 'lime', 'flex:1;text-align:center')}>Iniciar sesión</div>
-    <div ${act('setOwnerAuthMode', 'register')} ${chip(mode === 'register', 'lime', 'flex:1;text-align:center')}>Registrarme</div>
+    <div ${act('setOwnerAuthMode', 'login')} ${chip(mode === 'login' || !canRegister, 'lime', 'flex:1;text-align:center')}>Iniciar sesión</div>
+    ${canRegister ? `<div ${act('setOwnerAuthMode', 'register')} ${chip(mode === 'register', 'lime', 'flex:1;text-align:center')}>Registrarme</div>` : ''}
   </div>`;
+  const gateNote = canRegister ? '' : `<div style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:12px;line-height:1.5">El alta de un gimnasio nuevo es solo por invitación — si ya tenés un gimnasio, iniciá sesión.</div>`;
 
-  if (mode === 'register') {
+  if (mode === 'register' && canRegister) {
     return authScreen({
       label: 'Acceso de dueño', icon: 'dumbbell', accent: 'var(--lime)', accentBg: 'rgba(228,0,58,0.15)',
       title: 'Registra tu gimnasio', subtitle: 'Vas a crear tu cuenta de dueño y configurar tu gimnasio en 4 pasos rápidos.',
@@ -78,7 +88,7 @@ export function viewOwnerAuth() {
   }
 
   const invalid = state.busy || !(state.ownerLoginEmail.trim() && state.ownerLoginPassword.trim());
-  const inner = `${toggle}
+  const inner = `${toggle}${gateNote}
     <div class="stack">
       ${emailField('ownerLoginEmail', 'usuario', state.ownerLoginEmail)}
       ${passwordField('ownerLoginPassword', 'Contraseña', state.ownerLoginPassword)}
@@ -125,9 +135,15 @@ export function viewClientAuth() {
   });
 }
 
+// Fase 16: el alta de entrenador dejó de poder elegir cualquier gimnasio de
+// una lista pública — es solo por link de invitación (state.inviteRole,
+// ver router.js resolveGymInviteFromUrl). "Iniciar sesión" nunca se oculta
+// (las cuentas ya aprobadas siguen entrando normal).
 export function viewTrainerAuth() {
   const mode = state.trainerAuthMode;
-  const invalid = state.busy || (mode === 'login'
+  const canRegister = state.inviteRole === 'trainer';
+  const effectiveMode = mode === 'register' && canRegister ? 'register' : 'login';
+  const invalid = state.busy || (effectiveMode === 'login'
     ? !(state.trainerLoginEmail.trim() && state.trainerLoginPassword.trim())
     : !(state.trainerReg.name.trim() && state.trainerReg.email.trim() && state.trainerReg.phone.trim() && passwordStrength(state.trainerReg.password) >= 2));
 
@@ -150,23 +166,24 @@ export function viewTrainerAuth() {
   return `<div class="col">
     <div class="step-head" style="justify-content:space-between">
       <div class="back" ${act('goto', 'role')}>&lsaquo;</div>
-      <div class="step-label">${mode === 'login' ? 'Acceso de entrenador' : 'Registro de entrenador'}</div>
+      <div class="step-label">${effectiveMode === 'login' ? 'Acceso de entrenador' : 'Registro de entrenador'}</div>
       <div style="width:32px"></div>
     </div>
     <div class="form-body" style="position:relative;z-index:0">
       <div class="gym-watermark gym-watermark--amber">${iconSpan('clipboard')}</div>
       <div style="width:44px;height:44px;border-radius:12px;background:rgba(251,191,36,0.15);display:flex;align-items:center;justify-content:center;color:var(--amber);margin-bottom:16px">${iconSpan('clipboard', 22)}</div>
-      <div class="title">${mode === 'login' ? 'Bienvenido, coach' : 'Únete como entrenador'}</div>
-      <div class="subtitle">${mode === 'login' ? 'Ingresa con tu correo y contraseña' : 'Crea tu perfil para dar seguimiento a tus clientes'}</div>
+      <div class="title">${effectiveMode === 'login' ? 'Bienvenido, coach' : 'Únete como entrenador'}</div>
+      <div class="subtitle">${effectiveMode === 'login' ? 'Ingresa con tu correo y contraseña' : 'Crea tu perfil para dar seguimiento a tus clientes'}</div>
       ${errorBanner()}
       <div style="display:flex;gap:8px;margin-bottom:20px">
-        <div ${act('setTrainerAuthMode', 'login')} ${chip(mode === 'login', 'amber', 'flex:1;text-align:center')}>Iniciar sesión</div>
-        <div ${act('setTrainerAuthMode', 'register')} ${chip(mode === 'register', 'amber', 'flex:1;text-align:center')}>Registrarme</div>
+        <div ${act('setTrainerAuthMode', 'login')} ${chip(effectiveMode === 'login', 'amber', 'flex:1;text-align:center')}>Iniciar sesión</div>
+        ${canRegister ? `<div ${act('setTrainerAuthMode', 'register')} ${chip(effectiveMode === 'register', 'amber', 'flex:1;text-align:center')}>Registrarme</div>` : ''}
       </div>
-      ${mode === 'login' ? loginForm : registerForm}
+      ${!canRegister ? `<div style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.5">El alta de entrenador es solo por invitación de un gimnasio — pedile el link a tu administrador o dueño.</div>` : ''}
+      ${effectiveMode === 'login' ? loginForm : registerForm}
     </div>
     <div class="form-foot">
-      <button class="btn btn--amber" ${act(mode === 'login' ? 'trainerSignIn' : 'trainerSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Un momento…' : (mode === 'login' ? 'Ingresar' : 'Enviar solicitud')}</button>
+      <button class="btn btn--amber" ${act(effectiveMode === 'login' ? 'trainerSignIn' : 'trainerSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Un momento…' : (effectiveMode === 'login' ? 'Ingresar' : 'Enviar solicitud')}</button>
     </div>
   </div>`;
 }

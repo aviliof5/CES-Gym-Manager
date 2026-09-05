@@ -183,7 +183,7 @@ export function viewOwnerClientes() {
   return `<div class="pane">
     ${errorBanner()}
     ${ownerMetricsGrid()}
-    ${inviteCard()}
+    ${inviteCard('client')}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div style="font-size:12px;color:var(--muted)">${state.clientsForGym.length} clientes registrados</div>
       <div ${act('goToScanCheckin')} style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--sky);cursor:pointer;font-weight:700">${iconSpan('camera', 14)} Escanear QR</div>
@@ -226,25 +226,38 @@ export function viewScanCheckin() {
   </div>`;
 }
 
-// Link/código de invitación (sección 10 del pedido original) — el código lo
-// generó create_gym() solo, nadie lo "genera" a mano acá, esta tarjeta solo
-// lo muestra y arma el link para compartir. El QR es real (Fase 15, ver
-// src/qr.js) — codifica el mismo link con ?invite=CODE, así que cualquier
-// cámara (la de esta app o la del sistema) lo abre directo.
-function inviteCard() {
-  const link = `${window.location.origin}${window.location.pathname}?invite=${state.gym.invite_code}`;
+// Link/código de invitación (sección 10 del pedido original, separado por
+// rol en la Fase 16 — antes había un solo código compartido, asumiendo
+// siempre "cliente") — el código lo generó create_gym() solo (los 3, uno
+// por rol), nadie lo "genera" a mano acá, esta tarjeta solo lo muestra y
+// arma el link para compartir. El QR es real (Fase 15, ver src/qr.js) —
+// codifica el mismo link con ?invite=CODE, así que cualquier cámara (la de
+// esta app o la del sistema) lo abre directo, y router.js resuelve el rol
+// automáticamente al abrirlo (ver resolveGymInviteFromUrl).
+const INVITE_CARD_COPY = {
+  client: { title: 'Invitá clientes', desc: 'quien se registre como cliente con él' },
+  trainer: { title: 'Invitá entrenadores', desc: 'quien se registre como entrenador con él' },
+  admin: { title: 'Invitá administradores', desc: 'quien se registre como administrador con él' },
+};
+
+function inviteCard(role) {
+  const code = state.gymInvites && state.gymInvites[role];
+  if (!code) return ''; // todavía no cargó (o gimnasio viejo sin backfill) — no hay nada honesto que mostrar
+  const link = `${window.location.origin}${window.location.pathname}?invite=${code}`;
+  const copy = INVITE_CARD_COPY[role];
   return `<div class="card--dashed" style="margin-bottom:18px">
-    <div style="font-size:13px;font-weight:700;color:var(--muted)">Invitá clientes</div>
-    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Compartí este código o link — quien se registre como cliente con él queda unido directo a tu gimnasio, sin elegirlo de una lista.</div>
+    <div style="font-size:13px;font-weight:700;color:var(--muted)">${copy.title}</div>
+    <div style="font-size:11.5px;color:var(--muted);line-height:1.5">Compartí este código o link — ${copy.desc} queda unido directo a tu gimnasio, sin elegirlo de una lista.</div>
     <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
       <canvas class="qr-canvas" data-qr="${esc(link)}" data-qr-size="64"></canvas>
       <div style="flex:1;min-width:0">
         <div style="font-size:10.5px;color:var(--muted)">Código</div>
-        <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;font-family:var(--font-display)">${esc(state.gym.invite_code)}</div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;font-family:var(--font-display)">${esc(code)}</div>
       </div>
       <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--lime)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--red)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--red)' : 'var(--bg)'};font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
     </div>
     ${state.inviteLinkCopyFailed ? `<div style="font-size:11px;color:var(--red);margin-top:8px">Tu navegador no dejó copiar automático — copiá el código de arriba a mano.</div>` : ''}
+    <div ${act('regenerateGymInvite', role)} style="font-size:11px;color:var(--sky);cursor:pointer;margin-top:8px;text-decoration:underline">Regenerar código</div>
   </div>`;
 }
 
@@ -332,6 +345,7 @@ export function viewOwnerEntrenadores() {
 
   return `<div class="pane">
     ${errorBanner()}
+    ${inviteCard('trainer')}
     ${pendingBlock}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${approved.length} entrenadores activos en tu gym</div>
     ${rows}
@@ -373,10 +387,11 @@ export function viewOwnerAdmins() {
 
   return `<div class="pane">
     ${errorBanner()}
+    ${inviteCard('admin')}
     ${pendingBlock}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${approved.length} ${approved.length === 1 ? 'administrador activo' : 'administradores activos'} en tu gym</div>
     ${rows || `<div class="card" style="border:1px dashed rgba(255,255,255,0.12);padding:24px;text-align:center">
-        <div style="font-size:12.5px;color:var(--muted)">Todavía no tienes administradores. Compartí el nombre de tu gimnasio para que alguien se una como admin.</div>
+        <div style="font-size:12.5px;color:var(--muted)">Todavía no tienes administradores. Compartí el link de invitación de arriba para que alguien se una como admin.</div>
       </div>`}
   </div>`;
 }
@@ -453,13 +468,45 @@ export function viewOwnerComentarios() {
   </div>`;
 }
 
+// Tab "Plataforma" (Fase 16) — solo la ve la cuenta marcada
+// is_platform_admin (hoy, solo el dueño real de Fight Club/CES, ver la
+// migración de la fase). Genera el link de un solo uso con el que alguien
+// puede registrar un gimnasio nuevo como dueño — el gate real está en
+// create_owner_invite() del lado servidor, esto es solo el formulario.
+export function viewOwnerPlatform() {
+  const link = state.platformInviteLink;
+  return `<div class="pane">
+    ${errorBanner()}
+    <div class="card--dashed" style="margin-bottom:18px">
+      <div style="font-size:13px;font-weight:700;color:var(--muted)">Generar invitación de dueño</div>
+      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Cada link es de un solo uso — quien lo abra puede registrar UN gimnasio nuevo como dueño.</div>
+      ${textField('platformInviteNote', 'Nota (ej. nombre del cliente) — opcional', state.platformInviteNote, { sm: true })}
+      <button ${act('generatePlatformInvite')} style="background:var(--lime);border:none;border-radius:10px;padding:12px;color:var(--bg);font-weight:700;font-size:13.5px;cursor:pointer;width:100%;margin-top:10px">${state.busy ? 'Generando…' : 'Generar link de invitación'}</button>
+    </div>
+    ${link ? `<div class="card--dashed">
+      <div style="font-size:13px;font-weight:700;color:var(--muted)">Último link generado</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
+        <canvas class="qr-canvas" data-qr="${esc(link)}" data-qr-size="64"></canvas>
+        <div style="flex:1;min-width:0;font-size:11.5px;color:var(--text-soft);word-break:break-all">${esc(link)}</div>
+      </div>
+      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--lime)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--red)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--red)' : 'var(--bg)'};font-weight:700;font-size:12.5px;cursor:pointer;width:100%;margin-top:10px">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
+    </div>` : ''}
+  </div>`;
+}
+
 // Tabs base, iguales para dueño y administrador (paridad total) — la de
-// "Admins" se agrega condicionalmente en viewOwnerDash, solo para el dueño.
+// "Admins" se agrega condicionalmente en viewOwnerDash, solo para el dueño;
+// la de "Plataforma" (Fase 16), solo para is_platform_admin.
 const BASE_TABS = [['clientes', 'Clientes', 'users'], ['entrenadores', 'Coaches', 'clipboard'], ['facturacion', 'Facturas', 'receipt'], ['trafico', 'Tráfico', 'bars'], ['comentarios', 'Reseñas', 'star']];
 
 export function viewOwnerDash() {
   const isOwner = state.myProfile && state.myProfile.role === 'owner';
-  const tabs = isOwner ? [...BASE_TABS, ['admins', 'Admins', 'idcard']] : BASE_TABS;
+  const isPlatformAdmin = !!(state.myProfile && state.myProfile.is_platform_admin);
+  const tabs = [
+    ...BASE_TABS,
+    ...(isOwner ? [['admins', 'Admins', 'idcard']] : []),
+    ...(isPlatformAdmin ? [['plataforma', 'Plataforma', 'shield']] : []),
+  ];
   const panes = {
     clientes: viewOwnerClientes,
     entrenadores: viewOwnerEntrenadores,
@@ -467,8 +514,12 @@ export function viewOwnerDash() {
     trafico: viewOwnerTrafico,
     comentarios: viewOwnerComentarios,
     admins: viewOwnerAdmins,
+    plataforma: viewOwnerPlatform,
   };
-  const activeTab = (state.ownerTab === 'admins' && !isOwner) ? 'clientes' : state.ownerTab;
+  const activeTab =
+    (state.ownerTab === 'admins' && !isOwner) ? 'clientes' :
+    (state.ownerTab === 'plataforma' && !isPlatformAdmin) ? 'clientes' :
+    state.ownerTab;
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">
