@@ -32,6 +32,20 @@
     // son los tokens de un solo uso que generan alta de dueño.
     gymInvites: [],          // {gym_id, role: 'admin'|'trainer'|'client', code}
     ownerInvites: [],        // {token, note, created_by, created_at, used_at, used_by_user_id}
+    // Etapas 2-4 del rediseño (ver supabase/migrations/20260905000300) —
+    // mismas tablas, mismas reglas, del lado del mock.
+    exercises: [],            // {id, gym_id|null, name, muscle_group, equipment_name, media_key, description}
+    classes: [],              // {id, gym_id, name, description, trainer_user_id, duration_minutes, capacity}
+    classSessions: [],        // {id, class_id, gym_id, starts_at}
+    classBookings: [],        // {id, session_id, client_user_id, gym_id, status}
+    achievements: [],         // {id, code, name, description, icon, target, metric}
+    clientAchievements: [],   // {client_user_id, achievement_id, progress, earned_at}
+    bodyMeasurements: [],     // {id, client_user_id, taken_at, weight_kg, body_fat_pct, waist_cm, chest_cm, arm_cm, thigh_cm}
+    workoutSessions: [],      // {id, client_user_id, gym_id, source, started_at, finished_at}
+    exerciseLogs: [],         // {id, workout_session_id, client_user_id, exercise_name, set_number, reps, weight_kg}
+    trainerReviews: [],       // {id, trainer_user_id, client_user_id, rating, text}
+    conversations: [],        // {id, gym_id, trainer_user_id, client_user_id}
+    messages: [],             // {id, conversation_id, sender_user_id, body, created_at, read_at}
   };
 
   let session = null; // {id, role}
@@ -56,7 +70,7 @@
 
   (function seed() {
     const gymId = 'gym-1';
-    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234' });
+    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234', currency: 'USD' });
     // Fase 16 — un código de invitación por rol, ya no uno solo compartido.
     db.gymInvites.push({ gym_id: gymId, role: 'client', code: 'demo1234' }); // igual al invite_code legado de siempre
     db.gymInvites.push({ gym_id: gymId, role: 'admin', code: 'demoadmn' });
@@ -107,12 +121,54 @@
 
     const routineId = uid('rt');
     db.routines.push({ id: routineId, client_user_id: 'client-1', source: 'trainer', goal: null, author_user_id: 'trainer-1' });
-    ['Sentadilla en rack - 4x8', 'Press banca - 4x8', 'Remo - 10 min'].forEach((text, i) =>
-      db.routineExercises.push({ id: uid('rex'), routine_id: routineId, position: i, text }));
+    [
+      { text: 'Sentadilla en rack - 4x8', sets: 4, reps: '8', weight_kg: 60, rest_seconds: 90 },
+      { text: 'Press banca - 4x8', sets: 4, reps: '8', weight_kg: 40, rest_seconds: 90 },
+      { text: 'Remo - 10 min', sets: null, reps: null, weight_kg: null, rest_seconds: 60 },
+    ].forEach((ex, i) =>
+      db.routineExercises.push({ id: uid('rex'), routine_id: routineId, position: i, exercise_id: null, ...ex }));
 
     db.payments.push({ id: uid('pay'), client_user_id: 'client-1', gym_id: gymId, amount: 80, status: 'confirmed', confirmed_by: 'admin-1', confirmed_at: '2026-07-05' });
     db.reviews.push({ id: uid('rv'), gym_id: gymId, client_user_id: 'client-1', rating: 5, text: 'Excelente atención y máquinas nuevas.', created_at: '2026-07-10' });
     db.reviews.push({ id: uid('rv'), gym_id: gymId, client_user_id: 'client-2', rating: 4, text: 'Falta más espacio en horario pico.', created_at: '2026-07-08' });
+
+    // ---- Etapas 2-4: biblioteca de ejercicios (global, gym_id null — mismo
+    // seed que supabase/migrations/20260905000300_etapa2_features_schema.sql) ----
+    [
+      ['Press de banca', 'Pecho', 'Banco de press'],
+      ['Sentadilla con barra', 'Piernas', 'Rack de sentadillas'],
+      ['Peso muerto', 'Espalda', null],
+      ['Press militar', 'Hombros', null],
+      ['Curl con barra', 'Brazos', 'Mancuernas'],
+      ['Sprint en cinta', 'Cardio', 'Caminadora'],
+      ['Remo con mancuerna', 'Espalda', 'Mancuernas'],
+      ['Circuito funcional', 'Cuerpo completo', null],
+    ].forEach(([name, muscle_group, equipment_name]) =>
+      db.exercises.push({ id: uid('ex'), gym_id: null, name, muscle_group, equipment_name, media_key: null, description: null }));
+
+    // ---- Logros (catálogo global) ----
+    [
+      ['first_workout', 'Primer entrenamiento', 'Completaste tu primera sesión.', 'zap', 1, 'workouts'],
+      ['ten_workouts', '10 entrenamientos', 'Completaste 10 sesiones de entrenamiento.', 'dumbbell', 10, 'workouts'],
+      ['hundred_workouts', '100 entrenamientos', 'Completaste 100 sesiones de entrenamiento.', 'crown', 100, 'workouts'],
+      ['streak_30', '30 días consecutivos', 'Te registraste 30 días seguidos.', 'clock', 30, 'streak_days'],
+    ].forEach(([code, name, description, icon, target, metric]) =>
+      db.achievements.push({ id: uid('ach'), code, name, description, icon, target, metric }));
+
+    // client-1 ya entrenó un par de veces — para que Progreso/Logros no
+    // arranquen todos en cero en el mock.
+    const s1 = uid('ws'); db.workoutSessions.push({ id: s1, client_user_id: 'client-1', gym_id: gymId, source: 'trainer', started_at: minus(6), finished_at: minus(6) });
+    const s2 = uid('ws'); db.workoutSessions.push({ id: s2, client_user_id: 'client-1', gym_id: gymId, source: 'trainer', started_at: minus(3), finished_at: minus(3) });
+    db.exerciseLogs.push({ id: uid('exl'), workout_session_id: s2, client_user_id: 'client-1', exercise_name: 'Press de banca', set_number: 1, reps: 8, weight_kg: 45 });
+    db.exerciseLogs.push({ id: uid('exl'), workout_session_id: s2, client_user_id: 'client-1', exercise_name: 'Sentadilla con barra', set_number: 1, reps: 8, weight_kg: 65 });
+    db.bodyMeasurements.push({ id: uid('bm'), client_user_id: 'client-1', taken_at: minus(3), weight_kg: 78.5, body_fat_pct: 15.2, waist_cm: 82, chest_cm: null, arm_cm: null, thigh_cm: null });
+    db.bodyMeasurements.push({ id: uid('bm'), client_user_id: 'client-1', taken_at: minus(20), weight_kg: 80, body_fat_pct: 16.1, waist_cm: 84, chest_cm: null, arm_cm: null, thigh_cm: null });
+
+    // ---- Clases y una sesión de ejemplo ----
+    const classId = uid('cls');
+    db.classes.push({ id: classId, gym_id: gymId, name: 'Bailoterapia', description: 'Ritmo, energía y bienestar.', trainer_user_id: 'trainer-2', duration_minutes: 50, capacity: 20 });
+    const sessId = uid('css');
+    db.classSessions.push({ id: sessId, class_id: classId, gym_id: gymId, starts_at: new Date(today.getTime() + 3 * 3600000).toISOString() });
   })();
 
   /* ---------------- auth ---------------- */
@@ -222,7 +278,7 @@
       const invite = db.ownerInvites.find(i => i.token === ownerInviteToken && !i.used_at);
       if (!invite) throw new Error('El link de invitación de dueño no es válido o ya fue usado.');
       const id = uid('gym');
-      db.gyms.push({ id, name, address, hours, invite_code: Math.random().toString(36).slice(2, 10) });
+      db.gyms.push({ id, name, address, hours, invite_code: Math.random().toString(36).slice(2, 10), currency: 'USD' });
       me.gym_id = id;
       invite.used_at = new Date().toISOString();
       invite.used_by_user_id = s.id;
@@ -420,8 +476,15 @@
     if (!r) { r = { id: uid('rt'), client_user_id: clientUserId, source, goal: source === 'ia' ? goal : null, author_user_id: authorUserId }; db.routines.push(r); }
     return r.id;
   }
+  // Etapa 2 — cada ejercicio de rutina trae ahora sets/reps/weight_kg/
+  // rest_seconds además del texto de siempre (que se sigue mandando como
+  // resumen de respaldo para lo que todavía lo muestre sin parsear).
   function exercisesFor(routineId) {
-    return db.routineExercises.filter(e => e.routine_id === routineId).sort((a, b) => a.position - b.position).map(e => ({ id: e.id, text: e.text }));
+    return db.routineExercises.filter(e => e.routine_id === routineId).sort((a, b) => a.position - b.position).map(e => ({
+      id: e.id, text: e.text, exerciseId: e.exercise_id || null,
+      sets: e.sets != null ? e.sets : null, reps: e.reps != null ? e.reps : null,
+      weightKg: e.weight_kg != null ? e.weight_kg : null, restSeconds: e.rest_seconds != null ? e.rest_seconds : 60,
+    }));
   }
 
   const routines = {
@@ -435,20 +498,225 @@
       const r = findRoutine(clientUserId, 'trainer', null);
       return r ? { id: r.id, exercises: exercisesFor(r.id) } : { id: null, exercises: [] };
     },
-    async generateAi(clientUserId, goal, exerciseTexts) {
+    // `entries` ahora son objetos {text, sets, reps, weightKg, restSeconds},
+    // no strings sueltos — ver buildRoutine() en src/helpers.js.
+    async generateAi(clientUserId, goal, entries) {
       await wait();
       const routineId = ensureRoutine(clientUserId, 'ia', goal, null);
       db.routineExercises = db.routineExercises.filter(e => e.routine_id !== routineId);
-      exerciseTexts.forEach((text, i) => db.routineExercises.push({ id: uid('rex'), routine_id: routineId, position: i, text }));
+      entries.forEach((ex, i) => db.routineExercises.push({
+        id: uid('rex'), routine_id: routineId, position: i, exercise_id: ex.exerciseId || null,
+        text: ex.text, sets: ex.sets ?? null, reps: ex.reps ?? null, weight_kg: ex.weightKg ?? null, rest_seconds: ex.restSeconds ?? 60,
+      }));
     },
-    async addTrainerExercise(clientUserId, trainerUserId, text) {
+    async addTrainerExercise(clientUserId, trainerUserId, entry) {
       await wait();
       const routineId = ensureRoutine(clientUserId, 'trainer', null, trainerUserId);
       const existing = db.routineExercises.filter(e => e.routine_id === routineId);
       const nextPosition = existing.length ? Math.max(...existing.map(e => e.position)) + 1 : 0;
-      db.routineExercises.push({ id: uid('rex'), routine_id: routineId, position: nextPosition, text });
+      db.routineExercises.push({
+        id: uid('rex'), routine_id: routineId, position: nextPosition, exercise_id: entry.exerciseId || null,
+        text: entry.text, sets: entry.sets ?? null, reps: entry.reps ?? null, weight_kg: entry.weightKg ?? null, rest_seconds: entry.restSeconds ?? 60,
+      });
     },
     async removeExercise(exerciseId) { await wait(); db.routineExercises = db.routineExercises.filter(e => e.id !== exerciseId); },
+  };
+
+  /* ---------------- biblioteca de ejercicios ---------------- */
+
+  const exercisesLib = {
+    async list(gymId) {
+      await wait();
+      return db.exercises.filter(e => e.gym_id === null || e.gym_id === gymId)
+        .map(e => ({ id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description }));
+    },
+    async add(gymId, { name, muscleGroup, equipmentName, description }) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio agregan ejercicios.');
+      const row = { id: uid('ex'), gym_id: gymId, name, muscle_group: muscleGroup || 'General', equipment_name: equipmentName || null, media_key: null, description: description || null };
+      db.exercises.push(row);
+      return row.id;
+    },
+  };
+
+  /* ---------------- clases y reservas ---------------- */
+
+  const classesApi = {
+    async listForGym(gymId) {
+      await wait();
+      return db.classes.filter(c => c.gym_id === gymId).map(c => ({ ...c }));
+    },
+    async listSessions(gymId, fromIso) {
+      await wait();
+      return db.classSessions.filter(s => s.gym_id === gymId && (!fromIso || s.starts_at >= fromIso))
+        .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+        .map(s => ({ ...s, class: db.classes.find(c => c.id === s.class_id) }));
+    },
+    async listMyBookings(clientUserId) {
+      await wait();
+      return db.classBookings.filter(b => b.client_user_id === clientUserId && b.status === 'reservado').map(b => ({ ...b }));
+    },
+    async book(sessionId) {
+      await wait();
+      const s = requireAuth();
+      if (s.role !== 'client') throw new Error('Solo un cliente puede reservar una clase.');
+      const session = db.classSessions.find(cs => cs.id === sessionId);
+      if (!session) throw new Error('Esa clase no existe.');
+      const me = profileOf(s.id);
+      if (session.gym_id !== me.gym_id) throw new Error('Esa clase es de otro gimnasio.');
+      const cls = db.classes.find(c => c.id === session.class_id);
+      const booked = db.classBookings.filter(b => b.session_id === sessionId && b.status === 'reservado').length;
+      if (booked >= cls.capacity) throw new Error('Esta clase ya no tiene cupo.');
+      let row = db.classBookings.find(b => b.session_id === sessionId && b.client_user_id === s.id);
+      if (row) row.status = 'reservado';
+      else { row = { id: uid('bkg'), session_id: sessionId, client_user_id: s.id, gym_id: session.gym_id, status: 'reservado' }; db.classBookings.push(row); }
+      return row.id;
+    },
+    async cancelBooking(bookingId) {
+      await wait();
+      const s = requireAuth();
+      const row = db.classBookings.find(b => b.id === bookingId && b.client_user_id === s.id);
+      if (!row) throw new Error('Esa reserva no existe o no es tuya.');
+      row.status = 'cancelado';
+    },
+  };
+
+  /* ---------------- logros ---------------- */
+
+  const achievementsApi = {
+    async listCatalog() {
+      await wait();
+      return db.achievements.map(a => ({ ...a }));
+    },
+    async listForClient(clientUserId) {
+      await wait();
+      return db.clientAchievements.filter(a => a.client_user_id === clientUserId).map(a => ({ ...a }));
+    },
+    // Recalcula progreso contra datos reales — mismo criterio que
+    // evaluate_achievements() del lado real, nunca se marca a mano.
+    async evaluate(clientUserId) {
+      await wait();
+      const workouts = db.workoutSessions.filter(w => w.client_user_id === clientUserId && w.finished_at).length;
+      const checkinsCount = db.checkinEvents.filter(c => c.client_user_id === clientUserId).length;
+      db.achievements.forEach(a => {
+        const value = a.metric === 'workouts' ? workouts : a.metric === 'checkins' ? checkinsCount : 0;
+        let row = db.clientAchievements.find(ca => ca.client_user_id === clientUserId && ca.achievement_id === a.id);
+        if (!row) { row = { client_user_id: clientUserId, achievement_id: a.id, progress: 0, earned_at: null }; db.clientAchievements.push(row); }
+        row.progress = value;
+        if (value >= a.target && !row.earned_at) row.earned_at = new Date().toISOString();
+      });
+    },
+  };
+
+  /* ---------------- medidas corporales ---------------- */
+
+  const measurements = {
+    async listForClient(clientUserId) {
+      await wait();
+      return db.bodyMeasurements.filter(m => m.client_user_id === clientUserId).sort((a, b) => a.taken_at.localeCompare(b.taken_at)).map(m => ({ ...m }));
+    },
+    async recordToday(clientUserId, values) {
+      await wait();
+      const today = new Date().toISOString().slice(0, 10);
+      let row = db.bodyMeasurements.find(m => m.client_user_id === clientUserId && m.taken_at === today);
+      if (!row) { row = { id: uid('bm'), client_user_id: clientUserId, taken_at: today }; db.bodyMeasurements.push(row); }
+      Object.assign(row, values);
+    },
+  };
+
+  /* ---------------- récords personales + sesiones de entrenamiento ---------------- */
+
+  const workoutsApi = {
+    async start(clientUserId, gymId, source) {
+      await wait();
+      const row = { id: uid('ws'), client_user_id: clientUserId, gym_id: gymId, source, started_at: new Date().toISOString(), finished_at: null };
+      db.workoutSessions.push(row);
+      return row.id;
+    },
+    async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg) {
+      await wait();
+      db.exerciseLogs.push({ id: uid('exl'), workout_session_id: sessionId, client_user_id: clientUserId, exercise_name: exerciseName, set_number: setNumber, reps: reps ?? null, weight_kg: weightKg ?? null });
+    },
+    async finish(sessionId, clientUserId) {
+      await wait();
+      const row = db.workoutSessions.find(w => w.id === sessionId && w.client_user_id === clientUserId);
+      if (!row) throw new Error('Esa sesión no existe, no es tuya, o ya estaba cerrada.');
+      row.finished_at = new Date().toISOString();
+      await achievementsApi.evaluate(clientUserId);
+    },
+    async getPersonalRecords(clientUserId) {
+      await wait();
+      const byName = new Map();
+      db.exerciseLogs.filter(l => l.client_user_id === clientUserId && l.weight_kg != null).forEach(l => {
+        const cur = byName.get(l.exercise_name);
+        if (!cur || l.weight_kg > cur.maxWeightKg) byName.set(l.exercise_name, { exerciseName: l.exercise_name, maxWeightKg: l.weight_kg, achievedAt: l.created_at });
+      });
+      return [...byName.values()];
+    },
+    async countThisMonth(clientUserId) {
+      await wait();
+      const now = new Date();
+      return db.workoutSessions.filter(w => {
+        if (w.client_user_id !== clientUserId || !w.finished_at) return false;
+        const d = new Date(w.finished_at);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      }).length;
+    },
+  };
+
+  /* ---------------- rating de entrenador ---------------- */
+
+  const trainerReviewsApi = {
+    async listForTrainer(trainerUserId) {
+      await wait();
+      return db.trainerReviews.filter(r => r.trainer_user_id === trainerUserId).map(r => ({ ...r }));
+    },
+    async rate(trainerUserId, rating, text) {
+      await wait();
+      const s = requireAuth();
+      if (s.role !== 'client') throw new Error('Solo un cliente puede calificar a su entrenador.');
+      const me = profileOf(s.id);
+      if (me.trainer_user_id !== trainerUserId && !db.clientProfiles.find(c => c.user_id === s.id && c.trainer_user_id === trainerUserId)) {
+        throw new Error('Solo podés calificar a tu propio entrenador asignado.');
+      }
+      let row = db.trainerReviews.find(r => r.trainer_user_id === trainerUserId && r.client_user_id === s.id);
+      if (row) { row.rating = rating; row.text = text; }
+      else db.trainerReviews.push({ id: uid('trv'), trainer_user_id: trainerUserId, client_user_id: s.id, rating, text: text || null, created_at: new Date().toISOString() });
+    },
+  };
+
+  /* ---------------- mensajes entrenador <-> cliente ---------------- */
+
+  const messagesApi = {
+    async getOrCreateConversation(otherUserId) {
+      await wait();
+      const s = requireAuth();
+      const trainerUserId = s.role === 'trainer' ? s.id : otherUserId;
+      const clientUserId = s.role === 'client' ? s.id : otherUserId;
+      let conv = db.conversations.find(c => c.trainer_user_id === trainerUserId && c.client_user_id === clientUserId);
+      if (!conv) {
+        const me = profileOf(s.id);
+        conv = { id: uid('cnv'), gym_id: me.gym_id, trainer_user_id: trainerUserId, client_user_id: clientUserId };
+        db.conversations.push(conv);
+      }
+      return conv.id;
+    },
+    async list(conversationId) {
+      await wait();
+      return db.messages.filter(m => m.conversation_id === conversationId).sort((a, b) => a.created_at.localeCompare(b.created_at)).map(m => ({ ...m }));
+    },
+    async send(conversationId, body) {
+      await wait();
+      const s = requireAuth();
+      const row = { id: uid('msg'), conversation_id: conversationId, sender_user_id: s.id, body, created_at: new Date().toISOString(), read_at: null };
+      db.messages.push(row);
+      return row.id;
+    },
+    async listConversationsForTrainer(trainerUserId) {
+      await wait();
+      return db.conversations.filter(c => c.trainer_user_id === trainerUserId).map(c => ({ ...c }));
+    },
   };
 
   /* ---------------- cobros en efectivo ---------------- */
@@ -522,6 +790,7 @@
       if (!c || c.gym_id !== me.gym_id) throw new Error('Ese cliente no pertenece a tu gimnasio.');
       const row = { id: uid('chk'), gym_id: c.gym_id, client_user_id: clientUserId, checked_in_by: s.id, created_at: new Date().toISOString() };
       db.checkinEvents.push(row);
+      await achievementsApi.evaluate(clientUserId);
       return { ...row };
     },
     async listForClient(clientUserId, limit) {
@@ -559,6 +828,9 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform };
+  window.BolaAPI = {
+    auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
+    exercisesLib, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
+  };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

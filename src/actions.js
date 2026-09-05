@@ -351,8 +351,8 @@ export const ACTIONS = {
   },
   generateRoutine: async () => {
     setState({ busy: true });
-    const exerciseTexts = buildRoutine(state.aiGoal, state.equipment.map(e => e.name));
-    await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, exerciseTexts);
+    const entries = buildRoutine(state.aiGoal, state.equipment.map(e => e.name));
+    await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, entries);
     const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, state.aiGoal);
     setState({ busy: false, aiRoutine });
   },
@@ -490,7 +490,12 @@ export const ACTIONS = {
   addTrainerRoutineExercise: async () => {
     const text = state.trainerRoutineDraftText.trim();
     if (!text || !state.trainerSelectedClientId) return;
-    await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, text);
+    // Etapa 2: addTrainerExercise() ahora espera un objeto estructurado, no
+    // un string — este campo sigue siendo texto libre hasta que la pantalla
+    // #11 del plan ("Crear rutina" con selector de ejercicios +
+    // series/reps/peso/descanso) se reconstruya; mientras tanto se manda
+    // solo `text`, con el resto en null/default.
+    await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, { text, sets: null, reps: null, weightKg: null, restSeconds: 60 });
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
     setState({ trainerRoutineDraftText: '', trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
   },

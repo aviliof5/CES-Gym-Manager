@@ -25,11 +25,15 @@ export function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
 
+// Devuelve entradas estructuradas {text, sets, reps, weightKg, restSeconds} —
+// ver EXERCISE_LIB en data.js. routines.generateAi() las guarda tal cual en
+// las columnas nuevas de routine_exercises (Etapa 2); `text` sigue yendo
+// como resumen de respaldo para lo que todavía no las lee estructuradas.
 export function buildRoutine(goal, equipmentNames) {
   const lib = EXERCISE_LIB[goal] || [];
   const eqLower = equipmentNames.map(e => e.toLowerCase());
   const matched = lib.filter(ex => ex.kw === null || eqLower.some(e => e.includes(ex.kw)));
-  return (matched.length ? matched : lib).map(ex => ex.text);
+  return (matched.length ? matched : lib).map(ex => ({ text: ex.text, sets: ex.sets, reps: ex.reps, weightKg: ex.weightKg, restSeconds: ex.restSeconds }));
 }
 
 export function statusMeta(st) {

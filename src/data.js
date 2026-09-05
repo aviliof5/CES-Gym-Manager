@@ -25,30 +25,36 @@ export const LEVELS = [
   { id: 'intermedio', label: 'Intermedio' },
   { id: 'avanzado', label: 'Avanzado' },
 ];
+// Etapa 2 — cada entrada trae ya sets/reps/restSeconds estructurados (no solo
+// el texto libre de antes) para que el modo entrenamiento pueda mostrar y
+// registrar series reales. `reps` es texto (no número): admite "20 min" o
+// "circuito" además de una cifra — mismo criterio que routine_exercises.reps
+// del backend. weightKg queda null: el peso de partida lo define cada quien
+// la primera vez que entrena ese ejercicio, no lo inventa la IA.
 export const EXERCISE_LIB = {
   perder_peso: [
-    { text: 'Cardio en caminadora - 20 min', kw: 'caminadora' },
-    { text: 'Bicicleta estática - 15 min', kw: 'bicicleta' },
-    { text: 'Circuito funcional - 3 rondas', kw: null },
-    { text: 'Remo - 10 min', kw: 'remo' },
+    { text: 'Cardio en caminadora - 20 min', kw: 'caminadora', sets: 1, reps: '20 min', weightKg: null, restSeconds: 0 },
+    { text: 'Bicicleta estática - 15 min', kw: 'bicicleta', sets: 1, reps: '15 min', weightKg: null, restSeconds: 0 },
+    { text: 'Circuito funcional - 3 rondas', kw: null, sets: 3, reps: 'circuito', weightKg: null, restSeconds: 45 },
+    { text: 'Remo - 10 min', kw: 'remo', sets: 1, reps: '10 min', weightKg: null, restSeconds: 0 },
   ],
   ganar_musculo: [
-    { text: 'Sentadilla en rack - 4x8', kw: 'rack' },
-    { text: 'Press banca - 4x8', kw: 'banco' },
-    { text: 'Peso muerto - 3x6', kw: 'rack' },
-    { text: 'Máquina de poleas - 3x12', kw: 'poleas' },
+    { text: 'Sentadilla en rack - 4x8', kw: 'rack', sets: 4, reps: '8', weightKg: null, restSeconds: 90 },
+    { text: 'Press banca - 4x8', kw: 'banco', sets: 4, reps: '8', weightKg: null, restSeconds: 90 },
+    { text: 'Peso muerto - 3x6', kw: 'rack', sets: 3, reps: '6', weightKg: null, restSeconds: 120 },
+    { text: 'Máquina de poleas - 3x12', kw: 'poleas', sets: 3, reps: '12', weightKg: null, restSeconds: 60 },
   ],
   resistencia: [
-    { text: 'Caminadora - 30 min', kw: 'caminadora' },
-    { text: 'Bicicleta estática - 20 min', kw: 'bicicleta' },
-    { text: 'Remo - 15 min', kw: 'remo' },
-    { text: 'Circuito funcional - 4 rondas', kw: null },
+    { text: 'Caminadora - 30 min', kw: 'caminadora', sets: 1, reps: '30 min', weightKg: null, restSeconds: 0 },
+    { text: 'Bicicleta estática - 20 min', kw: 'bicicleta', sets: 1, reps: '20 min', weightKg: null, restSeconds: 0 },
+    { text: 'Remo - 15 min', kw: 'remo', sets: 1, reps: '15 min', weightKg: null, restSeconds: 0 },
+    { text: 'Circuito funcional - 4 rondas', kw: null, sets: 4, reps: 'circuito', weightKg: null, restSeconds: 45 },
   ],
   tonificar: [
-    { text: 'Mancuernas - 3x15', kw: 'mancuernas' },
-    { text: 'Máquina de poleas - 3x15', kw: 'poleas' },
-    { text: 'Circuito funcional - 3 rondas', kw: null },
-    { text: 'Bicicleta estática - 10 min', kw: 'bicicleta' },
+    { text: 'Mancuernas - 3x15', kw: 'mancuernas', sets: 3, reps: '15', weightKg: null, restSeconds: 60 },
+    { text: 'Máquina de poleas - 3x15', kw: 'poleas', sets: 3, reps: '15', weightKg: null, restSeconds: 60 },
+    { text: 'Circuito funcional - 3 rondas', kw: null, sets: 3, reps: 'circuito', weightKg: null, restSeconds: 45 },
+    { text: 'Bicicleta estática - 10 min', kw: 'bicicleta', sets: 1, reps: '10 min', weightKg: null, restSeconds: 0 },
   ],
 };
 export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
