@@ -10,7 +10,7 @@
 import { state } from '../state.js';
 import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan } from '../data.js';
 import {
-  esc, act, chip, stepHead, stepBars, errorBanner, textField, sectionTitle,
+  esc, act, stepHead, stepBars, errorBanner, textField, sectionTitle,
   tabsMarkup, devCredit, initials, statusMeta, enrichClient, commentCards, money,
   emailField, phoneField, passwordField, passwordStrength,
 } from '../helpers.js';
@@ -22,7 +22,7 @@ export function viewOwnerReg1() {
   const invalid = !(a.name.trim() && a.email.trim() && a.phone.trim() && passwordStrength(a.password) >= 2) || state.busy;
   return `<div class="col">
     ${stepHead('Paso 1 de 4 · Registro Dueño', 'goto:inviteWelcome')}
-    ${stepBars(1, 4, 'lime')}
+    ${stepBars(1, 4, '')}
     <div class="form-body">
       <div class="title">Tus datos personales</div>
       <div class="subtitle">Campos obligatorios para completar tu registro</div>
@@ -35,7 +35,7 @@ export function viewOwnerReg1() {
       </div>
     </div>
     <div class="form-foot">
-      <button class="btn btn--lime" ${act('ownerSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Creando cuenta…' : 'Continuar'}</button>
+      <button class="btn btn--action" ${act('ownerSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Creando cuenta…' : 'Continuar'}</button>
     </div>
   </div>`;
 }
@@ -45,7 +45,7 @@ export function viewOwnerReg2() {
   const invalid = !(g.name.trim() && g.address.trim() && g.hours.trim()) || state.busy;
   return `<div class="col">
     ${stepHead('Paso 2 de 4 · Datos del gimnasio', 'goto:ownerReg1')}
-    ${stepBars(2, 4, 'lime')}
+    ${stepBars(2, 4, '')}
     <div class="form-body">
       <div class="title">Tu gimnasio</div>
       <div class="subtitle">Estos datos los verán tus clientes</div>
@@ -57,46 +57,46 @@ export function viewOwnerReg2() {
       </div>
     </div>
     <div class="form-foot">
-      <button class="btn btn--lime" ${act('ownerCreateGym')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Creando gimnasio…' : 'Continuar'}</button>
+      <button class="btn btn--action" ${act('ownerCreateGym')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Creando gimnasio…' : 'Continuar'}</button>
     </div>
   </div>`;
 }
 
 export function viewOwnerReg3() {
   const chips = state.equipment.map(e => `
-    <div style="display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:8px 8px 8px 14px;font-size:13px">
+    <div class="pill" style="display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px">
       <span>${esc(e.name)}</span>
       <span ${act('removeEquipment', e.id)} style="width:18px;height:18px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--muted)">&times;</span>
     </div>`).join('');
 
   const have = new Set(state.equipment.map(e => e.name));
   const suggestions = EQUIPMENT_SUGGESTIONS.filter(s => !have.has(s)).map(s =>
-    `<div ${act('addEquipment', s)} style="background:var(--surface-dim);border:1px dashed rgba(255,255,255,0.18);border-radius:100px;padding:7px 13px;font-size:12.5px;color:var(--muted);cursor:pointer">+ ${s}</div>`).join('');
+    `<div ${act('addEquipment', s)} style="background:var(--surface-dim);border:1px dashed var(--line-strong);border-radius:100px;padding:7px 13px;font-size:12.5px;color:var(--muted);cursor:pointer">+ ${s}</div>`).join('');
 
   return `<div class="col">
     ${stepHead('Paso 3 de 4 · Equipo disponible', 'goto:ownerReg2')}
-    ${stepBars(3, 4, 'lime')}
+    ${stepBars(3, 4, '')}
     <div class="form-body">
       <div class="title">Máquinas y equipo</div>
       <div class="subtitle" style="margin-bottom:18px">Agrega cada máquina que tenga tu gym. Esto ayuda a recomendar rutinas con IA a tus clientes.</div>
       ${errorBanner()}
       <div style="display:flex;gap:8px;margin-bottom:16px">
         ${textField('newEquipment', 'Ej. Máquina de poleas', state.newEquipment, { sm: true, style: 'flex:1' })}
-        <button ${act('addEquipmentFromInput')} style="background:var(--lime);border:none;border-radius:12px;padding:0 18px;color:var(--bg);font-weight:700;font-size:20px;cursor:pointer">+</button>
+        <button ${act('addEquipmentFromInput')} class="btn btn--brand" style="padding:0 18px;font-size:20px">+</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${state.equipment.length && suggestions ? '16px' : '0'}">${chips}</div>
-      ${suggestions ? `<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Sugeridas</div><div style="display:flex;flex-wrap:wrap;gap:8px">${suggestions}</div>` : ''}
+      ${suggestions ? `<div class="eyebrow" style="margin-bottom:8px">Sugeridas</div><div style="display:flex;flex-wrap:wrap;gap:8px">${suggestions}</div>` : ''}
     </div>
     <div class="form-foot">
-      <button class="btn btn--lime" ${act('goto', 'ownerReg4')}>Continuar</button>
+      <button class="btn btn--action" ${act('goto', 'ownerReg4')}>Continuar</button>
     </div>
   </div>`;
 }
 
 export function viewOwnerReg4() {
   return viewPlansEditor({
-    stepHeader: `${stepHead('Paso 4 de 4 · Planes de membresía', 'goto:ownerReg3')}${stepBars(4, 4, 'lime')}`,
-    finishButton: `<div class="form-foot"><button class="btn btn--lime" ${act('ownerDashFromReg')}>Finalizar registro</button></div>`,
+    stepHeader: `${stepHead('Paso 4 de 4 · Planes de membresía', 'goto:ownerReg3')}${stepBars(4, 4, '')}`,
+    finishButton: `<div class="form-foot"><button class="btn btn--action" ${act('ownerDashFromReg')}>Finalizar registro</button></div>`,
   });
 }
 
@@ -104,19 +104,19 @@ export function viewOwnerReg4() {
 // solo lo usa el registro, pero queda separado para no duplicar el formulario.
 export function viewPlansEditor({ stepHeader, finishButton }) {
   const rows = state.plans.map(p => `
-    <div class="card" style="border-color:${state.editingPlanId === p.id ? 'var(--lime)' : 'var(--line)'};padding:14px 16px;display:flex;justify-content:space-between;align-items:center">
+    <div class="card" style="border-color:${state.editingPlanId === p.id ? 'var(--brand)' : 'var(--line)'};padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div>
         <div style="font-size:14.5px;font-weight:700">${esc(p.name)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(DURATION_LABELS[p.duration] || p.duration)} · $${esc(p.price)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(DURATION_LABELS[p.duration] || p.duration)} · ${money(p.price)}</div>
       </div>
       <div style="display:flex;gap:10px;align-items:center">
-        <div ${act('editPlan', p.id)} style="font-size:12px;font-weight:700;color:var(--lime);cursor:pointer">Editar</div>
-        <div ${act('deletePlan', p.id)} style="font-size:12px;font-weight:700;color:var(--red);cursor:pointer">Eliminar</div>
+        <div ${act('editPlan', p.id)} style="font-size:12px;font-weight:700;color:var(--brand);cursor:pointer">Editar</div>
+        <div ${act('deletePlan', p.id)} style="font-size:12px;font-weight:700;color:var(--danger);cursor:pointer">Eliminar</div>
       </div>
     </div>`).join('');
 
   const durations = ['Diario', 'Mensual', 'Anual'].map(d =>
-    `<div ${act('setPlanDuration', d)} ${chip(state.newPlanDuration === d, 'lime')}>${d}</div>`).join('');
+    `<div ${act('setPlanDuration', d)} class="chip chip--brand${state.newPlanDuration === d ? ' is-active' : ''}">${d}</div>`).join('');
 
   const editing = !!state.editingPlanId;
 
@@ -126,15 +126,15 @@ export function viewPlansEditor({ stepHeader, finishButton }) {
       <div class="title">Crea tus planes</div>
       <div class="subtitle" style="margin-bottom:18px">Tus clientes elegirán entre estos al registrarse. Puedes editar o eliminar cualquiera.</div>
       ${errorBanner()}
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px">${rows}</div>
+      <div style="margin-bottom:8px">${rows}</div>
       <div class="card--dashed">
-        <div style="font-size:13px;font-weight:700;color:var(--muted)">${editing ? 'Editar plan' : 'Agregar plan'}</div>
+        <div class="eyebrow">${editing ? 'Editar plan' : 'Agregar plan'}</div>
         ${textField('newPlanName', 'Nombre del plan', state.newPlanName, { sm: true })}
-        ${textField('newPlanPrice', 'Precio (USD)', state.newPlanPrice, { sm: true })}
+        ${textField('newPlanPrice', 'Precio', state.newPlanPrice, { sm: true })}
         <div style="display:flex;gap:8px">${durations}</div>
         <div style="display:flex;gap:8px">
-          <button ${act('savePlan')} style="flex:1;background:var(--lime);border:none;border-radius:10px;padding:12px;color:var(--bg);font-weight:700;font-size:13.5px;cursor:pointer">${editing ? 'Guardar cambios' : 'Agregar plan'}</button>
-          ${editing ? `<button ${act('cancelEditPlan')} style="background:var(--surface-2);border:none;border-radius:10px;padding:12px 16px;color:var(--muted);font-weight:700;font-size:13.5px;cursor:pointer">Cancelar</button>` : ''}
+          <button ${act('savePlan')} class="btn btn--brand" style="flex:1;padding:12px;font-size:13.5px">${editing ? 'Guardar cambios' : 'Agregar plan'}</button>
+          ${editing ? `<button ${act('cancelEditPlan')} class="btn btn--ghost" style="padding:12px 16px;font-size:13.5px">Cancelar</button>` : ''}
         </div>
       </div>
     </div>
@@ -235,20 +235,20 @@ export function viewScanCheckin() {
     </div>
     ${state.scanError
       ? `<div class="card" style="text-align:center;padding:28px 20px">
-          <div style="color:var(--red);font-size:13px;font-weight:700;margin-bottom:6px">No pudimos abrir la cámara</div>
+          <div style="color:var(--danger);font-size:13px;font-weight:700;margin-bottom:6px">No pudimos abrir la cámara</div>
           <div style="font-size:12px;color:var(--muted);line-height:1.5">${esc(state.scanError)}</div>
           <div style="font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5">Mientras tanto podés registrar la entrada a mano desde la lista de clientes.</div>
           <div style="display:flex;gap:18px;justify-content:center;margin-top:12px">
-            <div ${act('goToScanCheckin')} style="font-size:12px;color:var(--mint);cursor:pointer;font-weight:700">Reintentar</div>
-            <div ${act('goto', 'ownerDash')} style="font-size:12px;color:var(--sky);cursor:pointer;font-weight:700">Volver a Clientes</div>
+            <div ${act('goToScanCheckin')} style="font-size:12px;color:var(--ok);cursor:pointer;font-weight:700">Reintentar</div>
+            <div ${act('goto', 'ownerDash')} style="font-size:12px;color:var(--info);cursor:pointer;font-weight:700">Volver a Clientes</div>
           </div>
         </div>`
       : `<div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:1/1">
           <video id="qrScanVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
           <div style="position:absolute;inset:16%;border:2px solid rgba(255,255,255,0.55);border-radius:16px;pointer-events:none"></div>
         </div>
-        ${status ? `<div class="card" style="margin-top:14px;text-align:center;border-color:${status.ok ? 'var(--mint)' : 'var(--red)'}">
-            <div style="font-size:13px;font-weight:700;color:${status.ok ? 'var(--mint)' : 'var(--red)'}">${esc(status.text)}</div>
+        ${status ? `<div class="card" style="margin-top:14px;text-align:center;border-color:${status.ok ? 'var(--ok)' : 'var(--danger)'}">
+            <div style="font-size:13px;font-weight:700;color:${status.ok ? 'var(--ok)' : 'var(--danger)'}">${esc(status.text)}</div>
           </div>` : `<div style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px">Apuntá la cámara al código "Mi QR" del cliente</div>`}`}
   </div>`;
 }
@@ -281,10 +281,10 @@ function inviteCard(role) {
         <div style="font-size:10.5px;color:var(--muted)">Código</div>
         <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;font-family:var(--font-display)">${esc(code)}</div>
       </div>
-      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--lime)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--red)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--red)' : 'var(--bg)'};font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
+      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--action)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--danger)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--danger)' : '#fff'};font-weight:700;font-size:12.5px;cursor:pointer;white-space:nowrap">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
     </div>
-    ${state.inviteLinkCopyFailed ? `<div style="font-size:11px;color:var(--red);margin-top:8px">Tu navegador no dejó copiar automático — copiá el código de arriba a mano.</div>` : ''}
-    <div ${act('regenerateGymInvite', role)} style="font-size:11px;color:var(--sky);cursor:pointer;margin-top:8px;text-decoration:underline">Regenerar código</div>
+    ${state.inviteLinkCopyFailed ? `<div style="font-size:11px;color:var(--danger);margin-top:8px">Tu navegador no dejó copiar automático — copiá el código de arriba a mano.</div>` : ''}
+    <div ${act('regenerateGymInvite', role)} style="font-size:11px;color:var(--info);cursor:pointer;margin-top:8px;text-decoration:underline">Regenerar código</div>
   </div>`;
 }
 
@@ -348,23 +348,23 @@ export function viewOwnerEntrenadores() {
   const interestCountFor = candidateId => state.trainerInterest.filter(i => i.candidate_user_id === candidateId).length;
 
   const pendingBlock = pending.length ? `
-    <div class="section-title" style="color:var(--amber);margin-bottom:10px">Solicitudes pendientes (${pending.length})</div>
+    <div class="section-title" style="color:var(--warn);margin-bottom:10px">Solicitudes pendientes (${pending.length})</div>
     ${pending.map(t => {
       const interest = interestCountFor(t.id);
       return `
-      <div class="card" style="border-color:rgba(251,191,36,0.35);margin-bottom:10px">
+      <div class="card" style="border-color:rgba(var(--warn-rgb),0.35);margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:12px">
-          <div class="avatar avatar--sq avatar--amber">${esc(initials(t.name))}</div>
+          <div class="avatar avatar--sq" style="background:var(--warn-dim);color:var(--warn)">${esc(initials(t.name))}</div>
           <div style="flex:1">
             <div style="font-size:14.5px;font-weight:700">${esc(t.name)}</div>
-            <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)} · $${esc(t.price)}/mes</div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)} · ${money(t.price)}/mes</div>
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${esc(t.email)} · ${esc(t.phone)}</div>
           </div>
         </div>
         <div style="margin-top:10px;font-size:11.5px;font-weight:700;color:var(--muted)">${interest} ${interest === 1 ? 'cliente interesado' : 'clientes interesados'}</div>
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button ${act('approveTrainer', t.id)} style="flex:1;background:var(--action);border:none;border-radius:10px;padding:10px;color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">Aprobar</button>
-          <button ${act('rejectTrainer', t.id)} style="flex:1;background:var(--surface-2);border:none;border-radius:10px;padding:10px;color:var(--red);font-weight:700;font-size:12.5px;cursor:pointer">Rechazar</button>
+          <button ${act('approveTrainer', t.id)} class="btn btn--action" style="flex:1;padding:10px;font-size:12.5px">Aprobar</button>
+          <button ${act('rejectTrainer', t.id)} class="btn btn--ghost" style="flex:1;padding:10px;font-size:12.5px;color:var(--danger)">Rechazar</button>
         </div>
       </div>`;
     }).join('')}
@@ -411,40 +411,37 @@ export function viewOwnerAdmins() {
   const approved = state.gymAdminsForGym.filter(a => a.status === 'approved');
 
   const pendingBlock = pending.length ? `
-    <div class="section-title" style="color:var(--sky);margin-bottom:10px">Solicitudes pendientes (${pending.length})</div>
+    <div class="section-title" style="color:var(--info);margin-bottom:10px">Solicitudes pendientes (${pending.length})</div>
     ${pending.map(a => `
-      <div class="card" style="border-color:rgba(56,189,248,0.35);margin-bottom:10px">
+      <div class="card" style="border-color:rgba(var(--info-rgb),0.35);margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:12px">
-          <div class="avatar avatar--sq avatar--sky">${esc(initials(a.name))}</div>
+          <div class="avatar avatar--sq" style="background:var(--info-dim);color:var(--info)">${esc(initials(a.name))}</div>
           <div style="flex:1">
             <div style="font-size:14.5px;font-weight:700">${esc(a.name)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(a.email)} · ${esc(a.phone)}</div>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:12px">
-          <button ${act('approveAdmin', a.id)} style="flex:1;background:var(--mint);border:none;border-radius:10px;padding:10px;color:var(--bg);font-weight:700;font-size:12.5px;cursor:pointer">Aprobar</button>
-          <button ${act('rejectAdmin', a.id)} style="flex:1;background:var(--surface-2);border:none;border-radius:10px;padding:10px;color:var(--red);font-weight:700;font-size:12.5px;cursor:pointer">Rechazar</button>
+          <button ${act('approveAdmin', a.id)} class="btn btn--action" style="flex:1;padding:10px;font-size:12.5px">Aprobar</button>
+          <button ${act('rejectAdmin', a.id)} class="btn btn--ghost" style="flex:1;padding:10px;font-size:12.5px;color:var(--danger)">Rechazar</button>
         </div>
       </div>`).join('')}
   ` : '';
 
   const rows = approved.map(a => `
-    <div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:12px">
-      <div class="avatar avatar--sq avatar--sky">${esc(initials(a.name))}</div>
-      <div style="flex:1">
-        <div style="font-size:14.5px;font-weight:700">${esc(a.name)}</div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(a.email)}</div>
+    <div class="row">
+      <div class="avatar avatar--sq" style="background:var(--info-dim);color:var(--info)">${esc(initials(a.name))}</div>
+      <div class="row__body">
+        <div class="row__title">${esc(a.name)}</div>
+        <div class="row__meta">${esc(a.email)}</div>
       </div>
     </div>`).join('');
 
   return `<div class="pane">
     ${errorBanner()}
-    ${inviteCard('admin')}
     ${pendingBlock}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${approved.length} ${approved.length === 1 ? 'administrador activo' : 'administradores activos'} en tu gym</div>
-    ${rows || `<div class="card" style="border:1px dashed rgba(255,255,255,0.12);padding:24px;text-align:center">
-        <div style="font-size:12.5px;color:var(--muted)">Todavía no tienes administradores. Compartí el link de invitación de arriba para que alguien se una como admin.</div>
-      </div>`}
+    ${rows || `<div class="empty"><div class="empty__title">Sin administradores</div>Compartí el link de invitación de administrador desde Configuración para que alguien se una</div>`}
   </div>`;
 }
 
@@ -621,7 +618,7 @@ export function viewOwnerPlatform() {
       <div style="font-size:13px;font-weight:700;color:var(--muted)">Generar invitación de dueño</div>
       <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Cada link es de un solo uso — quien lo abra puede registrar UN gimnasio nuevo como dueño.</div>
       ${textField('platformInviteNote', 'Nota (ej. nombre del cliente) — opcional', state.platformInviteNote, { sm: true })}
-      <button ${act('generatePlatformInvite')} style="background:var(--lime);border:none;border-radius:10px;padding:12px;color:var(--bg);font-weight:700;font-size:13.5px;cursor:pointer;width:100%;margin-top:10px">${state.busy ? 'Generando…' : 'Generar link de invitación'}</button>
+      <button ${act('generatePlatformInvite')} class="btn btn--brand" style="width:100%;padding:12px;font-size:13.5px;margin-top:10px">${state.busy ? 'Generando…' : 'Generar link de invitación'}</button>
     </div>
     ${link ? `<div class="card--dashed">
       <div style="font-size:13px;font-weight:700;color:var(--muted)">Último link generado</div>
@@ -629,7 +626,7 @@ export function viewOwnerPlatform() {
         <canvas class="qr-canvas" data-qr="${esc(link)}" data-qr-size="64"></canvas>
         <div style="flex:1;min-width:0;font-size:11.5px;color:var(--text-soft);word-break:break-all">${esc(link)}</div>
       </div>
-      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--lime)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--red)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--red)' : 'var(--bg)'};font-weight:700;font-size:12.5px;cursor:pointer;width:100%;margin-top:10px">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
+      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--brand)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--danger)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--danger)' : '#fff'};font-weight:700;font-size:12.5px;cursor:pointer;width:100%;margin-top:10px">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
     </div>` : ''}
   </div>`;
 }

@@ -16,7 +16,7 @@ import { viewOwnerPlatform } from './owner.js';
 export function viewTrainerPending() {
   return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;position:relative;z-index:0">
     <div class="gym-watermark gym-watermark--amber">${iconSpan('clipboard')}</div>
-    <div style="width:64px;height:64px;border-radius:50%;background:rgba(251,191,36,0.15);display:flex;align-items:center;justify-content:center;color:var(--amber);margin-bottom:20px">${iconSpan('clock', 28)}</div>
+    <div style="width:64px;height:64px;border-radius:50%;background:var(--warn-dim);display:flex;align-items:center;justify-content:center;color:var(--warn);margin-bottom:20px">${iconSpan('clock', 28)}</div>
     <div style="font-size:19px;font-weight:800">Perfil en revisión</div>
     <div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6;max-width:280px">Hola ${esc(state.pendingTrainerName)}, tu perfil como entrenador fue enviado. El administrador del gimnasio debe aprobarlo antes de que puedas acceder a tu panel.</div>
     <button class="btn btn--ghost" style="margin-top:28px" ${act('signOut')}>Volver al inicio</button>

@@ -7,10 +7,12 @@
      --brand  (magenta) = identidad. Logo, cabeceras, detalles de marca.
      --action (rojo)    = acción. Botones, valores destacados, iconos activos.
 
-   Los tokens viejos (--lime/--mint/--amber/--sky) quedan como ALIAS del
-   sistema nuevo: se usan con interpolación dinámica en JS (`btn--${accent}`,
-   `var(--${variant})`), así que borrarlos de golpe rompería pantallas que
-   todavía no se rediseñaron. Se van eliminando pantalla por pantalla. */
+   Los tokens viejos (--lime/--mint/--amber/--sky/--red, de antes del
+   rediseño) vivieron un tiempo como ALIAS del sistema nuevo mientras se
+   migraba pantalla por pantalla — ya no queda ninguna pantalla sin migrar
+   (Etapa 2 completa), así que se eliminaron. Usar siempre los tokens
+   semánticos: --action/--brand para acento, --ok/--warn/--danger/--info
+   para estado. */
 :root{
   /* ---------- Fondo y superficies ---------- */
   --bg:#08080A;
@@ -71,13 +73,6 @@
   --shadow-card:0 1px 0 rgba(255,255,255,0.03) inset, 0 10px 30px rgba(0,0,0,0.55);
   --glow-action:0 0 0 1px rgba(226,55,68,0.35), 0 10px 30px rgba(226,55,68,0.26);
   --glow-brand:0 0 0 1px rgba(232,51,109,0.35), 0 10px 30px rgba(232,51,109,0.24);
-
-  /* ---------- Alias heredados (ver nota de cabecera) ---------- */
-  --lime:var(--action);
-  --mint:var(--ok);
-  --amber:var(--warn);
-  --sky:var(--info);
-  --red:var(--danger);
 }
 
 *{box-sizing:border-box}
@@ -195,12 +190,6 @@ input,textarea,select,button{font-family:inherit}
 .btn--brand{background:var(--brand);color:#fff;box-shadow:var(--glow-brand)}
 .btn--ghost{background:transparent;border:1px solid var(--line-strong);color:var(--text-soft)}
 .btn--ghost:hover{border-color:var(--action-line);color:var(--text)}
-/* Alias heredados por rol — se eliminan pantalla por pantalla */
-.btn--lime{background:var(--action);color:#fff;box-shadow:var(--glow-action)}
-.btn--mint{background:var(--action);color:#fff;box-shadow:var(--glow-action)}
-.btn--amber{background:var(--action);color:#fff;box-shadow:var(--glow-action)}
-.btn--sky{background:var(--action);color:#fff;box-shadow:var(--glow-action)}
-
 .card{
   background:var(--surface);
   border:1px solid var(--line);
@@ -231,11 +220,6 @@ input,textarea,select,button{font-family:inherit}
   border:1px solid var(--line);
 }
 .chip.is-active{font-weight:700;border-color:transparent}
-.chip--lime.is-active{background:var(--lime);color:var(--bg)}
-.chip--mint.is-active{background:var(--mint);color:var(--bg)}
-.chip--amber.is-active{background:var(--amber);color:var(--bg)}
-.chip--sky.is-active{background:var(--sky);color:var(--bg)}
-/* Semánticos nuevos (ver nota de --btn arriba) */
 .chip--action.is-active{background:var(--action);color:#fff}
 .chip--brand.is-active{background:var(--brand);color:#fff}
 .chip--ok.is-active{background:var(--ok);color:var(--bg)}
@@ -259,8 +243,7 @@ input,textarea,select,button{font-family:inherit}
 .step-label{font-size:13px;color:var(--muted)}
 .step-bars{display:flex;gap:6px;padding:0 20px 20px}
 .step-bars i{height:4px;flex:1;border-radius:2px;background:var(--surface-2)}
-.step-bars i.on{background:var(--lime)}
-.step-bars.mint i.on{background:var(--mint)}
+.step-bars i.on{background:var(--action)}
 
 .form-body{padding:0 24px;flex:1}
 .form-foot{padding:16px 24px 28px}
@@ -277,12 +260,12 @@ input,textarea,select,button{font-family:inherit}
   color:var(--muted);
 }
 .tab .icon{width:16px;height:16px}
-.tab.is-active{background:rgba(228,0,58,0.14);color:var(--lime)}
+.tab.is-active{background:var(--action-dim);color:var(--action)}
 .tab span{font-size:10.5px;font-weight:700;color:inherit}
 .tabbar--client .tab{padding:6px 1px}
-.tabbar--client .tab.is-active{background:rgba(52,211,153,0.12);color:var(--mint)}
+.tabbar--client .tab.is-active{background:var(--ok-dim);color:var(--ok)}
 .tabbar--client .tab span{font-size:9.5px}
-.tabbar--trainer .tab.is-active{background:rgba(251,191,36,0.12);color:var(--amber)}
+.tabbar--trainer .tab.is-active{background:var(--warn-dim);color:var(--warn)}
 
 /* ---------- app header ---------- */
 .app-head{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 14px}
@@ -298,12 +281,8 @@ input,textarea,select,button{font-family:inherit}
   font-size:14px;font-weight:800;color:var(--muted);flex-shrink:0;
 }
 .avatar--sq{width:42px;height:42px;border-radius:12px;font-size:15px}
-.avatar--lime{background:rgba(228,0,58,0.15);color:var(--lime)}
-.avatar--mint{background:rgba(52,211,153,0.15);color:var(--mint)}
-.avatar--amber{background:rgba(251,191,36,0.15);color:var(--amber)}
 .avatar--action{background:var(--action-dim);color:var(--action)}
 .avatar--brand{background:var(--brand-dim);color:var(--brand)}
-.avatar--sky{background:rgba(56,189,248,0.15);color:var(--sky)}
 
 .pill{background:var(--surface);border:1px solid var(--line);border-radius:100px;padding:7px 14px;font-size:12px}
 .pill--flat{background:var(--surface-2);border:none;border-radius:100px;padding:5px 12px;font-size:11.5px}
@@ -364,11 +343,10 @@ input,textarea,select,button{font-family:inherit}
   top:-40px;right:-56px;
   width:230px;height:230px;
   opacity:0.055;
-  color:var(--lime);
+  color:var(--action);
   pointer-events:none;
 }
-.gym-watermark--amber{color:var(--amber)}
-.gym-watermark--sky{color:var(--sky)}
+.gym-watermark--amber{color:var(--warn)}
 .gym-watermark svg{width:100%;height:100%;display:block}
 
 /* ---------- escritorio ---------- */

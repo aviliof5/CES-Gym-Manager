@@ -143,14 +143,14 @@ export function textField(field, placeholder, value, opts) {
 
 export function errorBanner() {
   if (!state.error) return '';
-  return `<div style="margin:0 22px 12px;background:rgba(255,92,92,0.12);border:1px solid rgba(255,92,92,0.4);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--red)">${esc(state.error)}</div>`;
+  return `<div style="margin:0 22px 12px;background:var(--danger-dim);border:1px solid rgba(var(--danger-rgb),0.4);border-radius:12px;padding:10px 14px;font-size:12.5px;color:var(--danger)">${esc(state.error)}</div>`;
 }
 
 // Banner persistente que se prepende a cualquier pantalla mientras el
 // navegador no tiene conexión (ver listeners online/offline en router.js) —
 // así el usuario lo ve apenas se corta, sin necesidad de tocar nada primero.
 export function offlineBanner() {
-  return `<div style="background:var(--red);color:var(--bg);font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 14)}<span>Sin conexión a internet</span></div>`;
+  return `<div style="background:var(--danger);color:#fff;font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 14)}<span>Sin conexión a internet</span></div>`;
 }
 
 // Input de correo que solo captura la parte local — el sufijo @gmail.com se
@@ -183,7 +183,7 @@ export function passwordStrength(pw) {
 export function passwordStrengthMeter(pw) {
   const level = passwordStrength(pw);
   const labels = ['', 'Débil', 'Media', 'Fuerte'];
-  const colors = ['var(--surface-2)', 'var(--red)', 'var(--amber)', 'var(--mint)'];
+  const colors = ['var(--surface-2)', 'var(--danger)', 'var(--warn)', 'var(--ok)'];
   const barColor = colors[level] || colors[0];
   const bars = [1, 2, 3].map(i => `<div style="flex:1;height:4px;border-radius:2px;background:${i <= level ? barColor : 'var(--surface-2)'}"></div>`).join('');
   const hint = pw
@@ -249,7 +249,7 @@ export function commentCards(list) {
     <div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between">
         <div style="font-size:13.5px;font-weight:700">${esc(cm.name)}</div>
-        <div style="font-size:12px;color:var(--amber)">${'★'.repeat(cm.rating)}${'☆'.repeat(5 - cm.rating)}</div>
+        <div style="font-size:12px;color:var(--action)">${'★'.repeat(cm.rating)}${'☆'.repeat(5 - cm.rating)}</div>
       </div>
       <div style="font-size:13px;color:var(--text-soft);margin-top:6px;line-height:1.5">${esc(cm.text)}</div>
       <div style="font-size:10.5px;color:var(--muted);margin-top:8px">${esc(cm.date)}</div>

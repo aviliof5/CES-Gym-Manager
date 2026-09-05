@@ -34,14 +34,14 @@ export function viewClientReg1() {
   const backTo = state.inviteRole === 'client' ? 'goto:inviteWelcome' : 'goto:landing';
   return `<div class="col">
     ${stepHead('Paso 1 de 4 · Registro Cliente', backTo)}
-    ${stepBars(1, 4, 'mint')}
+    ${stepBars(1, 4, '')}
     <div class="form-body">
       <div class="title">Tus datos personales</div>
       <div class="subtitle" style="margin-bottom:20px">Todos los campos y la foto de rostro son obligatorios</div>
       ${errorBanner()}
       <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
         <div class="slot slot--circle" style="width:110px;height:110px" ${act('pickPhoto', 'face')}>${photo}</div>
-        ${c.photoFile ? `<div class="chip chip--mint is-active" style="margin-top:12px;padding:8px 16px;font-size:12px">✓ Foto lista</div>` : ''}
+        ${c.photoFile ? `<div class="chip chip--action is-active" style="margin-top:12px;padding:8px 16px;font-size:12px">✓ Foto lista</div>` : ''}
         <div style="font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center;max-width:230px;line-height:1.5">Sube una foto donde se vea bien tu rostro para identificar tu acceso al gym.</div>
       </div>
       <div class="stack">
@@ -52,7 +52,7 @@ export function viewClientReg1() {
       </div>
     </div>
     <div class="form-foot">
-      <button class="btn btn--mint" ${act('clientSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Creando cuenta…' : 'Continuar'}</button>
+      <button class="btn btn--action" ${act('clientSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Creando cuenta…' : 'Continuar'}</button>
     </div>
   </div>`;
 }
@@ -79,11 +79,11 @@ export function viewClientPhotoRequired() {
       ${errorBanner()}
       <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
         <div class="slot slot--circle" style="width:110px;height:110px" ${act('pickPhoto', 'face')}>${photo}</div>
-        ${c.photoFile ? `<div class="chip chip--mint is-active" style="margin-top:12px;padding:8px 16px;font-size:12px">✓ Foto lista</div>` : ''}
+        ${c.photoFile ? `<div class="chip chip--action is-active" style="margin-top:12px;padding:8px 16px;font-size:12px">✓ Foto lista</div>` : ''}
       </div>
     </div>
     <div class="form-foot">
-      <button class="btn btn--mint" ${act('confirmRequiredFacePhoto')} ${(!c.photoFile || state.busy) ? 'disabled' : ''}>${state.busy ? 'Subiendo…' : 'Continuar'}</button>
+      <button class="btn btn--action" ${act('confirmRequiredFacePhoto')} ${(!c.photoFile || state.busy) ? 'disabled' : ''}>${state.busy ? 'Subiendo…' : 'Continuar'}</button>
     </div>
   </div>`;
 }
@@ -91,13 +91,13 @@ export function viewClientPhotoRequired() {
 export function viewClientReg2() {
   const p = state.clientPhysicalReg;
   const levels = LEVELS.map(lv =>
-    `<div ${act('setLevel', lv.id)} ${chip(p.level === lv.id, 'mint')}>${lv.label}</div>`).join('');
+    `<div ${act('setLevel', lv.id)} class="chip chip--action${p.level === lv.id ? ' is-active' : ''}">${lv.label}</div>`).join('');
   const goals = GOALS.map(g =>
-    `<div ${act('setRegGoal', g.id)} ${chip(p.goal === g.id, 'mint')}>${g.label}</div>`).join('');
+    `<div ${act('setRegGoal', g.id)} class="chip chip--action${p.goal === g.id ? ' is-active' : ''}">${g.label}</div>`).join('');
 
   return `<div class="col">
     ${stepHead('Paso 2 de 4 · Condición física', 'goto:clientReg1')}
-    ${stepBars(2, 4, 'mint')}
+    ${stepBars(2, 4, '')}
     <div class="form-body">
       <div class="title">Condición física</div>
       <div class="subtitle" style="margin-bottom:22px">Opcional — nos ayuda a recomendarte mejores rutinas</div>
@@ -107,14 +107,14 @@ export function viewClientReg2() {
         ${textField('clientPhysicalReg.height', 'Altura (cm)', p.height, { style: 'flex:1' })}
       </div>
       ${textField('clientPhysicalReg.age', 'Edad', p.age, { style: 'margin-bottom:18px' })}
-      <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Nivel de experiencia</div>
+      <div class="eyebrow" style="margin-bottom:8px">Nivel de experiencia</div>
       <div style="display:flex;gap:8px;margin-bottom:18px">${levels}</div>
-      <div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Meta principal</div>
+      <div class="eyebrow" style="margin-bottom:8px">Meta principal</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px">${goals}</div>
     </div>
     <div class="form-foot" style="display:flex;gap:10px">
       <button class="btn btn--ghost" style="flex:1" ${act('goClientReg3')}>Omitir</button>
-      <button class="btn btn--mint" style="flex:2" ${act('savePhysicalAndContinue')}>Continuar</button>
+      <button class="btn btn--action" style="flex:2" ${act('savePhysicalAndContinue')}>Continuar</button>
     </div>
   </div>`;
 }
@@ -122,18 +122,18 @@ export function viewClientReg2() {
 export function viewClientReg3() {
   const cards = state.plans.map(p => {
     const sel = state.selectedPlanId === p.id;
-    return `<div ${act('selectPlan', p.id)} style="display:flex;justify-content:space-between;align-items:center;padding:16px;border-radius:14px;cursor:pointer;background:${sel ? 'rgba(52,211,153,0.1)' : 'var(--surface)'};border:1px solid ${sel ? 'var(--mint)' : 'var(--line)'}">
-      <div>
-        <div style="font-size:15px;font-weight:700">${esc(p.name)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(DURATION_LABELS[p.duration] || p.duration)}</div>
+    return `<div ${act('selectPlan', p.id)} class="row" style="cursor:pointer;margin-bottom:0;${sel ? 'border-color:var(--action);background:var(--action-dim)' : ''}">
+      <div class="row__body">
+        <div class="row__title">${esc(p.name)}</div>
+        <div class="row__meta">${esc(DURATION_LABELS[p.duration] || p.duration)}</div>
       </div>
-      <div style="font-size:17px;font-weight:900;color:var(--mint)">$${esc(p.price)}</div>
+      <div style="font-family:var(--font-display);font-size:18px;color:var(--action)">${money(p.price)}</div>
     </div>`;
   }).join('');
 
   return `<div class="col">
     ${stepHead('Paso 3 de 4 · Elige tu plan', 'goto:clientReg2')}
-    ${stepBars(3, 4, 'mint')}
+    ${stepBars(3, 4, '')}
     <div class="form-body">
       ${errorBanner()}
       <div class="card" style="padding:14px 16px;margin-bottom:20px">
@@ -144,7 +144,7 @@ export function viewClientReg3() {
       <div style="display:flex;flex-direction:column;gap:10px">${cards}</div>
     </div>
     <div class="form-foot">
-      <button class="btn btn--mint" ${act('choosePlanAndContinue')} ${!state.selectedPlanId ? 'disabled' : ''}>Continuar</button>
+      <button class="btn btn--action" ${act('choosePlanAndContinue')} ${!state.selectedPlanId ? 'disabled' : ''}>Continuar</button>
     </div>
   </div>`;
 }
@@ -154,36 +154,36 @@ export function viewClientReg4() {
   const invalid = wants === null || (wants === true && !state.selectedTrainerId) || state.busy;
   const cards = state.approvedTrainersForReg.map(t => {
     const sel = state.selectedTrainerId === t.id;
-    return `<div ${act('selectTrainer', t.id)} style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;cursor:pointer;background:${sel ? 'rgba(52,211,153,0.1)' : 'var(--surface)'};border:1px solid ${sel ? 'var(--mint)' : 'var(--line)'}">
-      <div class="avatar avatar--sq avatar--mint">${esc(initials(t.name))}</div>
-      <div style="flex:1">
-        <div style="font-size:14.5px;font-weight:700">${esc(t.name)}</div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)}</div>
+    return `<div ${act('selectTrainer', t.id)} class="row" style="cursor:pointer;margin-bottom:0;${sel ? 'border-color:var(--action);background:var(--action-dim)' : ''}">
+      <div class="avatar avatar--sq avatar--action">${esc(initials(t.name))}</div>
+      <div class="row__body">
+        <div class="row__title">${esc(t.name)}</div>
+        <div class="row__meta">${esc(t.specialty)}</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
-        <div style="font-size:13px;font-weight:800;color:var(--mint)">$${esc(t.price)}/mes</div>
-        ${sel ? `<div style="width:20px;height:20px;border-radius:50%;background:var(--mint);display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:12px;font-weight:900">✓</div>` : ''}
+        <div style="font-size:13px;font-weight:800;color:var(--action)">${money(t.price)}/mes</div>
+        ${sel ? `<div style="width:20px;height:20px;border-radius:50%;background:var(--action);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:900">✓</div>` : ''}
       </div>
     </div>`;
   }).join('');
 
   return `<div class="col">
     ${stepHead('Paso 4 de 4 · Entrenador', 'goto:clientReg3')}
-    ${stepBars(4, 4, 'mint')}
+    ${stepBars(4, 4, '')}
     <div class="form-body">
       <div class="title">¿Quieres un entrenador?</div>
       <div class="subtitle" style="margin-bottom:20px">Un entrenador personal te guía, revisa tu progreso y te arma rutinas a medida</div>
       ${errorBanner()}
-      <div style="display:flex;gap:10px;margin-bottom:20px">
-        <div ${act('chooseWantTrainer')} ${chip(wants === true, 'mint', 'flex:1;text-align:center;padding:14px')}>Sí, quiero</div>
-        <div ${act('chooseNoTrainer')} ${chip(wants === false, 'mint', 'flex:1;text-align:center;padding:14px')}>No, por mi cuenta</div>
+      <div class="seg">
+        <div ${act('chooseWantTrainer')} class="seg__item${wants === true ? ' is-active' : ''}" style="flex:1;text-align:center">Sí, quiero</div>
+        <div ${act('chooseNoTrainer')} class="seg__item${wants === false ? ' is-active' : ''}" style="flex:1;text-align:center">No, por mi cuenta</div>
       </div>
       ${wants === true ? (state.approvedTrainersForReg.length
-        ? `<div class="section-title" style="margin-bottom:12px">Elige tu entrenador</div><div style="display:flex;flex-direction:column;gap:10px">${cards}</div>`
+        ? `<div class="section-title" style="margin:16px 0 12px">Elige tu entrenador</div><div style="display:flex;flex-direction:column;gap:10px">${cards}</div>`
         : `<div class="hint">Aún no hay entrenadores disponibles en este gimnasio.</div>`) : ''}
     </div>
     <div class="form-foot">
-      <button class="btn btn--mint" ${act('finishClientReg')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Guardando…' : 'Crear cuenta'}</button>
+      <button class="btn btn--action" ${act('finishClientReg')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Guardando…' : 'Crear cuenta'}</button>
     </div>
   </div>`;
 }
