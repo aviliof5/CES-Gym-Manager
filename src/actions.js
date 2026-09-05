@@ -688,6 +688,24 @@ export const ACTIONS = {
     await BolaAPI.trainers.updateProfile(state.myTrainer.id, { specialty: specialty.trim() || state.myTrainer.specialty, price: Number(price) || 0 });
     setState({ myTrainer: { ...state.myTrainer, specialty: specialty.trim() || state.myTrainer.specialty, price: Number(price) || 0 } });
   },
+
+  /* ---- Etapa 2: "Biblioteca de ejercicios" (pantalla transversal #23,
+     compartida por los 3 roles) ---- */
+  openExerciseLibrary: () => setState({ libraryReturn: state.screen, screen: 'exerciseLibrary', libraryQuery: '', libraryMuscleFilter: 'todos' }),
+  closeExerciseLibrary: () => setState({ screen: state.libraryReturn || 'clientHome', libraryReturn: null }),
+  setLibraryMuscleFilter: v => setState({ libraryMuscleFilter: v }),
+  addLibraryExercise: async () => {
+    const d = state.libraryDraft;
+    if (!d.name.trim()) return;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.exercisesLib.add(state.gym.id, { name: d.name.trim(), muscleGroup: d.muscleGroup.trim() || 'General', equipmentName: d.equipmentName.trim(), description: d.description.trim() });
+      const exercisesLib = await BolaAPI.exercisesLib.list(state.gym.id);
+      setState({ busy: false, exercisesLib, libraryDraft: { name: '', muscleGroup: '', equipmentName: '', description: '' } });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
 };
 
 /* ============================ screen-entry helpers ============================ */
@@ -946,10 +964,11 @@ export async function enterOwnerDash() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
   const attendanceEvents = await BolaAPI.checkins.listRangeForGym(state.gym.id, monthStart, monthEnd);
+  const exercisesLib = await BolaAPI.exercisesLib.list(state.gym.id);
 
   Object.assign(state, {
     screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
-    trainerRatingsById, attendanceEvents, attendanceSelectedDay: null,
+    trainerRatingsById, attendanceEvents, attendanceSelectedDay: null, exercisesLib,
     ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
     gymConfigDraft: { currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '' },
     busy: false,

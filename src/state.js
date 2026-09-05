@@ -132,6 +132,13 @@ export const state = {
   myTrainerRating: null, trainerRatingDraft: { rating: 0, text: '' },
   // Etapa 2 — mensajes con el propio entrenador asignado.
   conversationId: null, messages: [], messageDraft: '',
+  // Etapa 2 — "Biblioteca de ejercicios" (pantalla transversal del plan,
+  // #23): un solo `screen` compartido por los 3 roles. `libraryReturn`
+  // guarda a qué screen volver (clientHome/trainerDash/ownerDash) — las
+  // tabs de cada dashboard (clientTab/trainerTab/ownerTab) no se tocan al
+  // entrar, así que vuelven solas a como estaban.
+  libraryReturn: null, libraryQuery: '', libraryMuscleFilter: 'todos',
+  libraryDraft: { name: '', muscleGroup: '', equipmentName: '', description: '' },
 
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',

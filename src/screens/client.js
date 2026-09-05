@@ -366,6 +366,8 @@ export function exerciseRow(ex) {
   </div>`;
 }
 
+const libraryLink = () => `<div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:12px">${iconSpan('dumbbell', 14)} Ver biblioteca de ejercicios</div>`;
+
 export function viewClientRutina() {
   const trainer = state.myClientTrainer;
   const source = trainer ? state.routineSource : 'ia';
@@ -383,6 +385,7 @@ export function viewClientRutina() {
       ${sectionTitle('Rutina de tu entrenador', 'dumbbell', 'margin-bottom:4px')}
       <div class="hint">Creada y actualizada por ${esc(trainer.name)}</div>
       ${toggle}
+      ${libraryLink()}
       ${exercises.length
         ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin:12px 0 16px;width:100%" ${act('startWorkout', 'trainer')}>Comenzar entrenamiento</button>
            ${exercises.map(exerciseRow).join('')}`
@@ -398,6 +401,7 @@ export function viewClientRutina() {
   return `<div class="pane">
     ${errorBanner()}
     ${sectionTitle('Rutina con IA', 'zap', 'margin-bottom:4px')}
+    ${libraryLink()}
     <div class="hint">Elige tu meta y generamos una rutina según las máquinas de tu gym</div>
     ${toggle}
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px">${goals}</div>

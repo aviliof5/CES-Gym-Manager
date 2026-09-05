@@ -596,6 +596,10 @@ export function viewOwnerConfiguracion() {
       ${textField('gymConfigDraft.brandColor', 'Color de acento en hex (opcional, ej. #E23744)', d.brandColor, { style: 'margin-bottom:10px' })}
       <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveGymConfig')}>${state.busy ? 'Guardando…' : 'Guardar cambios'}</button>
     </div>
+    <div class="row" ${act('openExerciseLibrary')}>
+      <div class="row__body"><div class="row__title">Biblioteca de ejercicios</div><div class="row__meta">Catálogo global + el propio de tu gimnasio</div></div>
+      <div class="row__action">${iconSpan('chevronRight', 16)}</div>
+    </div>
     ${sectionTitle('Links de invitación', 'idcard', 'margin-bottom:8px')}
     <div class="hint" style="margin-bottom:12px">Un link por rol, reutilizable — quien lo abre queda unido directo a tu gimnasio con ESE rol, sin elegir de una lista.</div>
     ${inviteCard('client')}

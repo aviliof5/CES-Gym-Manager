@@ -123,6 +123,7 @@ export function viewTrainerClientes() {
 
       ${sectionTitle('Crear rutina', 'zap')}
       <div class="hint" style="margin-bottom:10px">Estos ejercicios se muestran al cliente si elige "De tu entrenador"</div>
+      <div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:10px">${iconSpan('dumbbell', 14)} Ver biblioteca completa</div>
       <div class="card" style="margin-bottom:16px">
         <select class="field" data-f="trainerRoutineDraft.exerciseId" style="margin-bottom:10px">
           <option value="">Elegí un ejercicio de la biblioteca (opcional)</option>

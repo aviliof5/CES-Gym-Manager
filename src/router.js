@@ -30,6 +30,7 @@ import {
   viewClientHome, viewClientPhotoRequired, viewWorkout, viewClientChat,
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
+import { viewExerciseLibrary } from './screens/library.js';
 
 const root = document.getElementById('app');
 
@@ -54,6 +55,7 @@ const SCREENS = {
   clientHome: viewClientHome,
   workout: viewWorkout,
   clientChat: viewClientChat,
+  exerciseLibrary: viewExerciseLibrary,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,
