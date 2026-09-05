@@ -84,6 +84,7 @@
         user_id: id, gym_id: gymId, plan_id: extra.planId, trainer_user_id: extra.trainerUserId || null,
         face_photo_key: null, weight: null, height: null, age: null, level: 'principiante', goal: extra.goal || 'perder_peso',
         membership_status: extra.status, membership_expires_at: extra.expires, last_payment_at: extra.lastPayment,
+        created_at: extra.joined || new Date().toISOString(),
       });
     };
 
@@ -110,11 +111,11 @@
     const plus = d => new Date(today.getTime() + d * 86400000).toISOString().slice(0, 10);
     const minus = d => new Date(today.getTime() - d * 86400000).toISOString().slice(0, 10);
 
-    mkUser('client-1', 'client', 'Carla Méndez', 'carla@bola.app', '555-0301', { password: 'cliente123', planId: 'plan-premium', trainerUserId: 'trainer-1', goal: 'ganar_musculo', status: 'al_dia', expires: plus(20), lastPayment: '2026-07-05' });
-    mkUser('client-2', 'client', 'Jorge Salinas', 'jorge@bola.app', '555-0302', { password: 'cliente123', planId: 'plan-basico', trainerUserId: 'trainer-2', status: 'pendiente', expires: plus(20), lastPayment: '2026-06-10' });
-    mkUser('client-3', 'client', 'Ana Torres', 'ana@bola.app', '555-0303', { password: 'cliente123', planId: 'plan-basico', trainerUserId: 'trainer-2', status: 'vencido', expires: minus(5), lastPayment: '2026-05-02' });
-    mkUser('client-4', 'client', 'Luis Rivas', 'luis@bola.app', '555-0304', { password: 'cliente123', planId: 'plan-premium', trainerUserId: 'trainer-1', status: 'al_dia', expires: plus(20), lastPayment: '2026-01-15' });
-    mkUser('client-5', 'client', 'Sofía Paredes', 'sofia@bola.app', '555-0305', { password: 'cliente123', planId: 'plan-basico', trainerUserId: 'trainer-3', status: 'al_dia', expires: plus(20), lastPayment: '2026-07-18' });
+    mkUser('client-1', 'client', 'Carla Méndez', 'carla@bola.app', '555-0301', { password: 'cliente123', planId: 'plan-premium', trainerUserId: 'trainer-1', goal: 'ganar_musculo', status: 'al_dia', expires: plus(20), lastPayment: '2026-07-05', joined: minus(60) });
+    mkUser('client-2', 'client', 'Jorge Salinas', 'jorge@bola.app', '555-0302', { password: 'cliente123', planId: 'plan-basico', trainerUserId: 'trainer-2', status: 'pendiente', expires: plus(20), lastPayment: '2026-06-10', joined: minus(45) });
+    mkUser('client-3', 'client', 'Ana Torres', 'ana@bola.app', '555-0303', { password: 'cliente123', planId: 'plan-basico', trainerUserId: 'trainer-2', status: 'vencido', expires: minus(5), lastPayment: '2026-05-02', joined: minus(200) });
+    mkUser('client-4', 'client', 'Luis Rivas', 'luis@bola.app', '555-0304', { password: 'cliente123', planId: 'plan-premium', trainerUserId: 'trainer-1', status: 'al_dia', expires: plus(20), lastPayment: '2026-01-15', joined: minus(10) });
+    mkUser('client-5', 'client', 'Sofía Paredes', 'sofia@bola.app', '555-0305', { password: 'cliente123', planId: 'plan-basico', trainerUserId: 'trainer-3', status: 'al_dia', expires: plus(20), lastPayment: '2026-07-18', joined: minus(5) });
 
     db.progress.push({ id: uid('pg'), client_user_id: 'client-1', storage_key: null, taken_at: minus(2) });
     db.progress.push({ id: uid('pg'), client_user_id: 'client-1', storage_key: null, taken_at: minus(1) });
@@ -217,7 +218,7 @@
       if (db.profiles.some(p => p.email === email)) throw new Error('Ya existe una cuenta con ese correo.');
       const id = uid('client');
       db.profiles.push({ id, role: 'client', gym_id: null, name, email, phone, password });
-      db.clientProfiles.push({ user_id: id, gym_id: null, plan_id: null, trainer_user_id: null, face_photo_key: null, weight: null, height: null, age: null, level: 'principiante', goal: 'perder_peso', membership_status: 'pendiente', membership_expires_at: null, last_payment_at: null });
+      db.clientProfiles.push({ user_id: id, gym_id: null, plan_id: null, trainer_user_id: null, face_photo_key: null, weight: null, height: null, age: null, level: 'principiante', goal: 'perder_peso', membership_status: 'pendiente', membership_expires_at: null, last_payment_at: null, created_at: new Date().toISOString() });
       session = { id, role: 'client' };
       return { user: { id }, session };
     },
@@ -296,6 +297,16 @@
       row.code = Math.random().toString(36).slice(2, 10);
       return row.code;
     },
+    async updateSettings(gymId, { currency, brandName, brandColor }) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio configuran el gimnasio.');
+      const gym = db.gyms.find(g => g.id === gymId);
+      if (!gym) throw new Error('Ese gimnasio no existe.');
+      if (currency && currency.trim()) gym.currency = currency.trim();
+      gym.brand_name = (brandName || '').trim() || null;
+      gym.brand_color = (brandColor || '').trim() || null;
+    },
     async join(gymId) {
       await wait();
       const s = requireAuth();
@@ -336,7 +347,10 @@
 
   function shapeTrainer(t) {
     const p = profileOf(t.user_id);
-    return { id: t.user_id, name: p.name, email: p.email, phone: p.phone, specialty: t.specialty, price: Number(t.price), status: t.status };
+    // is_active default true para filas sembradas antes de la Etapa 2
+    // (mismo criterio que el resto del seed: nunca inventar un dato, solo
+    // completar el default real de la columna nueva).
+    return { id: t.user_id, name: p.name, email: p.email, phone: p.phone, specialty: t.specialty, price: Number(t.price), status: t.status, isActive: t.is_active !== false };
   }
 
   function isStaff(s) { return s.role === 'admin' || s.role === 'owner'; }
@@ -364,6 +378,15 @@
       await wait();
       const t = db.trainers.find(x => x.user_id === userId);
       Object.assign(t, { specialty, price });
+    },
+    async setActive(userId, active) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio activan o desactivan un entrenador.');
+      const me = profileOf(s.id);
+      const t = db.trainers.find(x => x.user_id === userId && x.gym_id === me.gym_id && x.status === 'approved');
+      if (!t) throw new Error('Ese entrenador no existe o no está aprobado en tu gimnasio.');
+      t.is_active = !!active;
     },
 
     // Espeja supabase-client.js — ver el comentario ahí.
@@ -425,6 +448,7 @@
       planId: c.plan_id, trainerUserId: c.trainer_user_id, facePhotoKey: c.face_photo_key,
       physical: { weight: c.weight, height: c.height, age: c.age, level: c.level, goal: c.goal },
       status: c.membership_status, membershipExpiresAt: c.membership_expires_at, lastPaymentAt: c.last_payment_at,
+      createdAt: c.created_at,
     };
   }
 
@@ -438,6 +462,28 @@
     async choosePlan(userId, planId) { await wait(); db.clientProfiles.find(c => c.user_id === userId).plan_id = planId; },
     async chooseTrainer(userId, trainerUserId) { await wait(); db.clientProfiles.find(c => c.user_id === userId).trainer_user_id = trainerUserId; },
     async setFacePhotoKey(userId, key) { await wait(); db.clientProfiles.find(c => c.user_id === userId).face_photo_key = key; },
+    async suspend(userId, reason) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio suspenden un socio.');
+      const me = profileOf(s.id);
+      const c = db.clientProfiles.find(x => x.user_id === userId && x.gym_id === me.gym_id);
+      if (!c) throw new Error('Ese socio no existe en tu gimnasio.');
+      c.membership_status = 'suspendido';
+      c.suspended_at = new Date().toISOString();
+      c.suspended_reason = (reason || '').trim() || null;
+    },
+    async unsuspend(userId) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio reactivan un socio.');
+      const me = profileOf(s.id);
+      const c = db.clientProfiles.find(x => x.user_id === userId && x.gym_id === me.gym_id && x.membership_status === 'suspendido');
+      if (!c) throw new Error('Ese socio no está suspendido en tu gimnasio.');
+      c.membership_status = 'pendiente';
+      c.suspended_at = null;
+      c.suspended_reason = null;
+    },
   };
 
   /* ---------------- fotos ---------------- */
@@ -803,6 +849,14 @@
       await wait();
       const today = new Date().toISOString().slice(0, 10);
       return db.checkinEvents.filter(e => e.gym_id === gymId && e.created_at.slice(0, 10) === today)
+        .map(e => ({ client_user_id: e.client_user_id, created_at: e.created_at }));
+    },
+    // Etapa 2 — "Asistencia": un rango (típicamente el mes actual) en vez de
+    // solo "hoy", para poder marcar el calendario con los días que tuvieron
+    // check-ins reales.
+    async listRangeForGym(gymId, fromIso, toIso) {
+      await wait();
+      return db.checkinEvents.filter(e => e.gym_id === gymId && e.created_at >= fromIso && e.created_at < toIso)
         .map(e => ({ client_user_id: e.client_user_id, created_at: e.created_at }));
     },
   };

@@ -132,7 +132,7 @@
     },
 
     async get(gymId) {
-      return unwrap(await client.from('gyms').select('id, name, address, hours, invite_code').eq('id', gymId).single());
+      return unwrap(await client.from('gyms').select('id, name, address, hours, invite_code, currency, brand_name, brand_color').eq('id', gymId).single());
     },
 
     // Resolución del link/código de invitación (sección 10 del pedido
@@ -168,6 +168,14 @@
 
     async regenerateInvite(role) {
       return unwrap(await client.rpc('regenerate_gym_invite', { p_role: role }));
+    },
+
+    // Etapa 2 — "Configuración" (pantalla nueva). update_gym_settings()
+    // exige app_role_is_staff() en el servidor (owner O admin) — la RLS de
+    // gyms por sí sola solo dejaría escribir al dueño (ver la migración).
+    async updateSettings(gymId, { currency, brandName, brandColor }) {
+      const { error } = await client.rpc('update_gym_settings', { p_currency: currency, p_brand_name: brandName || null, p_brand_color: brandColor || null });
+      if (error) throw error;
     },
 
     async join(gymId) {
@@ -213,7 +221,7 @@
   // `trainers` no tiene nombre/correo propios — vienen de `profiles` vía el
   // FK trainers.user_id -> profiles.id, que PostgREST puede embeber directo.
 
-  const TRAINER_SELECT = 'user_id, specialty, price, status, profiles!inner(name, email, phone)';
+  const TRAINER_SELECT = 'user_id, specialty, price, status, is_active, profiles!inner(name, email, phone)';
 
   function shapeTrainer(row) {
     return {
@@ -224,6 +232,7 @@
       specialty: row.specialty,
       price: Number(row.price),
       status: row.status,
+      isActive: row.is_active !== false,
     };
   }
 
@@ -246,6 +255,10 @@
     },
     async updateProfile(userId, { specialty, price }) {
       const { error } = await client.from('trainers').update({ specialty, price }).eq('user_id', userId);
+      if (error) throw error;
+    },
+    async setActive(userId, active) {
+      const { error } = await client.rpc('set_trainer_active', { p_trainer_user_id: userId, p_active: active });
       if (error) throw error;
     },
 
@@ -296,7 +309,7 @@
   const CLIENT_SELECT = `
     user_id, gym_id, plan_id, trainer_user_id, face_photo_key,
     weight, height, age, level, goal,
-    membership_status, membership_expires_at, last_payment_at,
+    membership_status, membership_expires_at, last_payment_at, created_at,
     profiles!inner(name, email, phone)
   `;
 
@@ -313,6 +326,7 @@
       status: row.membership_status,
       membershipExpiresAt: row.membership_expires_at,
       lastPaymentAt: row.last_payment_at,
+      createdAt: row.created_at,
     };
   }
 
@@ -339,6 +353,14 @@
     },
     async setFacePhotoKey(userId, key) {
       const { error } = await client.from('client_profiles').update({ face_photo_key: key }).eq('user_id', userId);
+      if (error) throw error;
+    },
+    async suspend(userId, reason) {
+      const { error } = await client.rpc('suspend_client', { p_client_user_id: userId, p_reason: reason || null });
+      if (error) throw error;
+    },
+    async unsuspend(userId) {
+      const { error } = await client.rpc('unsuspend_client', { p_client_user_id: userId });
       if (error) throw error;
     },
   };
@@ -518,6 +540,13 @@
       const todayStart = new Date().toISOString().slice(0, 10) + 'T00:00:00';
       return unwrap(await client.from('checkin_events').select('client_user_id, created_at')
         .eq('gym_id', gymId).gte('created_at', todayStart).order('created_at', { ascending: false }));
+    },
+    // Etapa 2 — "Asistencia": un rango (típicamente el mes actual) en vez de
+    // solo "hoy", para poder marcar el calendario con los días que tuvieron
+    // check-ins reales.
+    async listRangeForGym(gymId, fromIso, toIso) {
+      return unwrap(await client.from('checkin_events').select('client_user_id, created_at')
+        .eq('gym_id', gymId).gte('created_at', fromIso).lt('created_at', toIso));
     },
   };
 

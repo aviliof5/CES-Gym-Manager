@@ -35,7 +35,7 @@ export const state = {
   offline: !navigator.onLine,
   showPassword: false,
 
-  ownerTab: 'clientes',
+  ownerTab: 'panel',
   clientTab: 'inicio',
   trainerTab: 'clientes',
 
@@ -79,6 +79,19 @@ export const state = {
   billingFilter: 'mensual',
   activeCharge: null,   // {paymentId, clientId, clientName, amount, status}
 
+  // Etapa 2 — "Socios" (buscador + filtro + suspender).
+  ownerClientQuery: '', ownerClientStatusFilter: 'todos',
+  ownerSuspendingClientId: null, ownerSuspendReason: '',
+  // Etapa 2 — "Entrenadores": rating real por entrenador (trainer_reviews).
+  trainerRatingsById: {},   // {[trainerUserId]: {avg, count}}
+  // Etapa 2 — "Asistencia" (pantalla nueva, reemplaza el "Tráfico" inventado
+  // — lee checkin_events de verdad). Mes actual cargado entero al entrar al
+  // panel; el día elegido solo filtra en memoria, sin otro viaje al server.
+  attendanceEvents: [], attendanceSelectedDay: null,
+  // Etapa 2 — "Configuración" (moneda, marca; los links de invitación viven
+  // acá, ya no repartidos en cada tab).
+  gymConfigDraft: { currency: 'USD', brandName: '', brandColor: '' },
+
   reviews: [],
   newCommentText: '', newCommentRating: 5,
 
@@ -98,8 +111,6 @@ export const state = {
   aiRoutine: null,          // {id, exercises:[{id,text}]}
   trainerRoutineForMe: null,
   pendingPayment: null,     // {id, amount, status}
-  clientVisitHour: null,
-
   // Sesión de entrenamiento en curso (pantalla "workout"). Etapa 2: además
   // del estado en memoria de siempre, ahora abre una fila real en
   // workout_sessions al arrancar (`sessionId`) y cada serie marcada se

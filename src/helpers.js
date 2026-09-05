@@ -3,7 +3,7 @@
 'use strict';
 
 import { state } from './state.js';
-import { iconSpan, COUNTRY_CODES, HOUR_VALUES, EXERCISE_LIB } from './data.js';
+import { iconSpan, COUNTRY_CODES, EXERCISE_LIB } from './data.js';
 
 // Formatea un importe con la moneda del gimnasio (gyms.currency, migración
 // 20260905000200). USD lleva el símbolo delante ($50); cualquier otra moneda
@@ -242,22 +242,8 @@ export function devCredit() {
   return `<div style="text-align:center;padding:8px 0 2px;font-size:9.5px;color:var(--muted-dim);letter-spacing:0.02em">Desarrollado por Cuban Enterprise Solution (CES)</div>`;
 }
 
-// Compartidos entre las pantallas de admin y cliente (tráfico/reseñas) —
-// antes duplicados solo por vivir en el mismo archivo, movidos acá para que
-// ningún screens/*.js dependa de otro.
-export function barChart(variant) {
-  const max = Math.max.apply(null, HOUR_VALUES);
-  const cols = HOUR_VALUES.map((v, i) => {
-    const h = Math.round(v / max * 100);
-    const bg = variant === 'admin'
-      ? 'var(--lime)'
-      : (state.clientVisitHour === i ? 'var(--mint)' : `rgba(228,0,58,${0.3 + 0.6 * (v / max)})`);
-    return `<div class="chart-col"><i style="height:${h}%;background:${bg}"></i></div>`;
-  }).join('');
-  return `<div class="chart">${cols}</div>
-    <div class="chart-axis"><span>6h</span><span>14h</span><span>22h</span></div>`;
-}
-
+// Compartido entre Perfil (cliente) y Reportes (dueño/admin) — antes vivía
+// duplicado por estar en el mismo archivo que su única llamadora.
 export function commentCards(list) {
   return list.map(cm => `
     <div class="card" style="margin-bottom:10px">

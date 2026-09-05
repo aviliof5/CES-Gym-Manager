@@ -223,9 +223,12 @@ export const ACTIONS = {
   // más abajo, y src/qr.js) para cuando no hay cámara a mano o el cliente
   // no tiene el código a la vista. Mismo RPC en ambos casos.
   checkInClient: async clientId => {
-    await BolaAPI.checkins.checkIn(clientId);
+    const row = await BolaAPI.checkins.checkIn(clientId);
     const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
-    setState({ todayCheckins });
+    // También se agrega a attendanceEvents (Asistencia), cargado una sola
+    // vez al entrar al panel — si no, un check-in hecho durante la misma
+    // sesión no aparecería en el calendario hasta volver a entrar.
+    setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: clientId, created_at: row.created_at }] });
   },
   clearScanStatus: () => setState({ scanStatus: null }),
   // Limpia el error/toast de una visita anterior a esta pantalla antes de
@@ -250,6 +253,47 @@ export const ACTIONS = {
     await BolaAPI.payments.confirm(state.activeCharge.paymentId);
     const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
     setState({ clientsForGym, activeCharge: null });
+  },
+
+  /* ---- Etapa 2: "Socios" — buscar/filtrar + suspender/reactivar ---- */
+  setOwnerClientStatusFilter: v => setState({ ownerClientStatusFilter: v }),
+  promptSuspendClient: clientId => setState({ ownerSuspendingClientId: clientId, ownerSuspendReason: '' }),
+  cancelSuspendClient: () => setState({ ownerSuspendingClientId: null, ownerSuspendReason: '' }),
+  confirmSuspendClient: async () => {
+    if (!state.ownerSuspendingClientId) return;
+    await BolaAPI.clients.suspend(state.ownerSuspendingClientId, state.ownerSuspendReason);
+    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+    setState({ clientsForGym, ownerSuspendingClientId: null, ownerSuspendReason: '' });
+  },
+  unsuspendClient: async clientId => {
+    await BolaAPI.clients.unsuspend(clientId);
+    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+    setState({ clientsForGym });
+  },
+
+  /* ---- Etapa 2: "Entrenadores" — activar/desactivar ---- */
+  toggleTrainerActive: async trainerId => {
+    const t = state.trainersForGym.find(x => x.id === trainerId);
+    if (!t) return;
+    await BolaAPI.trainers.setActive(trainerId, !t.isActive);
+    const trainersForGym = await BolaAPI.trainers.listForGym(state.gym.id);
+    setState({ trainersForGym });
+  },
+
+  /* ---- Etapa 2: "Asistencia" (calendario, reemplaza el "Tráfico" inventado) ---- */
+  setAttendanceSelectedDay: day => setState({ attendanceSelectedDay: Number(day) }),
+
+  /* ---- Etapa 2: "Configuración" (moneda, marca) ---- */
+  saveGymConfig: async () => {
+    const d = state.gymConfigDraft;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.gyms.updateSettings(state.gym.id, { currency: d.currency, brandName: d.brandName, brandColor: d.brandColor });
+      const gym = await BolaAPI.gyms.get(state.gym.id);
+      setState({ busy: false, gym });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
   },
 
   /* ---- selección de gimnasio (cliente y entrenador) ---- */
@@ -861,10 +905,10 @@ export async function handleCheckinScan(payload) {
     return;
   }
   try {
-    await BolaAPI.checkins.checkIn(client.id);
+    const row = await BolaAPI.checkins.checkIn(client.id);
     const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
     if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
-    setState({ todayCheckins, scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
+    setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: client.id, created_at: row.created_at }], scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
   } catch (err) {
     setState({ scanStatus: { ok: false, text: friendlyError(err) } });
   }
@@ -885,7 +929,31 @@ export async function enterOwnerDash() {
     BolaAPI.trainers.listInterestForGym(state.gym.id),
     BolaAPI.gyms.getInvites(state.gym.id),
   ]);
-  Object.assign(state, { screen: 'ownerDash', ownerTab: 'clientes', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites, busy: false });
+
+  // Etapa 2 — rating real por entrenador aprobado (Entrenadores/Reportes),
+  // asistencia del mes actual (Asistencia, reemplaza el "Tráfico" inventado)
+  // y el borrador de Configuración precargado con lo que el gimnasio ya tiene.
+  const approvedTrainers = trainersForGym.filter(t => t.status === 'approved');
+  const ratingsEntries = await Promise.all(approvedTrainers.map(async t => {
+    const rows = await BolaAPI.trainerReviews.listForTrainer(t.id);
+    const count = rows.length;
+    const avg = count ? rows.reduce((sum, r) => sum + r.rating, 0) / count : null;
+    return [t.id, { avg, count }];
+  }));
+  const trainerRatingsById = Object.fromEntries(ratingsEntries);
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
+  const attendanceEvents = await BolaAPI.checkins.listRangeForGym(state.gym.id, monthStart, monthEnd);
+
+  Object.assign(state, {
+    screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
+    trainerRatingsById, attendanceEvents, attendanceSelectedDay: null,
+    ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
+    gymConfigDraft: { currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '' },
+    busy: false,
+  });
   if (window.CesAds) window.CesAds.hideBanner();
   render();
 }

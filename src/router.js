@@ -109,14 +109,10 @@ root.addEventListener('input', e => {
 root.addEventListener('change', e => {
   const el = e.target;
   if (!el.dataset || !el.dataset.f) return;
-  if (el.dataset.f === 'clientVisitHour') {
-    setState({ clientVisitHour: el.value === '' ? null : Number(el.value) });
-    return;
-  }
   // Elegir un ejercicio de la biblioteca en "Crear rutina" (Etapa 2, panel
   // de entrenador) también precarga el nombre en el campo `text` — un
-  // setPath genérico solo tocaría `exerciseId`, así que pasa por su propia
-  // acción en vez del setPath de abajo (mismo patrón que clientVisitHour).
+  // setPath genérico solo tocaría `exerciseId`, así que este <select> pasa
+  // por su propia acción en vez del setPath de abajo.
   if (el.dataset.f === 'trainerRoutineDraft.exerciseId') {
     ACTIONS.selectRoutineExercise(el.value);
     return;

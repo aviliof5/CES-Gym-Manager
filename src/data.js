@@ -5,13 +5,7 @@
 'use strict';
 
 export const EQUIPMENT_SUGGESTIONS = ['Caminadora', 'Bicicleta estática', 'Rack de sentadillas', 'Banco de press', 'Mancuernas', 'Máquina de poleas', 'Remo'];
-export const HOUR_VALUES = [15, 25, 35, 30, 40, 55, 70, 60, 50, 65, 80, 90, 78, 58, 42, 28, 18];
 export const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-export const HEATMAP = {
-  'Mañana': [0.3, 0.4, 0.3, 0.4, 0.5, 0.7, 0.5],
-  'Tarde': [0.5, 0.5, 0.6, 0.5, 0.6, 0.8, 0.6],
-  'Noche': [0.8, 0.75, 0.8, 0.85, 0.9, 0.55, 0.35],
-};
 export const GOALS = [
   { id: 'perder_peso', label: 'Perder peso' },
   { id: 'ganar_musculo', label: 'Ganar músculo' },
@@ -105,6 +99,8 @@ export const ICON_PATHS = {
   check: '<path d="M4 12l5 5 11-11"/>',
   plus: '<path d="M12 4v16M4 12h16"/>',
   chevronRight: '<path d="M9 5l7 7-7 7"/>',
+  // Etapa 2 — "Configuración" (dueño/admin).
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H10a1.6 1.6 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V10a1.6 1.6 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1z"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de

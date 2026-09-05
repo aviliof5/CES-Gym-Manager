@@ -8,10 +8,10 @@
 'use strict';
 
 import { state } from '../state.js';
-import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, HEATMAP, DAY_LABELS, iconSpan } from '../data.js';
+import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan } from '../data.js';
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, sectionTitle,
-  tabsMarkup, devCredit, initials, statusMeta, enrichClient, barChart, commentCards,
+  tabsMarkup, devCredit, initials, statusMeta, enrichClient, commentCards, money,
   emailField, phoneField, passwordField, passwordStrength,
 } from '../helpers.js';
 
@@ -144,37 +144,61 @@ export function viewPlansEditor({ stepHeader, finishButton }) {
 
 /* ---------------- dashboard (dueño y administrador aprobado) ---------------- */
 
-export function viewOwnerClientes() {
-  const rows = state.clientsForGym.map(enrichClient).map(c => {
+// "Socios" (pantalla #16 del plan) — buscador + filtro por estado real +
+// suspender/reactivar (membership_status='suspendido', Etapa 2). El cobro
+// en efectivo y el check-in manual son los mismos de siempre.
+const STATUS_FILTERS = [['todos', 'Todos'], ['al_dia', 'Al día'], ['pendiente', 'Pendiente'], ['vencido', 'Vencido'], ['suspendido', 'Suspendido']];
+
+export function viewOwnerSocios() {
+  const query = state.ownerClientQuery.trim().toLowerCase();
+  const filter = state.ownerClientStatusFilter;
+  const enriched = state.clientsForGym.map(enrichClient);
+  const filtered = enriched.filter(c =>
+    (filter === 'todos' || c.status === filter) &&
+    (!query || c.name.toLowerCase().includes(query)));
+
+  const rows = filtered.map(c => {
     const m = statusMeta(c.status);
     const showCharge = state.activeCharge && state.activeCharge.clientId === c.id;
     const checkedInToday = state.todayCheckins.some(chk => chk.client_user_id === c.id);
+    const suspending = state.ownerSuspendingClientId === c.id;
     return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:10px">
           <div class="avatar">${esc(initials(c.name))}</div>
           <div>
             <div style="font-size:14.5px;font-weight:700">${esc(c.name)}</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(c.plan)} · $${esc(c.amount)}</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(c.plan)} · ${money(c.amount)}</div>
           </div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-          <div class="${m.cls}">${m.label}</div>
-          <div ${act('generateCharge', c.id)} style="font-size:11.5px;color:var(--lime);cursor:pointer;font-weight:600">Cobrar / QR</div>
+          <span class="${m.cls}">${m.label}</span>
+          <div ${act('generateCharge', c.id)} style="font-size:11.5px;color:var(--action);cursor:pointer;font-weight:600">Cobrar / QR</div>
           ${checkedInToday
-            ? `<div style="font-size:11px;color:var(--mint);font-weight:700">✓ Hoy</div>`
-            : `<div ${act('checkInClient', c.id)} style="font-size:11.5px;color:var(--sky);cursor:pointer;font-weight:600">Registrar entrada</div>`}
+            ? `<div style="font-size:11px;color:var(--ok);font-weight:700">✓ Hoy</div>`
+            : `<div ${act('checkInClient', c.id)} style="font-size:11.5px;color:var(--info);cursor:pointer;font-weight:600">Registrar entrada</div>`}
+          ${c.status === 'suspendido'
+            ? `<div ${act('unsuspendClient', c.id)} style="font-size:11.5px;color:var(--ok);cursor:pointer;font-weight:600">Reactivar</div>`
+            : `<div ${act('promptSuspendClient', c.id)} style="font-size:11.5px;color:var(--danger);cursor:pointer;font-weight:600">Suspender</div>`}
         </div>
       </div>
       ${showCharge ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;gap:12px;align-items:center">
         <canvas class="qr-canvas" data-qr="${esc(JSON.stringify({ t: 'payment', id: state.activeCharge.paymentId }))}" data-qr-size="56"></canvas>
         <div style="flex:1">
-          <div style="font-size:12.5px;font-weight:700">Cobro pendiente · $${esc(state.activeCharge.amount)} en efectivo</div>
+          <div style="font-size:12.5px;font-weight:700">Cobro pendiente · ${money(state.activeCharge.amount)} en efectivo</div>
           <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Confirma solo cuando ${esc(c.name)} te entregue el efectivo en el mostrador</div>
           <div style="display:flex;gap:14px;margin-top:6px">
-            <div ${act('confirmCharge')} style="font-size:11.5px;color:var(--mint);cursor:pointer;font-weight:700">Confirmar efectivo recibido</div>
-            <div ${act('cancelCharge')} style="font-size:11.5px;color:var(--red);cursor:pointer;font-weight:600">Cancelar</div>
+            <div ${act('confirmCharge')} style="font-size:11.5px;color:var(--ok);cursor:pointer;font-weight:700">Confirmar efectivo recibido</div>
+            <div ${act('cancelCharge')} style="font-size:11.5px;color:var(--danger);cursor:pointer;font-weight:600">Cancelar</div>
           </div>
+        </div>
+      </div>` : ''}
+      ${suspending ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">¿Por qué suspendés a ${esc(c.name)}? (opcional)</div>
+        ${textField('ownerSuspendReason', 'Motivo', state.ownerSuspendReason, { style: 'margin-bottom:8px' })}
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--action" style="flex:1;padding:10px;font-size:12.5px" ${act('confirmSuspendClient')}>Confirmar suspensión</button>
+          <button class="btn btn--ghost" style="padding:10px 16px;font-size:12.5px" ${act('cancelSuspendClient')}>Cancelar</button>
         </div>
       </div>` : ''}
     </div>`;
@@ -182,13 +206,16 @@ export function viewOwnerClientes() {
 
   return `<div class="pane">
     ${errorBanner()}
-    ${ownerMetricsGrid()}
-    ${inviteCard('client')}
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:12px;color:var(--muted)">${state.clientsForGym.length} clientes registrados</div>
-      <div ${act('goToScanCheckin')} style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--sky);cursor:pointer;font-weight:700">${iconSpan('camera', 14)} Escanear QR</div>
+    <div class="search">
+      <span class="search__icon">${iconSpan('users', 16)}</span>
+      <input class="field" data-f="ownerClientQuery" placeholder="Buscar socio por nombre…" value="${esc(state.ownerClientQuery)}"/>
     </div>
-    ${rows}
+    <div class="seg">${STATUS_FILTERS.map(([k, label]) => `<div ${act('setOwnerClientStatusFilter', k)} class="seg__item${filter === k ? ' is-active' : ''}">${label}</div>`).join('')}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--muted)">${filtered.length} de ${state.clientsForGym.length} socios</div>
+      <div ${act('goToScanCheckin')} style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--info);cursor:pointer;font-weight:700">${iconSpan('camera', 14)} Escanear QR</div>
+    </div>
+    ${rows || `<div class="empty"><div class="empty__title">Sin resultados</div>Nadie coincide con esa búsqueda/filtro</div>`}
   </div>`;
 }
 
@@ -266,22 +293,46 @@ function inviteCard(role) {
 // métricas reales ya cargadas en memoria — nada inventado. "Check-ins hoy"
 // ahora sí es real (checkin_events, ver docs/DATABASE_MAP.md) — antes de
 // esa migración este cuarto valor mostraba "Clientes al día" en su lugar.
-function ownerMetricsGrid() {
-  const trainersActivos = state.trainersForGym.filter(t => t.status === 'approved').length;
-  const ingresos = state.clientsForGym.map(enrichClient)
+function gymRevenue() {
+  return state.clientsForGym.map(enrichClient)
     .filter(c => c.status === 'al_dia')
     .reduce((sum, c) => sum + c.amount, 0);
+}
 
-  const tile = (label, value, color) => `<div class="card" style="padding:14px;text-align:center">
-    <div style="font-size:20px;font-weight:900;color:${color}">${value}</div>
-    <div style="font-size:10.5px;color:var(--muted);margin-top:3px">${label}</div>
+function ownerMetricsGrid() {
+  const trainersActivos = state.trainersForGym.filter(t => t.status === 'approved').length;
+  return `<div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat"><div class="stat__label">Clientes</div><div class="stat__value">${state.clientsForGym.length}</div></div>
+    <div class="stat stat--brand"><div class="stat__label">Entrenadores</div><div class="stat__value">${trainersActivos}</div></div>
+    <div class="stat"><div class="stat__label">Ingresos (al día)</div><div class="stat__value" style="font-size:24px">${money(gymRevenue())}</div></div>
+    <div class="stat stat--brand"><div class="stat__label">Check-ins hoy</div><div class="stat__value">${state.todayCheckins.length}</div></div>
   </div>`;
+}
 
-  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
-    ${tile('Clientes', state.clientsForGym.length, 'var(--text)')}
-    ${tile('Entrenadores', trainersActivos, 'var(--amber)')}
-    ${tile('Ingresos (al día)', '$' + ingresos, 'var(--lime)')}
-    ${tile('Check-ins hoy', state.todayCheckins.length, 'var(--mint)')}
+// "Panel de administración" (pantalla #15 del plan) — mismas métricas de
+// siempre + alertas reales (solicitudes pendientes, socios vencidos) +
+// accesos rápidos a las demás tabs.
+export function viewOwnerPanel() {
+  const isOwner = state.myProfile && state.myProfile.role === 'owner';
+  const pendingTrainers = state.trainersForGym.filter(t => t.status === 'pending').length;
+  const pendingAdmins = isOwner ? state.gymAdminsForGym.filter(a => a.status === 'pending').length : 0;
+  const vencidos = state.clientsForGym.filter(c => c.status === 'vencido').length;
+
+  const alerts = [];
+  if (pendingTrainers) alerts.push({ text: `${pendingTrainers} ${pendingTrainers === 1 ? 'entrenador espera' : 'entrenadores esperan'} aprobación`, tab: 'entrenadores' });
+  if (pendingAdmins) alerts.push({ text: `${pendingAdmins} ${pendingAdmins === 1 ? 'administrador espera' : 'administradores esperan'} aprobación`, tab: 'admins' });
+  if (vencidos) alerts.push({ text: `${vencidos} ${vencidos === 1 ? 'socio tiene' : 'socios tienen'} el pago vencido`, tab: 'socios' });
+
+  return `<div class="pane">
+    ${errorBanner()}
+    ${ownerMetricsGrid()}
+    ${alerts.length ? `${sectionTitle('Alertas', 'clock', 'margin-bottom:8px')}
+      ${alerts.map(a => `<div class="alert alert--warn"><div class="alert__text" style="flex:1">${esc(a.text)}</div><div ${act('ownerTab', a.tab)} style="color:var(--warn);font-weight:700;cursor:pointer;white-space:nowrap;font-size:var(--fs-sm)">Ver</div></div>`).join('')}` : ''}
+    ${sectionTitle('Accesos rápidos', 'zap', 'margin:20px 0 8px')}
+    <div class="row" ${act('ownerTab', 'socios')}><div class="row__body"><div class="row__title">Socios</div><div class="row__meta">Buscar, filtrar, cobrar, suspender</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
+    <div class="row" ${act('ownerTab', 'asistencia')}><div class="row__body"><div class="row__title">Asistencia</div><div class="row__meta">Check-ins reales del mes</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
+    <div class="row" ${act('ownerTab', 'reportes')}><div class="row__body"><div class="row__title">Reportes</div><div class="row__meta">Ingresos, retención, reseñas</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
+    <div class="row" ${act('ownerTab', 'configuracion')}><div class="row__body"><div class="row__title">Configuración</div><div class="row__meta">Moneda, marca, links de invitación</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
   </div>`;
 }
 
@@ -321,30 +372,32 @@ export function viewOwnerEntrenadores() {
 
   const rows = approved.map(t => {
     const names = clientsOf(t.id);
-    return `<div class="card" style="margin-bottom:10px">
+    const rating = state.trainerRatingsById[t.id] || { avg: null, count: 0 };
+    return `<div class="card" style="margin-bottom:10px;${t.isActive ? '' : 'opacity:0.55'}">
       <div style="display:flex;align-items:center;gap:12px">
-        <div class="avatar avatar--sq avatar--lime">${esc(initials(t.name))}</div>
+        <div class="avatar avatar--sq avatar--action">${esc(initials(t.name))}</div>
         <div style="flex:1">
-          <div style="font-size:14.5px;font-weight:700">${esc(t.name)}</div>
+          <div style="font-size:14.5px;font-weight:700">${esc(t.name)}${!t.isActive ? ' <span style="font-size:11px;color:var(--muted);font-weight:600">(desactivado)</span>' : ''}</div>
           <div style="font-size:11.5px;color:var(--muted);margin-top:2px">${esc(t.specialty)}</div>
+          <div class="rating" style="margin-top:4px">${iconSpan('star', 12)}<span class="rating__score">${rating.avg != null ? `${rating.avg.toFixed(1)} · ${rating.count} ${rating.count === 1 ? 'reseña' : 'reseñas'}` : 'Sin calificar aún'}</span></div>
         </div>
         <div style="text-align:right">
           <div style="font-size:11px;color:var(--muted)">${names.length} ${names.length === 1 ? 'cliente' : 'clientes'}</div>
-          <div style="font-size:12px;font-weight:700;color:var(--lime);margin-top:2px">$${esc(t.price)}/mes</div>
+          <div style="font-size:12px;font-weight:700;color:var(--action);margin-top:2px">${money(t.price)}/mes</div>
         </div>
       </div>
-      <div style="margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--line)">
         <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Clientes asignados</div>
         ${names.length
-          ? `<div style="display:flex;flex-wrap:wrap;gap:6px">${names.map(n => `<div class="pill pill--flat">${esc(n)}</div>`).join('')}</div>`
-          : `<div style="font-size:11.5px;color:var(--muted-dim)">Sin clientes asignados aún</div>`}
+          ? `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${names.map(n => `<div class="pill pill--flat">${esc(n)}</div>`).join('')}</div>`
+          : `<div style="font-size:11.5px;color:var(--muted-dim);margin-bottom:10px">Sin clientes asignados aún</div>`}
+        <div ${act('toggleTrainerActive', t.id)} style="font-size:11.5px;font-weight:700;color:${t.isActive ? 'var(--danger)' : 'var(--ok)'};cursor:pointer">${t.isActive ? 'Desactivar' : 'Activar'}</div>
       </div>
     </div>`;
   }).join('');
 
   return `<div class="pane">
     ${errorBanner()}
-    ${inviteCard('trainer')}
     ${pendingBlock}
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">${approved.length} entrenadores activos en tu gym</div>
     ${rows}
@@ -395,75 +448,159 @@ export function viewOwnerAdmins() {
   </div>`;
 }
 
-export function viewOwnerFacturacion() {
+export function viewOwnerPagos() {
   const f = state.billingFilter;
   const enriched = state.clientsForGym.map(enrichClient);
   const inFilter = enriched.filter(c => c.type === f);
   const label = f === 'diario' ? 'diarios' : f === 'mensual' ? 'mensuales' : 'anuales';
   const filters = ['diario', 'mensual', 'anual'].map(k =>
-    `<div ${act('setBillingFilter', k)} ${chip(f === k, 'lime', 'flex:1;text-align:center')}>${k === 'diario' ? 'Diario' : k === 'mensual' ? 'Mensual' : 'Anual'}</div>`).join('');
+    `<div ${act('setBillingFilter', k)} class="seg__item${f === k ? ' is-active' : ''}">${k === 'diario' ? 'Diario' : k === 'mensual' ? 'Mensual' : 'Anual'}</div>`).join('');
 
   const total = inFilter.reduce((a, c) => a + c.amount, 0);
   const count = st => inFilter.filter(c => c.status === st).length;
 
   const rows = inFilter.map(c => {
     const m = statusMeta(c.status);
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06)">
-      <div>
-        <div style="font-size:13.5px;font-weight:600">${esc(c.name)}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${c.lastPayment ? 'Último pago: ' + esc(c.lastPayment) : 'Sin pagos aún'}</div>
+    return `<div class="row">
+      <div class="row__body">
+        <div class="row__title">${esc(c.name)}</div>
+        <div class="row__meta">${c.lastPayment ? 'Último pago: ' + esc(c.lastPayment) : 'Sin pagos aún'}</div>
       </div>
-      <div class="${m.cls}">${m.label}</div>
+      <span class="${m.cls}">${m.label}</span>
     </div>`;
   }).join('');
 
   return `<div class="pane">
     ${errorBanner()}
-    <div style="display:flex;gap:8px;margin-bottom:16px">${filters}</div>
+    <div class="seg">${filters}</div>
     <div class="card" style="border-radius:16px;padding:18px;margin-bottom:16px">
-      <div style="font-size:12px;color:var(--muted)">Ingresos ${label}</div>
-      <div style="font-size:26px;font-weight:900;color:var(--lime);margin-top:4px">$${total}</div>
+      <div class="eyebrow">Ingresos ${label}</div>
+      <div style="font-family:var(--font-display);font-size:28px;color:var(--action);margin-top:4px">${money(total)}</div>
       <div style="display:flex;gap:16px;margin-top:14px">
-        <div><div style="font-size:15px;font-weight:800;color:var(--mint)">${count('al_dia')}</div><div style="font-size:10.5px;color:var(--muted)">Al día</div></div>
-        <div><div style="font-size:15px;font-weight:800;color:var(--amber)">${count('pendiente')}</div><div style="font-size:10.5px;color:var(--muted)">Pendiente</div></div>
-        <div><div style="font-size:15px;font-weight:800;color:var(--red)">${count('vencido')}</div><div style="font-size:10.5px;color:var(--muted)">Vencido</div></div>
+        <div><div style="font-size:15px;font-weight:800;color:var(--ok)">${count('al_dia')}</div><div style="font-size:10.5px;color:var(--muted)">Al día</div></div>
+        <div><div style="font-size:15px;font-weight:800;color:var(--warn)">${count('pendiente')}</div><div style="font-size:10.5px;color:var(--muted)">Pendiente</div></div>
+        <div><div style="font-size:15px;font-weight:800;color:var(--danger)">${count('vencido')}</div><div style="font-size:10.5px;color:var(--muted)">Vencido</div></div>
       </div>
     </div>
     ${rows}
   </div>`;
 }
 
-export function viewOwnerTrafico() {
-  const rows = Object.keys(HEATMAP).map(label => `
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
-      <div style="width:44px;font-size:9.5px;color:var(--muted)">${label}</div>
-      <div style="flex:1;display:flex;gap:5px">
-        ${HEATMAP[label].map(v => `<div style="flex:1;height:22px;border-radius:4px;background:rgba(228,0,58,${v})"></div>`).join('')}
-      </div>
-    </div>`).join('');
+/* ---------------- Asistencia (pantalla nueva del plan — reemplaza el
+   "Tráfico" con datos inventados: calendario real de checkin_events) ---------------- */
+
+function dayIndexMon(date) { return (date.getDay() + 6) % 7; }
+
+export function viewOwnerAsistencia() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstOffset = dayIndexMon(new Date(year, month, 1));
+  const todayNum = now.getDate();
+  const selectedDay = state.attendanceSelectedDay || todayNum;
+
+  const eventsByDay = {};
+  state.attendanceEvents.forEach(e => {
+    const d = new Date(e.created_at);
+    (eventsByDay[d.getDate()] = eventsByDay[d.getDate()] || []).push(e);
+  });
+
+  const cells = [];
+  for (let i = 0; i < firstOffset; i++) cells.push('<div class="cal__day is-muted"></div>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cls = ['cal__day'];
+    if (day === todayNum) cls.push('is-today');
+    if (day === selectedDay) cls.push('is-selected');
+    if (eventsByDay[day]) cls.push('has-event');
+    cells.push(`<div class="${cls.join(' ')}" ${act('setAttendanceSelectedDay', day)}>${day}</div>`);
+  }
+
+  const dayEvents = (eventsByDay[selectedDay] || []).slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const clientById = id => state.clientsForGym.find(c => c.id === id);
+  const list = dayEvents.length ? dayEvents.map(e => {
+    const c = clientById(e.client_user_id);
+    const t = new Date(e.created_at);
+    return `<div class="row">
+      <div class="avatar">${esc(initials(c ? c.name : '?'))}</div>
+      <div class="row__body"><div class="row__title">${esc(c ? c.name : 'Socio')}</div></div>
+      <div style="font-size:var(--fs-sm);color:var(--muted)">${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}</div>
+    </div>`;
+  }).join('') : `<div class="empty"><div class="empty__title">Sin check-ins este día</div>Elegí otro día del calendario</div>`;
 
   return `<div class="pane">
-    ${sectionTitle('Tráfico por hora (hoy)', 'bars', 'margin-bottom:12px')}
-    <div style="font-size:11px;color:var(--muted);margin:-4px 0 10px">Datos de ejemplo — todavía no conectados a check-ins reales.</div>
-    ${barChart('admin')}
-    <div class="section-title" style="margin:20px 0 12px">Mapa de calor semanal</div>
-    <div style="background:var(--surface);border-radius:14px;padding:12px;border:1px solid var(--line)">
-      ${rows}
-      <div style="display:flex;gap:6px;padding-left:50px;margin-top:2px">
-        ${DAY_LABELS.map(d => `<div style="flex:1;text-align:center;font-size:9px;color:var(--muted)">${d}</div>`).join('')}
-      </div>
+    ${sectionTitle('Asistencia', 'calendar', 'margin-bottom:12px')}
+    <div class="cal" style="margin-bottom:16px">
+      <div class="cal__head"><div class="cal__month">${MESES[month]} ${year}</div></div>
+      <div class="cal__grid">${DAY_LABELS.map(d => `<div class="cal__dow">${d}</div>`).join('')}${cells.join('')}</div>
     </div>
+    <div class="hint" style="margin-bottom:10px">${dayEvents.length} ${dayEvents.length === 1 ? 'check-in' : 'check-ins'} este día</div>
+    ${list}
   </div>`;
 }
 
-export function viewOwnerComentarios() {
-  const avg = state.reviews.length
-    ? (state.reviews.reduce((a, c) => a + c.rating, 0) / state.reviews.length).toFixed(1)
-    : '—';
+/* ---------------- Reportes (pantalla nueva del plan) ---------------- */
+
+export function viewOwnerReportes() {
+  const enriched = state.clientsForGym.map(enrichClient);
+  const total = enriched.length || 1;
+  const byStatus = st => enriched.filter(c => c.status === st).length;
+  const breakdown = [
+    ['al_dia', 'Al día', 'var(--ok)'],
+    ['pendiente', 'Pendiente', 'var(--warn)'],
+    ['vencido', 'Vencido', 'var(--danger)'],
+    ['suspendido', 'Suspendido', 'var(--muted)'],
+  ].map(([st, label, color]) => {
+    const n = byStatus(st);
+    const pct = Math.round(n / total * 100);
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:var(--fs-sm);margin-bottom:4px"><span>${label}</span><span style="color:var(--muted)">${n} · ${pct}%</span></div>
+      <div class="progress"><div class="progress__fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }).join('');
+
+  const now = new Date();
+  const nuevosEsteMes = state.clientsForGym.filter(c => c.createdAt && new Date(c.createdAt).getMonth() === now.getMonth() && new Date(c.createdAt).getFullYear() === now.getFullYear()).length;
+
+  const trainerRatings = Object.values(state.trainerRatingsById).filter(r => r.avg != null);
+  const gymTrainerAvg = trainerRatings.length ? (trainerRatings.reduce((s, r) => s + r.avg, 0) / trainerRatings.length).toFixed(1) : null;
+  const reviewAvg = state.reviews.length ? (state.reviews.reduce((a, c) => a + c.rating, 0) / state.reviews.length).toFixed(1) : null;
+
   return `<div class="pane">
-    ${sectionTitle('Opiniones de clientes', 'star', 'margin-bottom:4px')}
-    <div class="hint" style="margin-bottom:16px">Promedio ${avg} / 5 · ${state.reviews.length} reseñas</div>
-    ${commentCards(state.reviews)}
+    ${sectionTitle('Reportes', 'bars', 'margin-bottom:12px')}
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="stat"><div class="stat__label">Ingresos (al día)</div><div class="stat__value" style="font-size:22px">${money(gymRevenue())}</div></div>
+      <div class="stat stat--brand"><div class="stat__label">Nuevos este mes</div><div class="stat__value">${nuevosEsteMes}</div></div>
+    </div>
+    ${sectionTitle('Estado de los socios', 'users', 'margin-bottom:8px')}
+    ${breakdown}
+    ${sectionTitle('Opiniones', 'star', 'margin:20px 0 8px')}
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="stat"><div class="stat__label">Gimnasio</div><div class="stat__value" style="font-size:22px">${reviewAvg || '—'}${reviewAvg ? '<span style="font-size:12px;color:var(--muted)">/5</span>' : ''}</div><div class="stat__hint">${state.reviews.length} reseñas</div></div>
+      <div class="stat stat--brand"><div class="stat__label">Entrenadores</div><div class="stat__value" style="font-size:22px">${gymTrainerAvg || '—'}${gymTrainerAvg ? '<span style="font-size:12px;color:var(--muted)">/5</span>' : ''}</div></div>
+    </div>
+    ${commentCards(state.reviews.slice(0, 5))}
+  </div>`;
+}
+
+/* ---------------- Configuración (pantalla nueva del plan) ---------------- */
+
+export function viewOwnerConfiguracion() {
+  const d = state.gymConfigDraft;
+  return `<div class="pane">
+    ${errorBanner()}
+    ${sectionTitle('Configuración del gimnasio', 'settings', 'margin-bottom:12px')}
+    <div class="card" style="margin-bottom:18px">
+      <div class="eyebrow" style="margin-bottom:10px">Marca y moneda</div>
+      ${textField('gymConfigDraft.currency', 'Moneda (código ISO, ej. USD, CUP, EUR)', d.currency, { style: 'margin-bottom:10px' })}
+      ${textField('gymConfigDraft.brandName', 'Nombre de marca (opcional)', d.brandName, { style: 'margin-bottom:10px' })}
+      ${textField('gymConfigDraft.brandColor', 'Color de acento en hex (opcional, ej. #E23744)', d.brandColor, { style: 'margin-bottom:10px' })}
+      <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveGymConfig')}>${state.busy ? 'Guardando…' : 'Guardar cambios'}</button>
+    </div>
+    ${sectionTitle('Links de invitación', 'idcard', 'margin-bottom:8px')}
+    <div class="hint" style="margin-bottom:12px">Un link por rol, reutilizable — quien lo abre queda unido directo a tu gimnasio con ESE rol, sin elegir de una lista.</div>
+    ${inviteCard('client')}
+    ${inviteCard('trainer')}
+    ${inviteCard('admin')}
   </div>`;
 }
 
@@ -496,7 +633,15 @@ export function viewOwnerPlatform() {
 // Tabs base, iguales para dueño y administrador (paridad total) — la de
 // "Admins" se agrega condicionalmente en viewOwnerDash, solo para el dueño;
 // la de "Plataforma" (Fase 16), solo para is_platform_admin.
-const BASE_TABS = [['clientes', 'Clientes', 'users'], ['entrenadores', 'Coaches', 'clipboard'], ['facturacion', 'Facturas', 'receipt'], ['trafico', 'Tráfico', 'bars'], ['comentarios', 'Reseñas', 'star']];
+const BASE_TABS = [
+  ['panel', 'Panel', 'home'],
+  ['socios', 'Socios', 'users'],
+  ['entrenadores', 'Coaches', 'clipboard'],
+  ['pagos', 'Pagos', 'receipt'],
+  ['asistencia', 'Asistencia', 'calendar'],
+  ['reportes', 'Reportes', 'bars'],
+  ['configuracion', 'Config', 'settings'],
+];
 
 export function viewOwnerDash() {
   const isOwner = state.myProfile && state.myProfile.role === 'owner';
@@ -507,17 +652,19 @@ export function viewOwnerDash() {
     ...(isPlatformAdmin ? [['plataforma', 'Plataforma', 'shield']] : []),
   ];
   const panes = {
-    clientes: viewOwnerClientes,
+    panel: viewOwnerPanel,
+    socios: viewOwnerSocios,
     entrenadores: viewOwnerEntrenadores,
-    facturacion: viewOwnerFacturacion,
-    trafico: viewOwnerTrafico,
-    comentarios: viewOwnerComentarios,
+    pagos: viewOwnerPagos,
+    asistencia: viewOwnerAsistencia,
+    reportes: viewOwnerReportes,
+    configuracion: viewOwnerConfiguracion,
     admins: viewOwnerAdmins,
     plataforma: viewOwnerPlatform,
   };
   const activeTab =
-    (state.ownerTab === 'admins' && !isOwner) ? 'clientes' :
-    (state.ownerTab === 'plataforma' && !isPlatformAdmin) ? 'clientes' :
+    (state.ownerTab === 'admins' && !isOwner) ? 'panel' :
+    (state.ownerTab === 'plataforma' && !isPlatformAdmin) ? 'panel' :
     state.ownerTab;
   return `<div class="dash-shell">
     <div class="dash-main">
@@ -528,7 +675,7 @@ export function viewOwnerDash() {
         </div>
         <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
-      ${(panes[activeTab] || panes.clientes)()}
+      ${(panes[activeTab] || panes.panel)()}
       ${devCredit()}
     </div>
     <div class="tabbar">${tabsMarkup(tabs, activeTab, 'ownerTab')}</div>
