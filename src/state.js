@@ -15,10 +15,19 @@ export const state = {
   myProfile: null,   // {id, role, gym_id, name, email, phone}
   gym: null,          // {id, name, address, hours, invite_code}
   // Código de invitación leído de la URL al arrancar (?invite=XXXXX, ver
-  // router.js) — sección 10 del pedido original ("Invitación de clientes").
-  // No es un token de acceso, solo evita el selector manual de gimnasio
-  // cuando el cliente llegó desde el link/QR que compartió su gimnasio.
-  inviteCode: null,
+  // router.js) — sección 10 del pedido original ("Invitación de clientes"),
+  // generalizado en la Fase 16 a los 3 roles (gym_invites). No es un token
+  // de acceso, solo evita el selector manual de gimnasio/habilita el modo
+  // "Registrarme" del rol que corresponda cuando alguien llega desde el
+  // link/QR de su gimnasio — join_gym() sigue siendo el gate real.
+  inviteGym: null,   // gimnasio resuelto desde ?invite=CODE
+  inviteRole: null,  // 'admin'|'trainer'|'client' resuelto junto con inviteGym
+  // Token de ?owner_invite=TOKEN (Fase 16) — a diferencia de inviteGym/
+  // inviteRole, este SÍ es un gate de seguridad real: sin un token válido y
+  // sin usar, create_gym() rechaza en el servidor (ver docs/SECURITY_AUDIT.md).
+  ownerInviteToken: null,
+  gymInvites: null, // {client, admin, trainer} códigos de ESTE gimnasio — lo carga el dueño/admin (ver enterOwnerDash)
+  platformInviteNote: '', platformInviteLink: '', // formulario de la tab "Plataforma" (solo is_platform_admin)
   inviteLinkCopied: false, // feedback transitorio del botón "Copiar link" del dueño
   inviteLinkCopyFailed: false, // idem, cuando el portapapeles del navegador deniega el permiso
   busy: false,

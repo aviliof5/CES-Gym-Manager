@@ -120,7 +120,7 @@
     async getMyProfile() {
       const { data: { user } } = await client.auth.getUser();
       if (!user) return null;
-      return unwrap(await client.from('profiles').select('id, role, gym_id, name, email, phone').eq('id', user.id).single());
+      return unwrap(await client.from('profiles').select('id, role, gym_id, name, email, phone, is_platform_admin').eq('id', user.id).single());
     },
   };
 
@@ -136,18 +136,38 @@
     },
 
     // Resolución del link/código de invitación (sección 10 del pedido
-    // original) -- no es un chequeo de seguridad, gyms ya es público para
+    // original, generalizado en la Fase 16 a los 3 roles -- ver
+    // gym_invites) -- no es un chequeo de seguridad, gyms ya es público para
     // cualquier autenticado; join_gym() sigue siendo quien de verdad valida
     // la unión. Devuelve null en vez de lanzar si el código no existe, para
     // que el llamador pueda caer al selector manual sin un try/catch propio.
+    // Ya no asume "cliente": cada link es de un rol específico, así que
+    // devuelve ambos (gym Y rol).
     async getByInviteCode(code) {
-      const { data, error } = await client.from('gyms').select('id, name, address, hours, invite_code').eq('invite_code', code).maybeSingle();
+      const { data, error } = await client.from('gym_invites').select('role, gyms!inner(id, name, address, hours)').eq('code', code).maybeSingle();
       if (error) throw error;
-      return data;
+      return data ? { gym: data.gyms, role: data.role } : null;
     },
 
-    async create({ name, address, hours }) {
-      return unwrap(await client.rpc('create_gym', { p_name: name, p_address: address, p_hours: hours }));
+    // Los 3 códigos de ESTE gimnasio -- lo carga el dueño/admin al entrar al
+    // panel (ver actions.js enterOwnerDash) para mostrar las 3 tarjetas de
+    // invitación (Clientes/Coaches/Admins).
+    async getInvites(gymId) {
+      const rows = unwrap(await client.from('gym_invites').select('role, code').eq('gym_id', gymId));
+      const map = { client: null, admin: null, trainer: null };
+      rows.forEach(r => { map[r.role] = r.code; });
+      return map;
+    },
+
+    // p_owner_invite_token: Fase 16, create_gym() ahora exige un token de
+    // invitación de dueño válido y sin usar (ver docs/SECURITY_AUDIT.md) --
+    // sin esto, el RPC rechaza con un error claro.
+    async create({ name, address, hours, ownerInviteToken }) {
+      return unwrap(await client.rpc('create_gym', { p_name: name, p_address: address, p_hours: hours, p_owner_invite_token: ownerInviteToken }));
+    },
+
+    async regenerateInvite(role) {
+      return unwrap(await client.rpc('regenerate_gym_invite', { p_role: role }));
     },
 
     async join(gymId) {
@@ -484,5 +504,19 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins };
+  /* ---------------- plataforma (Fase 16 — alta de dueño interna) ---------------- */
+
+  const platform = {
+    // Callable sin sesión (quien abre el link todavía no se registró) --
+    // grant-eada a "anon" del lado del servidor (ver la migración). Solo
+    // devuelve un booleano, nunca expone la tabla de tokens.
+    async checkOwnerInvite(token) {
+      return unwrap(await client.rpc('check_owner_invite', { p_token: token }));
+    },
+    async createOwnerInvite(note) {
+      return unwrap(await client.rpc('create_owner_invite', { p_note: note }));
+    },
+  };
+
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform };
 })();

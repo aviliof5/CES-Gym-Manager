@@ -12,9 +12,15 @@ import {
   textField, emailField, phoneField, passwordField, passwordStrength,
 } from '../helpers.js';
 
+// Fase 16: el alta de administrador dejó de poder elegir cualquier gimnasio
+// de una lista pública — es solo por link de invitación (state.inviteRole,
+// ver router.js resolveGymInviteFromUrl). "Iniciar sesión" nunca se oculta
+// (las cuentas ya aprobadas siguen entrando normal).
 export function viewAdminAuth() {
   const mode = state.adminAuthMode;
-  const invalid = state.busy || (mode === 'login'
+  const canRegister = state.inviteRole === 'admin';
+  const effectiveMode = mode === 'register' && canRegister ? 'register' : 'login';
+  const invalid = state.busy || (effectiveMode === 'login'
     ? !(state.adminLoginEmail.trim() && state.adminLoginPassword.trim())
     : !(state.adminReg.name.trim() && state.adminReg.email.trim() && state.adminReg.phone.trim() && passwordStrength(state.adminReg.password) >= 2));
 
@@ -35,23 +41,24 @@ export function viewAdminAuth() {
   return `<div class="col">
     <div class="step-head" style="justify-content:space-between">
       <div class="back" ${act('goto', 'role')}>&lsaquo;</div>
-      <div class="step-label">${mode === 'login' ? 'Acceso de administrador' : 'Registro de administrador'}</div>
+      <div class="step-label">${effectiveMode === 'login' ? 'Acceso de administrador' : 'Registro de administrador'}</div>
       <div style="width:32px"></div>
     </div>
     <div class="form-body" style="position:relative;z-index:0">
       <div class="gym-watermark gym-watermark--sky">${iconSpan('idcard')}</div>
       <div style="width:44px;height:44px;border-radius:12px;background:rgba(56,189,248,0.15);display:flex;align-items:center;justify-content:center;color:var(--sky);margin-bottom:16px">${iconSpan('idcard', 22)}</div>
-      <div class="title">${mode === 'login' ? 'Bienvenido de nuevo' : 'Únete como administrador'}</div>
-      <div class="subtitle">${mode === 'login' ? 'Ingresa con tu correo y contraseña' : 'Ayudá a operar el día a día de un gimnasio ya creado'}</div>
+      <div class="title">${effectiveMode === 'login' ? 'Bienvenido de nuevo' : 'Únete como administrador'}</div>
+      <div class="subtitle">${effectiveMode === 'login' ? 'Ingresa con tu correo y contraseña' : 'Ayudá a operar el día a día de un gimnasio ya creado'}</div>
       ${errorBanner()}
       <div style="display:flex;gap:8px;margin-bottom:20px">
-        <div ${act('setAdminAuthMode', 'login')} ${chip(mode === 'login', 'sky', 'flex:1;text-align:center')}>Iniciar sesión</div>
-        <div ${act('setAdminAuthMode', 'register')} ${chip(mode === 'register', 'sky', 'flex:1;text-align:center')}>Registrarme</div>
+        <div ${act('setAdminAuthMode', 'login')} ${chip(effectiveMode === 'login', 'sky', 'flex:1;text-align:center')}>Iniciar sesión</div>
+        ${canRegister ? `<div ${act('setAdminAuthMode', 'register')} ${chip(effectiveMode === 'register', 'sky', 'flex:1;text-align:center')}>Registrarme</div>` : ''}
       </div>
-      ${mode === 'login' ? loginForm : registerForm}
+      ${!canRegister ? `<div style="font-size:11px;color:var(--muted);margin-bottom:16px;line-height:1.5">El alta de administrador es solo por invitación de un gimnasio — pedile el link al dueño.</div>` : ''}
+      ${effectiveMode === 'login' ? loginForm : registerForm}
     </div>
     <div class="form-foot">
-      <button class="btn btn--sky" ${act(mode === 'login' ? 'adminSignIn' : 'adminSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Un momento…' : (mode === 'login' ? 'Ingresar' : 'Continuar')}</button>
+      <button class="btn btn--sky" ${act(effectiveMode === 'login' ? 'adminSignIn' : 'adminSignUp')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Un momento…' : (effectiveMode === 'login' ? 'Ingresar' : 'Continuar')}</button>
     </div>
   </div>`;
 }

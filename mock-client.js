@@ -27,6 +27,11 @@
     checkinEvents: [],       // {id, gym_id, client_user_id, checked_in_by, created_at}
     trainerInterest: [],      // {candidate_user_id, client_user_id, gym_id}
     storage: new Map(),      // path -> File
+    // Fase 16 — invitaciones. gymInvites reemplaza gyms.invite_code como
+    // fuente de verdad (un código por rol, no uno compartido); ownerInvites
+    // son los tokens de un solo uso que generan alta de dueño.
+    gymInvites: [],          // {gym_id, role: 'admin'|'trainer'|'client', code}
+    ownerInvites: [],        // {token, note, created_by, created_at, used_at, used_by_user_id}
   };
 
   let session = null; // {id, role}
@@ -52,6 +57,10 @@
   (function seed() {
     const gymId = 'gym-1';
     db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234' });
+    // Fase 16 — un código de invitación por rol, ya no uno solo compartido.
+    db.gymInvites.push({ gym_id: gymId, role: 'client', code: 'demo1234' }); // igual al invite_code legado de siempre
+    db.gymInvites.push({ gym_id: gymId, role: 'admin', code: 'demoadmn' });
+    db.gymInvites.push({ gym_id: gymId, role: 'trainer', code: 'demotrnr' });
 
     const mkUser = (id, role, name, email, phone, extra) => {
       db.profiles.push({ id, role, gym_id: gymId, name, email, phone, password: extra.password });
@@ -68,6 +77,11 @@
     // para migrar la cuenta real en producción, ver supabase/migrations/
     // 20260903000002_owner_role_fix_wrong_promotion.sql).
     mkUser('admin-1', 'owner', 'Avilio Fernández', 'admin@bola.app', '555-0100', { password: 'admin123' });
+    // Fase 16 — la cuenta real de dueño (fernandezavilio5@gmail.com en
+    // producción) también es la de administrador de plataforma, la única
+    // que genera invitaciones de dueño nuevas. Se marca acá para poder
+    // probar la tab "Plataforma" contra el mock sin tocar Supabase real.
+    db.profiles.find(p => p.id === 'admin-1').is_platform_admin = true;
     mkUser('trainer-1', 'trainer', 'Marco Díaz', 'marco@bola.app', '555-0201', { password: 'coach123', specialty: 'Fuerza e hipertrofia', price: 20 });
     mkUser('trainer-2', 'trainer', 'Laura Gómez', 'laura@bola.app', '555-0202', { password: 'coach123', specialty: 'Pérdida de peso y cardio', price: 15 });
     mkUser('trainer-3', 'trainer', 'Diego Ruiz', 'diego@bola.app', '555-0203', { password: 'coach123', specialty: 'Funcional y movilidad', price: 10 });
@@ -167,7 +181,7 @@
       await wait();
       if (!session) return null;
       const p = profileOf(session.id);
-      return { id: p.id, role: p.role, gym_id: p.gym_id, name: p.name, email: p.email, phone: p.phone };
+      return { id: p.id, role: p.role, gym_id: p.gym_id, name: p.name, email: p.email, phone: p.phone, is_platform_admin: !!p.is_platform_admin };
     },
   };
 
@@ -176,19 +190,55 @@
   const gyms = {
     async listAll() { await wait(); return [...db.gyms]; },
     async get(gymId) { await wait(); return db.gyms.find(g => g.id === gymId) || null; },
-    // Espeja supabase-client.js: no es un chequeo de seguridad (gyms ya es
-    // público), solo la resolución del link/código de invitación.
-    async getByInviteCode(code) { await wait(); return db.gyms.find(g => g.invite_code === code) || null; },
-    async create({ name, address, hours }) {
+    // Fase 16 — ya no resuelve solo un gimnasio (asumiendo "cliente"): cada
+    // link ahora es de un rol específico (gym_invites), así que devuelve
+    // ambos. Sigue sin ser un chequeo de seguridad, solo UX — join_gym()
+    // sigue siendo la única función que de verdad une la cuenta al gimnasio.
+    async getByInviteCode(code) {
+      await wait();
+      const inv = db.gymInvites.find(i => i.code === code);
+      if (!inv) return null;
+      const gym = db.gyms.find(g => g.id === inv.gym_id);
+      return gym ? { gym: { ...gym }, role: inv.role } : null;
+    },
+    // Los 3 códigos de ESTE gimnasio — los carga el dueño/admin al entrar al
+    // panel (ver actions.js enterOwnerDash) para mostrar las 3 tarjetas de
+    // invitación (Clientes/Coaches/Admins).
+    async getInvites(gymId) {
+      await wait();
+      const rows = db.gymInvites.filter(i => i.gym_id === gymId);
+      return {
+        client: (rows.find(r => r.role === 'client') || {}).code || null,
+        admin: (rows.find(r => r.role === 'admin') || {}).code || null,
+        trainer: (rows.find(r => r.role === 'trainer') || {}).code || null,
+      };
+    },
+    async create({ name, address, hours, ownerInviteToken }) {
       await wait();
       const s = requireAuth();
       if (s.role !== 'owner') throw new Error('Solo una cuenta de dueño puede crear un gimnasio.');
       const me = profileOf(s.id);
       if (me.gym_id) throw new Error('Esta cuenta ya tiene un gimnasio asignado.');
+      const invite = db.ownerInvites.find(i => i.token === ownerInviteToken && !i.used_at);
+      if (!invite) throw new Error('El link de invitación de dueño no es válido o ya fue usado.');
       const id = uid('gym');
       db.gyms.push({ id, name, address, hours, invite_code: Math.random().toString(36).slice(2, 10) });
       me.gym_id = id;
+      invite.used_at = new Date().toISOString();
+      invite.used_by_user_id = s.id;
+      ['client', 'admin', 'trainer'].forEach(role =>
+        db.gymInvites.push({ gym_id: id, role, code: Math.random().toString(36).slice(2, 10) }));
       return id;
+    },
+    async regenerateInvite(role) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio regeneran un link de invitación.');
+      const me = profileOf(s.id);
+      const row = db.gymInvites.find(i => i.gym_id === me.gym_id && i.role === role);
+      if (!row) throw new Error('Este gimnasio todavía no tiene un link de invitación para ese rol.');
+      row.code = Math.random().toString(36).slice(2, 10);
+      return row.code;
     },
     async join(gymId) {
       await wait();
@@ -490,6 +540,27 @@
     },
   };
 
-  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins };
+  /* ---------------- plataforma (Fase 16 — alta de dueño interna) ---------------- */
+
+  const platform = {
+    // Callable sin sesión (quien abre el link todavía no se registró) —
+    // espeja la función security definer del lado real, que también está
+    // grant-eada a "anon".
+    async checkOwnerInvite(token) {
+      await wait();
+      return db.ownerInvites.some(i => i.token === token && !i.used_at);
+    },
+    async createOwnerInvite(note) {
+      await wait();
+      const s = requireAuth();
+      const me = profileOf(s.id);
+      if (!me.is_platform_admin) throw new Error('Solo un administrador de la plataforma puede generar invitaciones de dueño.');
+      const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+      db.ownerInvites.push({ token, note: note || null, created_by: s.id, created_at: new Date().toISOString(), used_at: null, used_by_user_id: null });
+      return token;
+    },
+  };
+
+  window.BolaAPI = { auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();
