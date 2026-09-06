@@ -8,10 +8,6 @@
 import { state } from '../state.js';
 import { GOALS, MESES, DAY_LABELS, iconSpan } from '../data.js';
 import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money } from '../helpers.js';
-// Fase 16 — is_platform_admin puede caer en una cuenta de cualquier rol
-// (ver src/screens/client.js, mismo comentario) — se reutiliza la misma
-// vista que ya usa el panel de dueño/admin en vez de duplicar el formulario.
-import { viewOwnerPlatform } from './owner.js';
 
 export function viewTrainerPending() {
   return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;position:relative;z-index:0">
@@ -304,17 +300,15 @@ const TRAINER_BASE_TABS = [
 ];
 
 export function viewTrainerDash() {
-  const isPlatformAdmin = !!(state.myProfile && state.myProfile.is_platform_admin);
-  const tabs = isPlatformAdmin ? [...TRAINER_BASE_TABS, ['plataforma', 'Plataforma', 'shield']] : TRAINER_BASE_TABS;
+  const tabs = TRAINER_BASE_TABS;
   const panes = {
     panel: viewTrainerPanel,
     clientes: viewTrainerClientes,
     calendario: viewTrainerCalendario,
     mensajes: viewTrainerMensajes,
     perfil: viewTrainerPerfil,
-    plataforma: viewOwnerPlatform,
   };
-  const activeTab = (state.trainerTab === 'plataforma' && !isPlatformAdmin) ? 'panel' : state.trainerTab;
+  const activeTab = state.trainerTab;
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">

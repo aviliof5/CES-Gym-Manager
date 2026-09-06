@@ -562,6 +562,17 @@
     async createOwnerInvite(note) {
       return unwrap(await client.rpc('create_owner_invite', { p_note: note }));
     },
+    // Panel de plataforma (src/screens/platform.js) — todos los gimnasios +
+    // su dueño. Gate real es platform_list_gyms() en el servidor (exige
+    // app_is_platform_admin()).
+    async listGyms() {
+      const rows = unwrap(await client.rpc('platform_list_gyms'));
+      return rows.map(g => ({
+        id: g.id, name: g.name, address: g.address, currency: g.currency,
+        brandName: g.brand_name, createdAt: g.created_at,
+        ownerName: g.owner_name, ownerEmail: g.owner_email,
+      }));
+    },
   };
 
   /* ---------------- biblioteca de ejercicios ---------------- */
