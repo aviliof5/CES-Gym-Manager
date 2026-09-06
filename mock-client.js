@@ -319,7 +319,10 @@
       me.gym_id = gymId;
       if (s.role === 'trainer') db.trainers.find(t => t.user_id === s.id).gym_id = gymId;
       if (s.role === 'client') db.clientProfiles.find(c => c.user_id === s.id).gym_id = gymId;
-      if (s.role === 'admin') db.gymAdmins.find(a => a.user_id === s.id).gym_id = gymId;
+      // El único camino hasta acá para un 'admin' es un código de invitación
+      // de administrador válido de ESTE gimnasio — usarlo ES la aprobación
+      // del dueño (ver join_gym() en supabase/migrations/20260908000000_admin_auto_approve.sql).
+      if (s.role === 'admin') { const a = db.gymAdmins.find(x => x.user_id === s.id); a.gym_id = gymId; a.status = 'approved'; }
     },
   };
 
