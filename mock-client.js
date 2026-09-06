@@ -231,6 +231,18 @@
       if (!p) throw new Error('Correo o contraseña incorrectos.');
       session = { id: p.id, role: p.role };
     },
+    // El mock nunca exige confirmación de correo (session siempre presente
+    // arriba, ver el comentario de auth), así que la pantalla de código
+    // (viewConfirmCode) nunca se llega a mostrar en test-harness.html — este
+    // camino se probó a mano contra Supabase real, no acá.
+    async verifyEmailCode() {
+      await wait();
+      throw new Error('El mock no simula confirmación de correo — probá este flujo directo contra Supabase.');
+    },
+    async resendConfirmCode() {
+      await wait();
+      throw new Error('El mock no simula confirmación de correo — probá este flujo directo contra Supabase.');
+    },
     async signOut() { await wait(); session = null; },
     // No-op: el deep link de confirmación solo existe en la app nativa
     // empaquetada, nunca en el navegador donde corre este mock.

@@ -52,6 +52,17 @@ export const state = {
   // invitación — o sin ella solo para cliente — nunca un modo de esta pantalla).
   loginEmail: '', loginPassword: '', loginError: '',
 
+  // Confirmación de correo por código (pantalla "confirmCode", ver
+  // screens/auth.js viewConfirmCode + ACTIONS.verifyConfirmCode/
+  // resendConfirmCode en actions.js) — Supabase manda un código de 6
+  // dígitos en el correo de "Confirm signup" en vez del link de siempre.
+  // confirmRole distingue el caso fresco (recién hizo Xsignup en esta misma
+  // sesión, con inviteGym/inviteRole todavía en memoria) del caso "abandonó
+  // la pantalla y volvió más tarde a loguearse" (confirmRole null — ahí no
+  // hay nada en memoria y se resuelve como cualquier login, ver
+  // routeAfterLogin/resumeOwnerSession/resumeAdminSession/resumeClientSession).
+  confirmEmail: '', confirmCode: '', confirmRole: null, confirmCodeResent: false,
+
   // Dueño: crea el gimnasio — antes lo hacía "admin", ver docs/MIGRATION_PLAN.md Fase 4.
   ownerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   gymReg: { name: '', address: '', hours: '' },
