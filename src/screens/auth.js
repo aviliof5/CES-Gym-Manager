@@ -72,13 +72,19 @@ export function viewLogin() {
 // el correo no está confirmado) o desde login() si Supabase devuelve
 // "email no confirmado" — ver ACTIONS.verifyConfirmCode/resendConfirmCode.
 export function viewConfirmCode() {
-  const invalid = state.busy || state.confirmCode.trim().length !== 6;
+  // OJO: NO asumir una longitud fija acá. Supabase documenta {{ .Token }}
+  // como un OTP de 6 dígitos, pero en la práctica (reporte real del dueño,
+  // probando contra producción) llegó un código más largo — capar el campo
+  // a maxlength=6/exigir exactamente 6 dejaba a la persona sin poder
+  // siquiera terminar de escribirlo. Mejor aceptar cualquier largo
+  // razonable de dígitos y solo exigir que no esté vacío.
+  const invalid = state.busy || !state.confirmCode.trim();
   const inner = `<div style="text-align:center;margin-bottom:20px">
-      <div style="font-size:13px;color:var(--text-soft);line-height:1.6">Te mandamos un código de 6 dígitos a<br/><strong style="color:var(--text)">${esc(state.confirmEmail)}</strong></div>
+      <div style="font-size:13px;color:var(--text-soft);line-height:1.6">Te mandamos un código de confirmación a<br/><strong style="color:var(--text)">${esc(state.confirmEmail)}</strong></div>
     </div>
-    <input class="field" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
-      placeholder="000000" value="${esc(state.confirmCode)}" data-f="confirmCode" data-numeric="true"
-      style="text-align:center;font-size:26px;letter-spacing:0.5em;font-family:var(--font-display);padding-left:6px"/>
+    <input class="field" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="20"
+      placeholder="Código" value="${esc(state.confirmCode)}" data-f="confirmCode" data-numeric="true"
+      style="text-align:center;font-size:22px;letter-spacing:0.15em;font-family:var(--font-display)"/>
     ${state.confirmCodeResent ? `<div style="font-size:12px;color:var(--ok);margin-top:12px;text-align:center">Código reenviado — revisá tu correo</div>` : ''}
     <div style="text-align:center;margin-top:18px">
       <span ${act('resendConfirmCode')} style="font-size:12px;color:var(--info);cursor:pointer;text-decoration:underline">¿No te llegó? Reenviar código</span>
