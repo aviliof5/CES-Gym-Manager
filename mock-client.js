@@ -691,9 +691,13 @@
   /* ---------------- récords personales + sesiones de entrenamiento ---------------- */
 
   const workoutsApi = {
-    async start(clientUserId, gymId, source) {
+    // explicitId: espeja supabase-client.js (ver el comentario ahí) — el
+    // mock nunca falla por red, pero acepta el mismo parámetro para que la
+    // firma sea idéntica y el harness pueda probar el camino "con ID
+    // elegido de antemano" si hace falta.
+    async start(clientUserId, gymId, source, explicitId) {
       await wait();
-      const row = { id: uid('ws'), client_user_id: clientUserId, gym_id: gymId, source, started_at: new Date().toISOString(), finished_at: null };
+      const row = { id: explicitId || uid('ws'), client_user_id: clientUserId, gym_id: gymId, source, started_at: new Date().toISOString(), finished_at: null };
       db.workoutSessions.push(row);
       return row.id;
     },

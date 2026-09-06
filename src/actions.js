@@ -12,6 +12,7 @@ import { state, setState } from './state.js';
 import { friendlyError, splitPhone, enrichClient, buildRoutine } from './helpers.js';
 import { DURATION_LABELS } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
+import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
 
 // Handle del setInterval del descanso entre series — módulo-scoped porque
 // no es parte del estado serializable, solo un recurso a limpiar (ver
@@ -54,6 +55,54 @@ function isUnconfirmedEmailError(err) {
 // verifique (null cuando no hay un registro en curso, ver login() arriba).
 function goToConfirmCode(email, role) {
   setState({ busy: false, screen: 'confirmCode', confirmEmail: email, confirmRole: role, confirmCode: '', confirmCodeResent: false });
+}
+
+/* ==================== resiliencia a mala señal (src/offline.js) ====================
+   Ver el comentario largo de ese archivo para el porqué. Acá solo vive lo
+   que es específico de ESTA app: qué handler le corresponde a cada tipo de
+   acción encolada, y un helper para las LECTURAS que deben caer a la
+   última copia guardada en vez de romper la pantalla entera. */
+
+// Uno por cada `kind` que algún ACTIONS.xxx encola con queueAction() más
+// abajo — recibe exactamente el mismo payload que se guardó, y repite la
+// llamada a BolaAPI tal cual se hubiera hecho con señal en el momento.
+const QUEUE_HANDLERS = {
+  workoutStart: ({ sessionId, clientUserId, gymId, source }) => BolaAPI.workouts.start(clientUserId, gymId, source, sessionId),
+  workoutLogSet: ({ sessionId, clientUserId, exerciseName, setNumber, reps, weightKg }) => BolaAPI.workouts.logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg),
+  workoutFinish: ({ sessionId, clientUserId }) => BolaAPI.workouts.finish(sessionId, clientUserId),
+  checkin: ({ clientUserId }) => BolaAPI.checkins.checkIn(clientUserId),
+  // Solo CONFIRMAR un cobro que ya existe — generar uno nuevo necesita
+  // señal en el momento (ver el comentario grande en src/offline.js sobre
+  // por qué eso se dejó afuera a propósito).
+  confirmPayment: ({ paymentId }) => BolaAPI.payments.confirm(paymentId),
+};
+
+// Se llama al reconectar, al arrancar la app y cada tanto en segundo plano
+// (ver router.js) — nunca hace falta que la persona toque nada para que
+// esto se dispare.
+export async function flushPendingQueue() {
+  await flushQueue(QUEUE_HANDLERS, size => setState({ pendingSyncCount: size }));
+  setState({ pendingSyncCount: getQueueSize() });
+}
+
+// Envuelve una lectura (BolaAPI.xxx.listForGym, etc.) para que un fallo de
+// RED caiga a la última copia guardada (ver saveSnapshot/loadSnapshot en
+// src/offline.js) en vez de tumbar toda la pantalla — un fallo que NO es
+// de red (permisos, dato corrupto) se deja pasar tal cual, porque
+// reintentar con datos viejos no lo arregla y ocultarlo sería engañoso.
+// `key` tiene que ser única por gimnasio/cliente (ver los call sites) para
+// que dos gimnasios/cuentas no compartan la copia guardada del otro.
+async function loadWithFallback(key, fetcher) {
+  try {
+    const data = await fetcher();
+    saveSnapshot(key, data);
+    return { data, stale: false };
+  } catch (err) {
+    if (!isNetworkError(err)) throw err;
+    const cached = loadSnapshot(key);
+    if (cached) return { data: cached.data, stale: true };
+    throw err; // no hay nada guardado — no queda otra que mostrar el error real
+  }
 }
 
 export const ACTIONS = {
@@ -292,12 +341,26 @@ export const ACTIONS = {
   // más abajo, y src/qr.js) para cuando no hay cámara a mano o el cliente
   // no tiene el código a la vista. Mismo RPC en ambos casos.
   checkInClient: async clientId => {
-    const row = await BolaAPI.checkins.checkIn(clientId);
-    const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
-    // También se agrega a attendanceEvents (Asistencia), cargado una sola
-    // vez al entrar al panel — si no, un check-in hecho durante la misma
-    // sesión no aparecería en el calendario hasta volver a entrar.
-    setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: clientId, created_at: row.created_at }] });
+    const nowIso = new Date().toISOString();
+    try {
+      const row = await BolaAPI.checkins.checkIn(clientId);
+      const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
+      // También se agrega a attendanceEvents (Asistencia), cargado una sola
+      // vez al entrar al panel — si no, un check-in hecho durante la misma
+      // sesión no aparecería en el calendario hasta volver a entrar.
+      setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: clientId, created_at: row.created_at }] });
+    } catch (err) {
+      if (!isNetworkError(err)) throw err;
+      // Sin señal: se registra igual en la pantalla (el "✓ Hoy" aparece de
+      // una) y se encola para mandarse sola apenas vuelva la conexión — ver
+      // src/offline.js. Nadie se queda esperando frente al mostrador.
+      queueAction('checkin', { clientUserId: clientId });
+      setState({
+        pendingSyncCount: getQueueSize(),
+        todayCheckins: [...state.todayCheckins, { client_user_id: clientId, created_at: nowIso }],
+        attendanceEvents: [...state.attendanceEvents, { client_user_id: clientId, created_at: nowIso }],
+      });
+    }
   },
   clearScanStatus: () => setState({ scanStatus: null }),
   // Limpia el error/toast de una visita anterior a esta pantalla antes de
@@ -322,9 +385,20 @@ export const ACTIONS = {
   },
   confirmCharge: async () => {
     if (!state.activeCharge) return;
-    await BolaAPI.payments.confirm(state.activeCharge.paymentId);
-    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
-    setState({ clientsForGym, activeCharge: null, chargeQrExpanded: false });
+    const paymentId = state.activeCharge.paymentId;
+    try {
+      await BolaAPI.payments.confirm(paymentId);
+      const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+      setState({ clientsForGym, activeCharge: null, chargeQrExpanded: false });
+    } catch (err) {
+      if (!isNetworkError(err)) throw err;
+      // El cobro YA existe (se generó con señal) — solo falta avisarle al
+      // servidor que se confirmó, así que esto sí se puede encolar sin
+      // riesgo (no hace falta un ID nuevo). Ver src/offline.js sobre por
+      // qué generar un cobro NUEVO sin señal no está cubierto.
+      queueAction('confirmPayment', { paymentId });
+      setState({ pendingSyncCount: getQueueSize(), activeCharge: null, chargeQrExpanded: false });
+    }
   },
   // El QR del cobro (ver viewOwnerSocios) solo se genera de este lado — el
   // cliente ya no dibuja el suyo, lo escanea (ver goToScanPayment más
@@ -510,7 +584,21 @@ export const ACTIONS = {
     const routine = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
     if (!routine.exercises.length) return;
     clearRestTimer();
-    const sessionId = await BolaAPI.workouts.start(state.myClient.id, state.gym.id, source);
+    // El ID de la sesión se elige ACÁ, no lo asigna el servidor — así,
+    // aunque no haya señal en este momento, se puede seguir entrenando y
+    // marcando series con ESTE mismo ID; cuando vuelva la señal, se manda
+    // primero la creación de la sesión y después cada serie encolada, en
+    // orden (ver src/offline.js y QUEUE_HANDLERS.workoutStart más arriba).
+    // Esto funciona porque workout_sessions se inserta directo (no por
+    // RPC) y su política RLS no exige que el ID lo genere el servidor.
+    const sessionId = newUuid();
+    try {
+      await BolaAPI.workouts.start(state.myClient.id, state.gym.id, source, sessionId);
+    } catch (err) {
+      if (!isNetworkError(err)) throw err;
+      queueAction('workoutStart', { sessionId, clientUserId: state.myClient.id, gymId: state.gym.id, source });
+      setState({ pendingSyncCount: getQueueSize() });
+    }
     const first = routine.exercises[0] || {};
     setState({
       screen: 'workout',
@@ -541,7 +629,13 @@ export const ACTIONS = {
       const ex = w.exercises[key] || {};
       const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
       const repsNum = w.repsInput !== '' && w.repsInput != null ? Number(w.repsInput) : null;
-      await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, num, repsNum, weightKg);
+      try {
+        await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, num, repsNum, weightKg);
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        queueAction('workoutLogSet', { sessionId: w.sessionId, clientUserId: state.myClient.id, exerciseName: ex.text, setNumber: num, reps: repsNum, weightKg });
+        setState({ pendingSyncCount: getQueueSize() });
+      }
       ACTIONS.startRest(ex.restSeconds);
     }
   },
@@ -554,7 +648,13 @@ export const ACTIONS = {
     if (!wasDone) {
       const ex = w.exercises[key] || {};
       const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
-      await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, 1, null, weightKg);
+      try {
+        await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, 1, null, weightKg);
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        queueAction('workoutLogSet', { sessionId: w.sessionId, clientUserId: state.myClient.id, exerciseName: ex.text, setNumber: 1, reps: null, weightKg });
+        setState({ pendingSyncCount: getQueueSize() });
+      }
     }
   },
   startRest: seconds => {
@@ -583,14 +683,33 @@ export const ACTIONS = {
     if (!w) return;
     clearRestTimer();
     if (w.index + 1 >= w.exercises.length) {
-      await BolaAPI.workouts.finish(w.sessionId, state.myClient.id);
+      try {
+        await BolaAPI.workouts.finish(w.sessionId, state.myClient.id);
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+        // finish_workout_session() corre DESPUÉS de workoutStart y de
+        // cada workoutLogSet en la cola (mismo orden en que se encolaron),
+        // así que cuando por fin haya señal, la sesión y sus series ya van
+        // a existir para cuando le toque el turno a esto — ver flushQueue.
+        queueAction('workoutFinish', { sessionId: w.sessionId, clientUserId: state.myClient.id });
+        setState({ pendingSyncCount: getQueueSize() });
+      }
       // Refresca lo que "Progreso"/"Logros" muestran, para que al volver ya
-      // reflejen este entrenamiento recién cerrado sin recargar toda la app.
-      const [personalRecords, workoutsThisMonth, myAchievements] = await Promise.all([
-        BolaAPI.workouts.getPersonalRecords(state.myClient.id),
-        BolaAPI.workouts.countThisMonth(state.myClient.id),
-        BolaAPI.achievements.listForClient(state.myClient.id),
-      ]);
+      // reflejen este entrenamiento recién cerrado sin recargar toda la
+      // app — si esto falla por red, se deja lo que ya había en memoria
+      // (se van a poner al día solos la próxima vez que carguen bien,
+      // p. ej. porque evaluate_achievements() corre server-side recién
+      // cuando finish_workout_session() se termine de sincronizar).
+      let personalRecords = state.personalRecords, workoutsThisMonth = state.workoutsThisMonth, myAchievements = state.myAchievements;
+      try {
+        [personalRecords, workoutsThisMonth, myAchievements] = await Promise.all([
+          BolaAPI.workouts.getPersonalRecords(state.myClient.id),
+          BolaAPI.workouts.countThisMonth(state.myClient.id),
+          BolaAPI.achievements.listForClient(state.myClient.id),
+        ]);
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+      }
       setState({ workout: { ...w, finished: true, restSecondsLeft: 0 }, personalRecords, workoutsThisMonth, myAchievements });
     } else {
       const next = w.exercises[w.index + 1] || {};
@@ -827,7 +946,7 @@ export async function resumeOwnerSession(profile) {
     });
     return;
   }
-  state.gym = await BolaAPI.gyms.get(profile.gym_id);
+  state.gym = (await loadWithFallback(`gym:${profile.gym_id}`, () => BolaAPI.gyms.get(profile.gym_id))).data;
   await enterOwnerDash();
 }
 
@@ -856,7 +975,7 @@ export async function resumeClientSession(profile) {
 }
 
 export async function continueClientResume(profile) {
-  state.gym = await BolaAPI.gyms.get(profile.gym_id);
+  state.gym = (await loadWithFallback(`gym:${profile.gym_id}`, () => BolaAPI.gyms.get(profile.gym_id))).data;
   const client = await BolaAPI.clients.getSelf(profile.id);
   if (!client.facePhotoKey) {
     // El alta original quedó interrumpida antes de subir la foto (ver
@@ -972,7 +1091,12 @@ export async function continueAdminSignUpAfterGym() {
 }
 
 export async function continueAdminSignIn(profile) {
-  const gym = await BolaAPI.gyms.get(profile.gym_id);
+  // El gimnasio en sí (nombre/dirección) se puede cachear sin riesgo, pero
+  // OJO: gymAdminsForGym de la línea siguiente NO pasa por loadWithFallback
+  // a propósito — es el chequeo de "¿ya me aprobaron?" y usar una copia
+  // vieja ahí podría dejar entrar a alguien pendiente/rechazado, o al
+  // revés, trabar a alguien ya aprobado. Ese sí necesita señal de verdad.
+  const gym = (await loadWithFallback(`gym:${profile.gym_id}`, () => BolaAPI.gyms.get(profile.gym_id))).data;
   const gymAdminsForGym = await BolaAPI.admins.listForGym(gym.id);
   const myEntry = gymAdminsForGym.find(a => a.id === profile.id);
   if (!myEntry || myEntry.status === 'pending') {
@@ -1048,6 +1172,19 @@ export async function handleCheckinScan(payload) {
     if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
     setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: client.id, created_at: row.created_at }], scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
   } catch (err) {
+    if (isNetworkError(err)) {
+      // El cliente y el "todavía no tiene check-in de hoy" ya se validaron
+      // arriba con lo que había en memoria — se puede encolar sin riesgo.
+      const nowIso = new Date().toISOString();
+      queueAction('checkin', { clientUserId: client.id });
+      setState({
+        pendingSyncCount: getQueueSize(),
+        todayCheckins: [...state.todayCheckins, { client_user_id: client.id, created_at: nowIso }],
+        attendanceEvents: [...state.attendanceEvents, { client_user_id: client.id, created_at: nowIso }],
+        scanStatus: { ok: true, text: `✓ ${client.name} registrado (se sincroniza solo).` },
+      });
+      return;
+    }
     setState({ scanStatus: { ok: false, text: friendlyError(err) } });
   }
 }
@@ -1077,10 +1214,19 @@ export async function handlePaymentScan(payload) {
       setState({ scanStatus: { ok: false, text: 'Ese cobro ya fue confirmado antes.' } });
       return;
     }
-    await BolaAPI.payments.confirm(data.id);
-    const client = await BolaAPI.clients.getSelf(state.myProfile.id);
-    if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
-    setState({ myClient: client, pendingPayment: null, scanStatus: { ok: true, text: '✓ Pago confirmado. ¡Gracias!' } });
+    try {
+      await BolaAPI.payments.confirm(data.id);
+      const client = await BolaAPI.clients.getSelf(state.myProfile.id);
+      if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
+      setState({ myClient: client, pendingPayment: null, scanStatus: { ok: true, text: '✓ Pago confirmado. ¡Gracias!' } });
+    } catch (err) {
+      if (!isNetworkError(err)) throw err;
+      // Ya se validó arriba (con señal) que es SU cobro y que sigue
+      // pendiente — encolar acá no corre el riesgo de confirmar algo sin
+      // haber verificado antes de qué se trata.
+      queueAction('confirmPayment', { paymentId: data.id });
+      setState({ pendingSyncCount: getQueueSize(), pendingPayment: null, scanStatus: { ok: true, text: '✓ Vamos a confirmar tu pago apenas vuelva la señal.' } });
+    }
   } catch (err) {
     setState({ scanStatus: { ok: false, text: friendlyError(err) } });
   }
@@ -1097,41 +1243,60 @@ export async function enterPlatformDash() {
 }
 
 export async function enterOwnerDash() {
-  const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites] = await Promise.all([
-    BolaAPI.clients.listForGym(state.gym.id),
-    BolaAPI.trainers.listForGym(state.gym.id),
-    BolaAPI.plans.list(state.gym.id),
-    BolaAPI.equipment.list(state.gym.id),
-    BolaAPI.reviews.listForGym(state.gym.id),
-    BolaAPI.admins.listForGym(state.gym.id),
-    BolaAPI.checkins.listTodayForGym(state.gym.id),
-    BolaAPI.trainers.listInterestForGym(state.gym.id),
-    BolaAPI.gyms.getInvites(state.gym.id),
+  // Ver loadWithFallback más arriba: si alguna de estas falla por RED, cae
+  // a la última copia guardada en vez de dejar a todo el panel sin poder
+  // abrir — esto es justamente lo que resuelve "el administrador no puede
+  // ver quién pagó con mala señal" (clientsForGym trae membership_status).
+  // Antes esto era un Promise.all directo: un solo fallo tumbaba las 9
+  // lecturas juntas, incluida la que importa.
+  const gymId = state.gym.id;
+  const [clientsRes, trainersRes, plansRes, equipmentRes, reviewsRes, adminsRes, checkinsRes, interestRes, invitesRes] = await Promise.all([
+    loadWithFallback(`clientsForGym:${gymId}`, () => BolaAPI.clients.listForGym(gymId)),
+    loadWithFallback(`trainersForGym:${gymId}`, () => BolaAPI.trainers.listForGym(gymId)),
+    loadWithFallback(`plans:${gymId}`, () => BolaAPI.plans.list(gymId)),
+    loadWithFallback(`equipment:${gymId}`, () => BolaAPI.equipment.list(gymId)),
+    loadWithFallback(`reviews:${gymId}`, () => BolaAPI.reviews.listForGym(gymId)),
+    loadWithFallback(`gymAdminsForGym:${gymId}`, () => BolaAPI.admins.listForGym(gymId)),
+    loadWithFallback(`todayCheckins:${gymId}`, () => BolaAPI.checkins.listTodayForGym(gymId)),
+    loadWithFallback(`trainerInterest:${gymId}`, () => BolaAPI.trainers.listInterestForGym(gymId)),
+    loadWithFallback(`gymInvites:${gymId}`, () => BolaAPI.gyms.getInvites(gymId)),
   ]);
+  const clientsForGym = clientsRes.data, trainersForGym = trainersRes.data, plans = plansRes.data, equipment = equipmentRes.data,
+    reviews = reviewsRes.data, gymAdminsForGym = adminsRes.data, todayCheckins = checkinsRes.data, trainerInterest = interestRes.data, gymInvites = invitesRes.data;
+  const coreStale = [clientsRes, trainersRes, plansRes, equipmentRes, reviewsRes, adminsRes, checkinsRes, interestRes, invitesRes].some(r => r.stale);
 
   // Etapa 2 — rating real por entrenador aprobado (Entrenadores/Reportes),
   // asistencia del mes actual (Asistencia, reemplaza el "Tráfico" inventado)
   // y el borrador de Configuración precargado con lo que el gimnasio ya tiene.
+  // Estas tres son secundarias (no bloquean ver socios/pagos) — si fallan
+  // por red, se quedan con lo que ya había en memoria en vez de romper
+  // toda la entrada al panel.
   const approvedTrainers = trainersForGym.filter(t => t.status === 'approved');
-  const ratingsEntries = await Promise.all(approvedTrainers.map(async t => {
-    const rows = await BolaAPI.trainerReviews.listForTrainer(t.id);
-    const count = rows.length;
-    const avg = count ? rows.reduce((sum, r) => sum + r.rating, 0) / count : null;
-    return [t.id, { avg, count }];
-  }));
-  const trainerRatingsById = Object.fromEntries(ratingsEntries);
+  let trainerRatingsById = state.trainerRatingsById;
+  try {
+    const ratingsEntries = await Promise.all(approvedTrainers.map(async t => {
+      const rows = await BolaAPI.trainerReviews.listForTrainer(t.id);
+      const count = rows.length;
+      const avg = count ? rows.reduce((sum, r) => sum + r.rating, 0) / count : null;
+      return [t.id, { avg, count }];
+    }));
+    trainerRatingsById = Object.fromEntries(ratingsEntries);
+  } catch (err) {
+    if (!isNetworkError(err)) throw err;
+  }
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
-  const attendanceEvents = await BolaAPI.checkins.listRangeForGym(state.gym.id, monthStart, monthEnd);
-  const exercisesLib = await BolaAPI.exercisesLib.list(state.gym.id);
+  const attendanceRes = await loadWithFallback(`attendanceEvents:${gymId}:${monthStart}`, () => BolaAPI.checkins.listRangeForGym(gymId, monthStart, monthEnd));
+  const exercisesLibRes = await loadWithFallback(`exercisesLib:${gymId}`, () => BolaAPI.exercisesLib.list(gymId));
 
   Object.assign(state, {
     screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
-    trainerRatingsById, attendanceEvents, attendanceSelectedDay: null, exercisesLib,
+    trainerRatingsById, attendanceEvents: attendanceRes.data, attendanceSelectedDay: null, exercisesLib: exercisesLibRes.data,
     ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
     gymConfigDraft: { currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '' },
+    dataStale: coreStale || attendanceRes.stale || exercisesLibRes.stale,
     busy: false,
   });
   if (window.CesAds) window.CesAds.hideBanner();
