@@ -11,7 +11,7 @@
 import { state, setState } from './state.js';
 import { friendlyError, splitPhone, enrichClient, buildRoutine } from './helpers.js';
 import { DURATION_LABELS } from './data.js';
-import { render } from './router.js';
+import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 
 // Handle del setInterval del descanso entre series — módulo-scoped porque
 // no es parte del estado serializable, solo un recurso a limpiar (ver
@@ -36,6 +36,9 @@ export const ACTIONS = {
 
   signOut: async () => {
     await BolaAPI.auth.signOut();
+    // Ver OWNER_INVITE_KEY/GYM_INVITE_KEY en router.js — no dejar una
+    // invitación pegada al navegador para la próxima cuenta que se loguee ahí.
+    try { localStorage.removeItem(OWNER_INVITE_KEY); localStorage.removeItem(GYM_INVITE_KEY); } catch (_) {}
     if (window.CesAds) window.CesAds.hideBanner();
     Object.assign(state, {
       screen: 'landing', session: null, myProfile: null, gym: null, error: '',
@@ -98,6 +101,7 @@ export const ACTIONS = {
     // (ver docs/SECURITY_AUDIT.md) — sin state.ownerInviteToken el RPC
     // rechaza con un error claro que se muestra igual que cualquier otro.
     const gymId = await BolaAPI.gyms.create({ ...state.gymReg, ownerInviteToken: state.ownerInviteToken });
+    try { localStorage.removeItem(OWNER_INVITE_KEY); } catch (_) {}
     const gym = await BolaAPI.gyms.get(gymId);
     setState({ busy: false, gym, screen: 'ownerReg3', equipment: [], plans: [] });
   },
@@ -818,6 +822,7 @@ async function tryJoinViaGymInvite(next, expectedRole) {
   if (!state.inviteGym || state.inviteRole !== expectedRole) return false;
   try {
     await BolaAPI.gyms.join(state.inviteGym.id);
+    try { localStorage.removeItem(GYM_INVITE_KEY); } catch (_) {}
     if (next === 'clientSignUp') await continueClientSignUpAfterGym(state.inviteGym);
     else if (next === 'adminSignUp') continueAdminSignUpAfterGym();
     else if (next === 'trainerSignUp') continueTrainerSignUpAfterGym();

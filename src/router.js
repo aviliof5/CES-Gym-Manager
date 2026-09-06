@@ -35,6 +35,16 @@ import { viewPlatformDash } from './screens/platform.js';
 
 const root = document.getElementById('app');
 
+// Claves de localStorage para sobrevivir el viaje de ida y vuelta por el
+// correo de confirmación (ver resolveOwnerInviteFromUrl/resolveGymInviteFromUrl
+// más abajo — el bug real que arreglan: con "Confirm email" activo en
+// Supabase, signUpOwner/signUpAdmin/signUpTrainer/signUpClient usan
+// emailRedirectTo: undefined en web, así que el link "Confirmar mi correo"
+// devuelve al Site URL pelado — sin el ?owner_invite=/?invite= original —
+// y sin esto, create_gym()/join_gym() se llamaban con el token/código vacío).
+export const OWNER_INVITE_KEY = 'bola_owner_invite_token';
+export const GYM_INVITE_KEY = 'bola_gym_invite_code';
+
 const SCREENS = {
   boot: viewBoot,
   landing: viewLanding,
@@ -303,10 +313,21 @@ async function handleAuthDeepLink(url) {
 async function resolveOwnerInviteFromUrl() {
   let token;
   try { token = new URLSearchParams(window.location.search).get('owner_invite'); }
-  catch (_) { return; }
-  if (!token) return;
+  catch (_) { token = null; }
+  if (!token) {
+    // No vino en la URL de esta carga — puede ser el regreso del correo de
+    // confirmación (ver comentario del OWNER_INVITE_KEY más arriba). Si se
+    // guardó antes, se revalida igual (checkOwnerInvite) antes de usarlo.
+    try { token = localStorage.getItem(OWNER_INVITE_KEY); } catch (_) { return; }
+    if (!token) return;
+  }
   try {
-    if (await BolaAPI.platform.checkOwnerInvite(token)) state.ownerInviteToken = token;
+    if (await BolaAPI.platform.checkOwnerInvite(token)) {
+      state.ownerInviteToken = token;
+      try { localStorage.setItem(OWNER_INVITE_KEY, token); } catch (_) {}
+    } else {
+      try { localStorage.removeItem(OWNER_INVITE_KEY); } catch (_) {}
+    }
   } catch (err) { console.error('No se pudo validar el link de invitación de dueño:', err); }
 }
 
@@ -316,11 +337,21 @@ async function resolveOwnerInviteFromUrl() {
 async function resolveGymInviteFromUrl() {
   let code;
   try { code = new URLSearchParams(window.location.search).get('invite'); }
-  catch (_) { return; }
-  if (!code) return;
+  catch (_) { code = null; }
+  if (!code) {
+    // Mismo motivo que en resolveOwnerInviteFromUrl: puede ser el regreso
+    // del correo de confirmación, sin el ?invite= original en la URL.
+    try { code = localStorage.getItem(GYM_INVITE_KEY); } catch (_) { return; }
+    if (!code) return;
+  }
   try {
     const resolved = await BolaAPI.gyms.getByInviteCode(code);
-    if (resolved) { state.inviteGym = resolved.gym; state.inviteRole = resolved.role; }
+    if (resolved) {
+      state.inviteGym = resolved.gym; state.inviteRole = resolved.role;
+      try { localStorage.setItem(GYM_INVITE_KEY, code); } catch (_) {}
+    } else {
+      try { localStorage.removeItem(GYM_INVITE_KEY); } catch (_) {}
+    }
   } catch (err) { console.error('No se pudo resolver el link de invitación de gimnasio:', err); }
 }
 
