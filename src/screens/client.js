@@ -6,7 +6,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan } from '../data.js';
+import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
@@ -808,9 +808,12 @@ export function viewClientHome() {
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">
-        <div>
-          <div class="app-title">Hola, ${esc((client.name || 'Cliente').split(' ')[0])}</div>
-          <div class="app-sub">${esc(state.gym.name)}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${brandMark('sm')}
+          <div>
+            <div class="app-title">Hola, ${esc((client.name || 'Cliente').split(' ')[0])}</div>
+            <div class="app-sub">${esc(state.gym.name)}</div>
+          </div>
         </div>
         <div ${act('signOut')} class="link-muted">Salir</div>
       </div>
