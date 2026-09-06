@@ -669,8 +669,17 @@
   /* ---------------- récords personales + sesiones de entrenamiento ---------------- */
 
   const workoutsApi = {
-    async start(clientUserId, gymId, source) {
-      const row = unwrap(await client.from('workout_sessions').insert({ client_user_id: clientUserId, gym_id: gymId, source }).select('id').single());
+    // explicitId (opcional): resiliencia a mala señal (ver src/offline.js
+    // ACTIONS.startWorkout) — deja elegir el ID de la sesión ANTES de
+    // saber si hay conexión, para poder seguir entrenando y encolando
+    // series con ese mismo ID aunque la creación de la fila todavía no le
+    // haya llegado al servidor. La política RLS ("self manages own
+    // workout sessions") no exige que el ID lo genere Postgres, así que
+    // esto es seguro: sigue siendo el propio auth.uid() quien inserta.
+    async start(clientUserId, gymId, source, explicitId) {
+      const payload = { client_user_id: clientUserId, gym_id: gymId, source };
+      if (explicitId) payload.id = explicitId;
+      const row = unwrap(await client.from('workout_sessions').insert(payload).select('id').single());
       return row.id;
     },
     async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg) {

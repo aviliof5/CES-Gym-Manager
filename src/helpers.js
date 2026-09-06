@@ -153,6 +153,26 @@ export function offlineBanner() {
   return `<div style="background:var(--danger);color:#fff;font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 14)}<span>Sin conexión a internet</span></div>`;
 }
 
+// Ver src/offline.js — avisa que hay acciones (marcar serie, check-in,
+// confirmar cobro) guardadas en el celular esperando que vuelva la señal
+// para mandarse solas. No es un error: por eso va en tono "warn", no
+// "danger" como offlineBanner — la acción YA se aplicó en la pantalla,
+// solo falta que el servidor se entere.
+export function pendingSyncBanner() {
+  if (!state.pendingSyncCount) return '';
+  const n = state.pendingSyncCount;
+  return `<div style="background:var(--warn);color:#1a1400;font-size:12px;font-weight:800;text-align:center;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('clock', 14)}<span>${n} ${n === 1 ? 'cambio pendiente' : 'cambios pendientes'} de sincronizar — se manda${n === 1 ? '' : 'n'} sol${n === 1 ? 'o' : 'os'} apenas vuelva la señal</span></div>`;
+}
+
+// Ídem, para cuando una pantalla está mostrando la última copia GUARDADA
+// de una lista (ver loadWithFallback en actions.js) en vez de datos recién
+// bajados — para que nadie confíe en un "Al día"/"Vencido" que puede
+// llevar un rato desactualizado sin saberlo.
+export function staleDataBanner() {
+  if (!state.dataStale) return '';
+  return `<div style="background:var(--warn-dim);color:var(--warn);border-bottom:1px solid rgba(var(--warn-rgb),0.3);font-size:11.5px;font-weight:700;text-align:center;padding:7px 10px;display:flex;align-items:center;justify-content:center;gap:6px">${iconSpan('wifiOff', 13)}<span>Mostrando la última info guardada — puede no estar al día</span></div>`;
+}
+
 // Input de correo que solo captura la parte local — el sufijo @gmail.com se
 // muestra fijo al lado y se agrega en supabase-client.js al enviar. Evita
 // que el usuario tenga que escribirlo (y typos tipo @gmial.com).
