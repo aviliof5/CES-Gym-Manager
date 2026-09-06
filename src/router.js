@@ -19,7 +19,7 @@ import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, e
 import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
 
 import {
-  viewBoot, viewLanding, viewLogin, viewInviteWelcome, viewTrainerReg, viewGymPicker,
+  viewBoot, viewLanding, viewLogin, viewConfirmCode, viewInviteWelcome, viewTrainerReg, viewGymPicker,
 } from './screens/auth.js';
 import {
   viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash, viewScanCheckin,
@@ -49,6 +49,7 @@ const SCREENS = {
   boot: viewBoot,
   landing: viewLanding,
   login: viewLogin,
+  confirmCode: viewConfirmCode,
   inviteWelcome: viewInviteWelcome,
   adminReg: viewAdminReg,
   trainerReg: viewTrainerReg,

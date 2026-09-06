@@ -30,6 +30,32 @@ function defaultReps(ex) {
   return /^\d+$/.test(String((ex && ex.reps) || '').trim()) ? ex.reps : '';
 }
 
+// El campo de correo de la UI solo captura la parte local (ver emailField()
+// en helpers.js) — acá se completa con el mismo criterio que
+// normalizeEmail() en supabase-client.js, para reconstruir el correo
+// completo cuando todo lo que hay a mano es lo que la persona tipeó en el
+// campo "usuario" (ej. detectar "correo no confirmado" en login(), donde
+// todavía no hay ninguna respuesta de Supabase con el correo completo).
+function normalizeEmailLocal(raw) {
+  const v = (raw || '').trim();
+  return v.includes('@') ? v : `${v}@gmail.com`;
+}
+
+// Supabase rechaza signInWithPassword() con este error cuando la cuenta
+// existe pero todavía no confirmó su correo — pasa cuando alguien cerró la
+// app antes de poner el código (ver viewConfirmCode) y vuelve más tarde a
+// intentar loguearse directo, en vez de volver a esa pantalla.
+function isUnconfirmedEmailError(err) {
+  return !!err && (err.code === 'email_not_confirmed' || /email not confirmed/i.test(err.message || ''));
+}
+
+// Manda a la pantalla de código (ver viewConfirmCode) — `role` queda
+// guardado para que ACTIONS.verifyConfirmCode sepa qué continuar apenas se
+// verifique (null cuando no hay un registro en curso, ver login() arriba).
+function goToConfirmCode(email, role) {
+  setState({ busy: false, screen: 'confirmCode', confirmEmail: email, confirmRole: role, confirmCode: '', confirmCodeResent: false });
+}
+
 export const ACTIONS = {
   goto: v => setState({ screen: v, error: '' }),
   togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
@@ -58,12 +84,55 @@ export const ACTIONS = {
     try {
       await BolaAPI.auth.signIn({ email: state.loginEmail, password: state.loginPassword });
     } catch (err) {
+      if (isUnconfirmedEmailError(err)) {
+        // No hay draft de registro en memoria (pudo haber cerrado la app
+        // hace días) — confirmRole queda null a propósito, ver
+        // ACTIONS.verifyConfirmCode.
+        goToConfirmCode(normalizeEmailLocal(state.loginEmail), null);
+        return;
+      }
       setState({ busy: false, loginError: friendlyError(err) });
       return;
     }
     const profile = await BolaAPI.auth.getMyProfile();
     setState({ loginEmail: '', loginPassword: '' });
     await routeAfterLogin(profile);
+  },
+
+  // Confirmación de correo por código (ver viewConfirmCode en screens/
+  // auth.js) — reemplaza el link "Confirmar mi correo" que Supabase mandaba
+  // por defecto. verifyOtp() confirma Y loguea en el mismo paso (a
+  // diferencia del link viejo, que solo confirmaba — había que volver a
+  // loguearse a mano después). confirmRole distingue si esto es la
+  // continuación directa de un registro recién hecho en esta misma sesión
+  // (retoma el paso exacto donde quedó, con inviteGym/inviteRole todavía en
+  // memoria) o si viene de login() detectando una cuenta sin confirmar
+  // (nada en memoria — se resuelve como cualquier login normal).
+  verifyConfirmCode: async () => {
+    setState({ busy: true, error: '' });
+    let result;
+    try {
+      result = await BolaAPI.auth.verifyEmailCode({ email: state.confirmEmail, token: state.confirmCode.trim() });
+      if (!result || !result.session) throw new Error('No pudimos verificar el código. Probá de nuevo.');
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    const role = state.confirmRole;
+    setState({ confirmEmail: '', confirmCode: '', confirmRole: null, confirmCodeResent: false });
+    if (role) { await continueAfterEmailConfirmed(role); return; }
+    const profile = await BolaAPI.auth.getMyProfile();
+    await routeAfterLogin(profile);
+  },
+  resendConfirmCode: async () => {
+    setState({ busy: true, error: '', confirmCodeResent: false });
+    try {
+      await BolaAPI.auth.resendConfirmCode(state.confirmEmail);
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    setState({ busy: false, confirmCodeResent: true });
   },
 
   // Fase 16: el alta de administrador ya es solo por link de invitación de
@@ -74,26 +143,22 @@ export const ACTIONS = {
     const a = state.adminReg;
     const result = await BolaAPI.auth.signUpAdmin({ ...a, phone: a.phonePrefix + a.phone });
     if (!result || !result.session) {
-      setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
+      goToConfirmCode((result && result.user && result.user.email) || normalizeEmailLocal(a.email), 'admin');
       return;
     }
-    if (await tryJoinViaGymInvite('adminSignUp', 'admin')) return;
-    setState({ busy: false, error: 'Necesitás un link de invitación de administrador de un gimnasio para registrarte — pedíselo al dueño.' });
+    await continueAfterEmailConfirmed('admin');
   },
 
   /* ---- owner registration (crea el gimnasio) ---- */
   ownerSignUp: async () => {
     setState({ busy: true, error: '' });
-    const result = await BolaAPI.auth.signUpOwner({ ...state.ownerReg, phone: state.ownerReg.phonePrefix + state.ownerReg.phone });
+    const r = state.ownerReg;
+    const result = await BolaAPI.auth.signUpOwner({ ...r, phone: r.phonePrefix + r.phone });
     if (!result || !result.session) {
-      setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
+      goToConfirmCode((result && result.user && result.user.email) || normalizeEmailLocal(r.email), 'owner');
       return;
     }
-    // viewOwnerDash necesita myProfile.role para decidir si muestra la tab
-    // de aprobar administradores — se setea acá, no solo al final del
-    // asistente, para que esté disponible durante todo el registro.
-    const profile = await BolaAPI.auth.getMyProfile();
-    setState({ busy: false, screen: 'ownerReg2', myProfile: profile });
+    await continueAfterEmailConfirmed('owner');
   },
   ownerCreateGym: async () => {
     setState({ busy: true, error: '' });
@@ -361,16 +426,10 @@ export const ACTIONS = {
     const c = state.clientReg;
     const result = await BolaAPI.auth.signUpClient({ name: c.name, email: c.email, phone: c.phonePrefix + c.phone, password: c.password });
     if (!result || !result.session) {
-      setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
+      goToConfirmCode((result && result.user && result.user.email) || normalizeEmailLocal(c.email), 'client');
       return;
     }
-    // Si llegó desde un link/QR de invitación (?invite=XXXXX) de rol
-    // cliente, se une directo a ESE gimnasio sin pasar por el selector
-    // manual. Cualquier problema (código de otro rol, ya no válido, etc.)
-    // cae al selector de siempre — nunca deja a alguien varado por un link
-    // roto. Sin cambios de comportamiento respecto a antes de la Fase 16.
-    if (await tryJoinViaGymInvite('clientSignUp', 'client')) return;
-    await loadGymPicker('clientSignUp');
+    await continueAfterEmailConfirmed('client');
   },
   setLevel: v => setState({ clientPhysicalReg: { ...state.clientPhysicalReg, level: v } }),
   setRegGoal: v => setState({ clientPhysicalReg: { ...state.clientPhysicalReg, goal: v }, aiGoal: v }),
@@ -640,11 +699,10 @@ export const ACTIONS = {
     const r = state.trainerReg;
     const result = await BolaAPI.auth.signUpTrainer({ ...r, phone: r.phonePrefix + r.phone });
     if (!result || !result.session) {
-      setState({ busy: false, error: 'Te enviamos un correo para confirmar tu cuenta. Confírmalo y volvé a esta pantalla para iniciar sesión.' });
+      goToConfirmCode((result && result.user && result.user.email) || normalizeEmailLocal(r.email), 'trainer');
       return;
     }
-    if (await tryJoinViaGymInvite('trainerSignUp', 'trainer')) return;
-    setState({ busy: false, error: 'Necesitás un link de invitación de entrenador de un gimnasio para registrarte — pedíselo al dueño o a un administrador.' });
+    await continueAfterEmailConfirmed('trainer');
   },
   /* ---- trainer dashboard ---- */
   trainerTab: v => setState({ trainerTab: v }),
@@ -821,6 +879,39 @@ export async function continueAfterFacePhoto(client) {
     return;
   }
   await enterClientHome();
+}
+
+// Qué sigue apenas hay sesión confirmada — sea porque signUp() la dio
+// directo (proyecto sin "Confirm email") o porque se acaba de verificar el
+// código de la pantalla confirmCode (ver ACTIONS.verifyConfirmCode). Un
+// solo lugar para las 4 ramas por rol, para no duplicar (ni desincronizar)
+// el "qué sigue" entre el caso con sesión inmediata y el caso confirmado
+// por código.
+async function continueAfterEmailConfirmed(role) {
+  if (role === 'owner') {
+    // viewOwnerDash necesita myProfile.role para decidir si muestra la tab
+    // de aprobar administradores — se setea acá, no solo al final del
+    // asistente, para que esté disponible durante todo el registro.
+    const profile = await BolaAPI.auth.getMyProfile();
+    setState({ busy: false, screen: 'ownerReg2', myProfile: profile });
+    return;
+  }
+  if (role === 'admin') {
+    if (await tryJoinViaGymInvite('adminSignUp', 'admin')) return;
+    setState({ busy: false, error: 'Necesitás un link de invitación de administrador de un gimnasio para registrarte — pedíselo al dueño.' });
+    return;
+  }
+  if (role === 'trainer') {
+    if (await tryJoinViaGymInvite('trainerSignUp', 'trainer')) return;
+    setState({ busy: false, error: 'Necesitás un link de invitación de entrenador de un gimnasio para registrarte — pedíselo al dueño o a un administrador.' });
+    return;
+  }
+  // 'client': si llegó desde un link/QR de invitación (?invite=XXXXX) de
+  // rol cliente, se une directo a ESE gimnasio sin pasar por el selector
+  // manual. Cualquier problema (código de otro rol, ya no válido, etc.) cae
+  // al selector de siempre — nunca deja a alguien varado por un link roto.
+  if (await tryJoinViaGymInvite('clientSignUp', 'client')) return;
+  await loadGymPicker('clientSignUp');
 }
 
 // Intenta unirse directo al gimnasio/rol resuelto en el arranque (ver

@@ -65,6 +65,33 @@ export function viewLogin() {
   });
 }
 
+// Confirmación de correo por código — reemplaza el link "Confirmar mi
+// correo" que mandaba Supabase por defecto (ver plantilla "Confirm signup"
+// en el dashboard, ahora con {{ .Token }} en vez de {{ .ConfirmationURL }}).
+// Se llega acá desde cualquiera de los 4 signUp (sin sesión todavía porque
+// el correo no está confirmado) o desde login() si Supabase devuelve
+// "email no confirmado" — ver ACTIONS.verifyConfirmCode/resendConfirmCode.
+export function viewConfirmCode() {
+  const invalid = state.busy || state.confirmCode.trim().length !== 6;
+  const inner = `<div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:13px;color:var(--text-soft);line-height:1.6">Te mandamos un código de 6 dígitos a<br/><strong style="color:var(--text)">${esc(state.confirmEmail)}</strong></div>
+    </div>
+    <input class="field" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+      placeholder="000000" value="${esc(state.confirmCode)}" data-f="confirmCode" data-numeric="true"
+      style="text-align:center;font-size:26px;letter-spacing:0.5em;font-family:var(--font-display);padding-left:6px"/>
+    ${state.confirmCodeResent ? `<div style="font-size:12px;color:var(--ok);margin-top:12px;text-align:center">Código reenviado — revisá tu correo</div>` : ''}
+    <div style="text-align:center;margin-top:18px">
+      <span ${act('resendConfirmCode')} style="font-size:12px;color:var(--info);cursor:pointer;text-decoration:underline">¿No te llegó? Reenviar código</span>
+    </div>`;
+
+  return authScreen({
+    label: 'Verificar correo', icon: 'mail', accent: 'var(--action)', accentBg: 'var(--action-dim)',
+    title: 'Ingresá el código', subtitle: 'Confirmá tu cuenta con el código que te mandamos por correo',
+    backAction: 'goto:login', inner,
+    footer: `<div class="form-foot"><button class="btn btn--action" ${act('verifyConfirmCode')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Verificando…' : 'Confirmar código'}</button></div>`,
+  });
+}
+
 const INVITE_WELCOME_COPY = {
   owner: { icon: 'crown', title: 'Te invitaron a crear tu gimnasio', role: 'Dueño', next: 'ownerReg1' },
   admin: { icon: 'idcard', title: 'Te invitaron a', role: 'Administrador', next: 'adminReg' },

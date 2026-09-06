@@ -82,6 +82,25 @@
       return unwrap(await client.auth.signInWithPassword({ email: normalizeEmail(email), password }));
     },
 
+    // Confirmación de correo por código en vez de link (ver plantilla
+    // "Confirm signup" en Supabase → Authentication → Emails, que ahora
+    // manda {{ .Token }} — un código de 6 dígitos — en vez del botón
+    // "Confirmar mi correo" con {{ .ConfirmationURL }}). type:'signup' es
+    // el mismo evento que ya disparó signUp(): no es un flujo aparte, solo
+    // otra forma de resolver el mismo token que Supabase generó — y de
+    // paso confirma Y loguea en un solo paso (verifyOtp devuelve session),
+    // a diferencia del link viejo que solo confirmaba. Esto también cubre
+    // la app nativa (Capacitor) sin el deep link de NATIVE_AUTH_CALLBACK —
+    // un código no depende de qué URL abra el correo, así que corre igual
+    // adentro del WebView.
+    async verifyEmailCode({ email, token }) {
+      return unwrap(await client.auth.verifyOtp({ email: normalizeEmail(email), token, type: 'signup' }));
+    },
+    async resendConfirmCode(email) {
+      const { error } = await client.auth.resend({ type: 'signup', email: normalizeEmail(email) });
+      if (error) throw error;
+    },
+
     async signOut() {
       const { error } = await client.auth.signOut();
       if (error) throw error;
