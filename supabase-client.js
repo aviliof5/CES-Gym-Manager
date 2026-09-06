@@ -137,16 +137,19 @@
 
     // Resolución del link/código de invitación (sección 10 del pedido
     // original, generalizado en la Fase 16 a los 3 roles -- ver
-    // gym_invites) -- no es un chequeo de seguridad, gyms ya es público para
-    // cualquier autenticado; join_gym() sigue siendo quien de verdad valida
-    // la unión. Devuelve null en vez de lanzar si el código no existe, para
-    // que el llamador pueda caer al selector manual sin un try/catch propio.
-    // Ya no asume "cliente": cada link es de un rol específico, así que
-    // devuelve ambos (gym Y rol).
+    // gym_invites) -- no es un chequeo de seguridad, join_gym() sigue siendo
+    // quien de verdad valida la unión. RPC en vez de select+embed directo
+    // porque gyms solo tiene política de lectura para "authenticated" -- con
+    // !inner, alguien todavía sin cuenta (el caso normal al abrir el link
+    // por primera vez) siempre recibía [] aunque el código fuera válido (ver
+    // 20260906000000_gym_invite_anon_resolve.sql). Devuelve null en vez de
+    // lanzar si el código no existe, para que el llamador pueda caer al
+    // selector manual sin un try/catch propio. Ya no asume "cliente": cada
+    // link es de un rol específico, así que devuelve ambos (gym Y rol).
     async getByInviteCode(code) {
-      const { data, error } = await client.from('gym_invites').select('role, gyms!inner(id, name, address, hours)').eq('code', code).maybeSingle();
-      if (error) throw error;
-      return data ? { gym: data.gyms, role: data.role } : null;
+      const rows = unwrap(await client.rpc('resolve_gym_invite', { p_code: code }));
+      const row = rows && rows[0];
+      return row ? { gym: { id: row.gym_id, name: row.gym_name, address: row.gym_address, hours: row.gym_hours }, role: row.role } : null;
     },
 
     // Los 3 códigos de ESTE gimnasio -- lo carga el dueño/admin al entrar al
