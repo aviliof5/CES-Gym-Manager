@@ -156,9 +156,15 @@ export function offlineBanner() {
 // Input de correo que solo captura la parte local — el sufijo @gmail.com se
 // muestra fijo al lado y se agrega en supabase-client.js al enviar. Evita
 // que el usuario tenga que escribirlo (y typos tipo @gmial.com).
+// inputmode a propósito NO es "email": muchos teclados (Gboard incluido)
+// usan ese modo para mostrar @/.com en vez de la fila de números, y como
+// esto es solo la parte local (nombres de usuario tipo "carla2024", con
+// letras Y números mezclados) terminaba obligando a tocar "?123" cada vez
+// para escribir un dígito. Con el modo de texto normal el teclado ya trae
+// ambos combinados sin tener que cambiar de pantalla.
 export function emailField(field, placeholder, value) {
   return `<div class="field-suffix field-suffix--email">
-    <input class="field" type="text" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"
+    <input class="field" type="text" inputmode="text" autocapitalize="none" autocorrect="off" spellcheck="false"
       placeholder="${esc(placeholder)}" value="${esc(value)}" data-f="${field}"/>
     <span class="field-suffix__label">@gmail.com</span>
   </div>`;

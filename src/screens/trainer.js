@@ -6,7 +6,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { GOALS, MESES, DAY_LABELS, iconSpan } from '../data.js';
+import { GOALS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
 import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money } from '../helpers.js';
 
 export function viewTrainerPending() {
@@ -312,9 +312,12 @@ export function viewTrainerDash() {
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">
-        <div>
-          <div class="app-title">${esc(state.myTrainer.name)}</div>
-          <div class="app-sub">Panel de entrenador · ${esc(state.gym.name)}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${brandMark('sm')}
+          <div>
+            <div class="app-title">${esc(state.myTrainer.name)}</div>
+            <div class="app-sub">Panel de entrenador · ${esc(state.gym.name)}</div>
+          </div>
         </div>
         <div ${act('signOut')} class="link-muted">Salir</div>
       </div>

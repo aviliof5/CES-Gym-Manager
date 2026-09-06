@@ -56,21 +56,17 @@ export const DURATION_LABELS = { diario: 'Diario', mensual: 'Mensual', anual: 'A
 
 export const LOGO_SVG = `<svg viewBox="0 0 100 100" width="34" height="34"><path d="M20 18 h60 a12 12 0 0 1 12 12 v28 a12 12 0 0 1 -12 12 H42 L28 84 V70 H20 a12 12 0 0 1 -12 -12 V30 a12 12 0 0 1 12 -12 Z" fill="none" stroke="#0B0D10" stroke-width="7" stroke-linejoin="round"/><rect x="34" y="40" width="32" height="7" rx="3.5" fill="#0B0D10"/><rect x="26" y="33" width="8" height="21" rx="3" fill="#0B0D10"/><rect x="66" y="33" width="8" height="21" rx="3" fill="#0B0D10"/></svg>`;
 
-// Lockup de marca "FIGHT CLUB GYM". Tipográfico a propósito: escala sin
-// perder nitidez, respeta los tokens (--brand para CLUB) y no depende de
-// cargar una imagen. El logo ilustrado completo se usa solo en el ícono
-// de la app y en materiales de marketing, no dentro de la interfaz.
-export const BRAND_MARK_SIZES = { sm: 18, md: 26, lg: 40, xl: 56 };
+// Logo real de la marca (assets/logo.png, ver scripts/build-icons.js) — el
+// mismo badge circular en cualquier lugar donde aparece el logo: portada,
+// login, encabezado de los 4 paneles (dueño/admin, cliente, entrenador,
+// plataforma) y los íconos de la app (favicon/PWA, generados del mismo
+// archivo). Antes acá había un lockup tipográfico ("FightClub" en texto);
+// se reemplazó por completo por el logo ilustrado.
+export const BRAND_MARK_SIZES = { sm: 32, md: 44, lg: 88, xl: 140 };
 
-export function brandMark(size = 'md', opts = {}) {
+export function brandMark(size = 'md') {
   const px = BRAND_MARK_SIZES[size] || BRAND_MARK_SIZES.md;
-  const sub = opts.sub === false ? '' : '<div class="brand-mark__sub">Gym</div>';
-  return `<div class="brand-mark">
-    <div>
-      <div class="brand-mark__word" style="font-size:${px}px">Fight<em>Club</em></div>
-      ${sub}
-    </div>
-  </div>`;
+  return `<img src="assets/logo.png" alt="Fight Club Gym" width="${px}" height="${px}" style="width:${px}px;height:${px}px;flex-shrink:0;display:block" />`;
 }
 
 export const ICON_PATHS = {

@@ -8,7 +8,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan } from '../data.js';
+import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
 import {
   esc, act, stepHead, stepBars, errorBanner, textField, sectionTitle,
   tabsMarkup, devCredit, initials, statusMeta, enrichClient, commentCards, money,
@@ -656,9 +656,12 @@ export function viewOwnerDash() {
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">
-        <div>
-          <div class="app-title">${esc(state.gym.name)}</div>
-          <div class="app-sub">${isOwner ? 'Panel de dueño' : 'Panel de administrador'}</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${brandMark('sm')}
+          <div>
+            <div class="app-title">${esc(state.gym.name)}</div>
+            <div class="app-sub">${isOwner ? 'Panel de dueño' : 'Panel de administrador'}</div>
+          </div>
         </div>
         <div ${act('signOut')} class="link-muted">Salir</div>
       </div>

@@ -13,7 +13,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { iconSpan } from '../data.js';
+import { brandMark } from '../data.js';
 import { esc, act, errorBanner, textField, devCredit, initials } from '../helpers.js';
 
 export function viewPlatformDash() {
@@ -40,7 +40,7 @@ export function viewPlatformDash() {
     <div class="dash-main">
       <div class="app-head">
         <div style="display:flex;align-items:center;gap:10px">
-          <div style="width:34px;height:34px;border-radius:10px;background:var(--brand-dim);display:flex;align-items:center;justify-content:center;color:var(--brand)">${iconSpan('shield', 18)}</div>
+          ${brandMark('sm')}
           <div>
             <div class="app-title">Plataforma</div>
             <div class="app-sub">Administrador de plataforma</div>
