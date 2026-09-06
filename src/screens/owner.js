@@ -12,7 +12,7 @@ import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan } f
 import {
   esc, act, stepHead, stepBars, errorBanner, textField, sectionTitle,
   tabsMarkup, devCredit, initials, statusMeta, enrichClient, commentCards, money,
-  emailField, phoneField, passwordField, passwordStrength,
+  emailField, phoneField, passwordField, passwordStrength, daysUntil,
 } from '../helpers.js';
 
 /* ---------------- dueño: registro ---------------- */
@@ -183,11 +183,14 @@ export function viewOwnerSocios() {
         </div>
       </div>
       ${showCharge ? `<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:12px;display:flex;gap:12px;align-items:center">
-        <canvas class="qr-canvas" data-qr="${esc(JSON.stringify({ t: 'payment', id: state.activeCharge.paymentId }))}" data-qr-size="56"></canvas>
+        <div ${act('toggleChargeQrExpanded')} style="cursor:pointer" title="Ver en grande">
+          <canvas class="qr-canvas" data-qr="${esc(JSON.stringify({ t: 'payment', id: state.activeCharge.paymentId }))}" data-qr-size="56"></canvas>
+        </div>
         <div style="flex:1">
           <div style="font-size:12.5px;font-weight:700">Cobro pendiente · ${money(state.activeCharge.amount)} en efectivo</div>
-          <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Confirma solo cuando ${esc(c.name)} te entregue el efectivo en el mostrador</div>
-          <div style="display:flex;gap:14px;margin-top:6px">
+          <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Que ${esc(c.name)} escanee este código para confirmar su pago, o confirmalo vos cuando te entregue el efectivo</div>
+          <div style="display:flex;gap:14px;margin-top:6px;align-items:center">
+            <div ${act('toggleChargeQrExpanded')} style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--info);cursor:pointer;font-weight:700">${iconSpan('eye', 14)} Ver en grande</div>
             <div ${act('confirmCharge')} style="font-size:11.5px;color:var(--ok);cursor:pointer;font-weight:700">Confirmar efectivo recibido</div>
             <div ${act('cancelCharge')} style="font-size:11.5px;color:var(--danger);cursor:pointer;font-weight:600">Cancelar</div>
           </div>
@@ -216,6 +219,14 @@ export function viewOwnerSocios() {
       <div ${act('goToScanCheckin')} style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--info);cursor:pointer;font-weight:700">${iconSpan('camera', 14)} Escanear QR</div>
     </div>
     ${rows || `<div class="empty"><div class="empty__title">Sin resultados</div>Nadie coincide con esa búsqueda/filtro</div>`}
+    ${state.activeCharge && state.chargeQrExpanded ? `<div ${act('toggleChargeQrExpanded')} style="position:fixed;inset:0;background:rgba(11,13,16,0.94);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px">
+        <canvas class="qr-canvas" data-qr="${esc(JSON.stringify({ t: 'payment', id: state.activeCharge.paymentId }))}" data-qr-size="260"></canvas>
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:800;color:#fff">${esc(state.activeCharge.clientName)}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.65);margin-top:4px">${money(state.activeCharge.amount)} · que escanee este código para confirmar</div>
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.55);text-decoration:underline;cursor:pointer">Cerrar</div>
+      </div>` : ''}
   </div>`;
 }
 
@@ -317,11 +328,17 @@ export function viewOwnerPanel() {
   const pendingTrainers = state.trainersForGym.filter(t => t.status === 'pending').length;
   const pendingAdmins = isOwner ? state.gymAdminsForGym.filter(a => a.status === 'pending').length : 0;
   const vencidos = state.clientsForGym.filter(c => c.status === 'vencido').length;
+  // Socios a 5 días o menos de que se les venza el plan (mismo criterio que
+  // el aviso del propio cliente en viewClientHome) — excluye "diario", que
+  // vence el mismo día que se paga y no tiene sentido "avisar con tiempo".
+  const porVencer = state.clientsForGym.map(enrichClient)
+    .filter(c => c.status === 'al_dia' && c.type !== 'diario' && (d => d !== null && d >= 0 && d <= 5)(daysUntil(c.membershipExpiresAt))).length;
 
   const alerts = [];
   if (pendingTrainers) alerts.push({ text: `${pendingTrainers} ${pendingTrainers === 1 ? 'entrenador espera' : 'entrenadores esperan'} aprobación`, tab: 'entrenadores' });
   if (pendingAdmins) alerts.push({ text: `${pendingAdmins} ${pendingAdmins === 1 ? 'administrador espera' : 'administradores esperan'} aprobación`, tab: 'admins' });
   if (vencidos) alerts.push({ text: `${vencidos} ${vencidos === 1 ? 'socio tiene' : 'socios tienen'} el pago vencido`, tab: 'socios' });
+  if (porVencer) alerts.push({ text: `${porVencer} ${porVencer === 1 ? 'socio vence' : 'socios vencen'} su plan en 5 días o menos`, tab: 'socios' });
 
   return `<div class="pane">
     ${errorBanner()}

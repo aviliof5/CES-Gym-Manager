@@ -15,7 +15,7 @@
 
 import { state, setState } from './state.js';
 import { offlineBanner, friendlyError } from './helpers.js';
-import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan } from './actions.js';
+import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan } from './actions.js';
 import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
 
 import {
@@ -27,7 +27,7 @@ import {
 import { viewAdminReg, viewAdminPending } from './screens/admin.js';
 import {
   viewClientReg1, viewClientReg2, viewClientReg3, viewClientReg4,
-  viewClientHome, viewClientPhotoRequired, viewWorkout, viewClientChat,
+  viewClientHome, viewClientPhotoRequired, viewWorkout, viewClientChat, viewClientScanPayment,
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 import { viewExerciseLibrary } from './screens/library.js';
@@ -72,6 +72,15 @@ const SCREENS = {
   gymPicker: viewGymPicker,
   clientPhotoRequired: viewClientPhotoRequired,
   platformDash: viewPlatformDash,
+  scanPayment: viewClientScanPayment,
+};
+
+// Pantallas de lectura de QR con cámara y qué handler decodifica cada una
+// (ver render() más abajo) — check-in (owner.js) y el cliente confirmando
+// su propio pago (client.js, ACTIONS.handlePaymentScan).
+const QR_SCAN_SCREENS = {
+  scanCheckin: handleCheckinScan,
+  scanPayment: handlePaymentScan,
 };
 
 /** Write a possibly-dotted state path, cloning the parent object. */
@@ -176,21 +185,24 @@ export function render() {
   paintQrCodes(root);
 
   // La cámara de lectura de QR (ver src/qr.js) solo debe estar prendida
-  // mientras la pantalla "Escanear QR" está activa — se corta apenas se
-  // navega a cualquier otra, para no dejar el hardware ocupado de fondo.
+  // mientras una pantalla de escaneo (QR_SCAN_SCREENS) está activa — se
+  // corta apenas se navega a cualquier otra, para no dejar el hardware
+  // ocupado de fondo. Solo puede haber UNA cámara activa a la vez (sesión
+  // global en qr.js), así que scanCheckin y scanPayment nunca se solapan.
   // El `!state.scanError` es a propósito: si ya falló una vez en esta
   // visita a la pantalla (permiso denegado, sin cámara), NO hay que
   // reintentar en cada render — eso causaría un loop infinito, porque
   // `ensureQrScanner` fallaría de nuevo, dispararía `setState({scanError})`,
   // que dispara OTRO render(), que reintenta, etc. Reintentar de verdad pasa
-  // solo si el usuario sale y vuelve a entrar (goToScanCheckin en
-  // actions.js limpia scanError antes de navegar acá).
-  if (state.screen === 'scanCheckin' && !state.scanError) {
-    ensureQrScanner('qrScanVideo', handleCheckinScan).catch(err => {
+  // solo si el usuario sale y vuelve a entrar (goToScanCheckin/goToScanPayment
+  // en actions.js limpian scanError antes de navegar acá).
+  const scanHandler = QR_SCAN_SCREENS[state.screen];
+  if (scanHandler && !state.scanError) {
+    ensureQrScanner('qrScanVideo', scanHandler).catch(err => {
       console.error('No se pudo acceder a la cámara:', err);
       setState({ scanError: cameraErrorMessage(err) });
     });
-  } else if (state.screen !== 'scanCheckin') {
+  } else if (!scanHandler) {
     stopQrScanner();
   }
 }

@@ -781,17 +781,26 @@
       db.payments.push({ id, client_user_id: clientUserId, gym_id: c.gym_id, amount: plan.price + (trainer ? trainer.price : 0), status: 'pending', confirmed_by: null, confirmed_at: null });
       return id;
     },
+    // Confirma el staff (botón manual) o el propio cliente de ese cobro
+    // (escaneando el QR que le muestra el mostrador, ver
+    // ACTIONS.handlePaymentScan) — nunca un cliente ajeno a ese cobro
+    // puntual. El plazo respeta el plan actual del cliente (diario = 1 día,
+    // anual = 1 año, el resto/sin plan = 1 mes) — ver la migración
+    // 20260907000000_payment_qr_flip.sql, que es el mismo criterio del lado real.
     async confirm(paymentId) {
       await wait();
       const s = requireAuth();
-      if (!isStaff(s)) throw new Error('Solo el staff del gimnasio puede confirmar un cobro.');
       const pay = db.payments.find(p => p.id === paymentId);
       if (!pay || pay.status !== 'pending') throw new Error('Este cobro ya fue procesado.');
+      const isOwnClient = s.role === 'client' && pay.client_user_id === s.id;
+      if (!isStaff(s) && !isOwnClient) throw new Error('No autorizado para confirmar este cobro.');
       pay.status = 'confirmed'; pay.confirmed_by = s.id; pay.confirmed_at = new Date().toISOString();
       const c = db.clientProfiles.find(x => x.user_id === pay.client_user_id);
+      const plan = db.plans.find(p => p.id === c.plan_id);
+      const days = plan && plan.duration === 'diario' ? 1 : plan && plan.duration === 'anual' ? 365 : 30;
       c.membership_status = 'al_dia';
       c.last_payment_at = new Date().toISOString();
-      c.membership_expires_at = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      c.membership_expires_at = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
     },
     async cancel(paymentId) {
       await wait();

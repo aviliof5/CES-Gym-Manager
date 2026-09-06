@@ -240,24 +240,32 @@ export const ACTIONS = {
   // quedaría pegado en pantalla un instante mientras router.js reintenta
   // pedir la cámara de nuevo (ver ensureQrScanner en src/qr.js).
   goToScanCheckin: () => setState({ screen: 'scanCheckin', scanError: '', scanStatus: null, error: '' }),
+  // Mismo patrón, del lado del cliente — ver ACTIONS.handlePaymentScan y
+  // viewClientScanPayment en screens/client.js.
+  goToScanPayment: () => setState({ screen: 'scanPayment', scanError: '', scanStatus: null, error: '' }),
 
   generateCharge: async clientId => {
     const c = state.clientsForGym.map(enrichClient).find(x => x.id === clientId);
     if (!c) return;
     const paymentId = await BolaAPI.payments.createCashCharge(clientId);
-    setState({ activeCharge: { paymentId, clientId, clientName: c.name, amount: c.amount } });
+    setState({ activeCharge: { paymentId, clientId, clientName: c.name, amount: c.amount }, chargeQrExpanded: false });
   },
   cancelCharge: async () => {
     if (!state.activeCharge) return;
     await BolaAPI.payments.cancel(state.activeCharge.paymentId);
-    setState({ activeCharge: null });
+    setState({ activeCharge: null, chargeQrExpanded: false });
   },
   confirmCharge: async () => {
     if (!state.activeCharge) return;
     await BolaAPI.payments.confirm(state.activeCharge.paymentId);
     const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
-    setState({ clientsForGym, activeCharge: null });
+    setState({ clientsForGym, activeCharge: null, chargeQrExpanded: false });
   },
+  // El QR del cobro (ver viewOwnerSocios) solo se genera de este lado — el
+  // cliente ya no dibuja el suyo, lo escanea (ver goToScanPayment más
+  // arriba). Esto solo lo agranda a pantalla completa para que sea más
+  // fácil de leer desde el mostrador — mismo dato, mismo QR.
+  toggleChargeQrExpanded: () => setState({ chargeQrExpanded: !state.chargeQrExpanded }),
 
   /* ---- Etapa 2: "Socios" — buscar/filtrar + suspender/reactivar ---- */
   setOwnerClientStatusFilter: v => setState({ ownerClientStatusFilter: v }),
@@ -396,6 +404,14 @@ export const ACTIONS = {
     }
   },
   goPayTab: () => ACTIONS.selectClientTab('pago'),
+  // A diferencia de goPayTab (que solo cambia de tab DENTRO de clientHome,
+  // para cuando ya estás ahí — ver el aviso de "vence en 5 días"),
+  // viewClientScanPayment es una pantalla top-level propia (mismo patrón que
+  // scanCheckin del lado del dueño) — "volver" tiene que restaurar screen
+  // a clientHome además de la tab, o si no se queda pegado en scanPayment.
+  // router.js corta la cámara solo (ver QR_SCAN_SCREENS en render()) apenas
+  // detecta que `screen` dejó de ser una pantalla de escaneo.
+  exitScanPayment: () => setState({ screen: 'clientHome', clientTab: 'pago', scanError: '', scanStatus: null }),
   refreshPendingPayment: async () => {
     const pendingPayment = await BolaAPI.payments.getPendingForClient(state.myClient.id);
     setState({ pendingPayment });
@@ -935,6 +951,40 @@ export async function handleCheckinScan(payload) {
     const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
     if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
     setState({ todayCheckins, attendanceEvents: [...state.attendanceEvents, { client_user_id: client.id, created_at: row.created_at }], scanStatus: { ok: true, text: `✓ ${client.name} registrado.` } });
+  } catch (err) {
+    setState({ scanStatus: { ok: false, text: friendlyError(err) } });
+  }
+}
+
+// Callback de src/qr.js para la pantalla "Escanear QR" del CLIENTE (ver
+// viewClientScanPayment en screens/client.js) — el QR ahora solo se genera
+// del lado del dueño/admin (ver viewOwnerSocios), el cliente lo escanea
+// para confirmar su propio pago en vez de esperar a que el staff lo
+// confirme a mano. Mismas validaciones "solo para un mensaje claro en
+// pantalla" que handleCheckinScan de arriba — la que de verdad importa es
+// confirm_cash_payment() en el servidor, que solo deja confirmar al staff
+// o al propio dueño de ese cobro (nunca un cliente ajeno).
+export async function handlePaymentScan(payload) {
+  let data;
+  try { data = JSON.parse(payload); } catch (_) { data = null; }
+  if (!data || data.t !== 'payment' || !data.id) {
+    setState({ scanStatus: { ok: false, text: 'Ese código no es un QR de cobro de Fight Club Gym Manager.' } });
+    return;
+  }
+  try {
+    const payment = await BolaAPI.payments.getById(data.id);
+    if (!payment || payment.client_user_id !== state.myClient.id) {
+      setState({ scanStatus: { ok: false, text: 'Ese código no es tu cobro — pedile al mostrador que te muestre el tuyo.' } });
+      return;
+    }
+    if (payment.status !== 'pending') {
+      setState({ scanStatus: { ok: false, text: 'Ese cobro ya fue confirmado antes.' } });
+      return;
+    }
+    await BolaAPI.payments.confirm(data.id);
+    const client = await BolaAPI.clients.getSelf(state.myProfile.id);
+    if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
+    setState({ myClient: client, pendingPayment: null, scanStatus: { ok: true, text: '✓ Pago confirmado. ¡Gracias!' } });
   } catch (err) {
     setState({ scanStatus: { ok: false, text: friendlyError(err) } });
   }

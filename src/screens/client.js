@@ -626,14 +626,51 @@ export function viewClientPago() {
       <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:10px">Aún no hay un cobro generado. Pide al administrador que genere tu código QR para pagar.</div>
     </div>`;
   } else {
-    body = `<div style="margin-top:20px;font-size:var(--fs-md);font-weight:700">Muestra este código en el mostrador</div>
-      <canvas class="qr-canvas" style="margin-top:16px" data-qr="${esc(JSON.stringify({ t: 'payment', id: pending.id }))}" data-qr-size="180"></canvas>
-      <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:12px">Paga ${money(pending.amount)} en efectivo. El staff confirmará el cobro desde su panel.</div>
-      <div style="font-size:var(--fs-sm);color:var(--warn);margin-top:14px;font-weight:700">Esperando confirmación del gimnasio…</div>
+    // El QR ya no lo dibuja el cliente — lo genera y muestra el mostrador
+    // (dueño/admin, ver viewOwnerSocios). Acá solo hay un botón para abrir
+    // la cámara y escanear ESE código, que confirma el pago al instante
+    // (ver ACTIONS.handlePaymentScan) — sin esperar a que el staff lo haga
+    // a mano, aunque esa opción se mantiene abajo por si no hay cámara.
+    body = `<div style="margin-top:20px;font-size:var(--fs-md);font-weight:700">Paga ${money(pending.amount)} en efectivo en el mostrador</div>
+      <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:10px;max-width:280px">Pedile al mostrador que te muestre su código y escaneálo para confirmar tu pago al instante</div>
+      <button class="btn btn--action" ${act('goToScanPayment')} style="margin-top:20px;padding:14px 28px;display:inline-flex;align-items:center;gap:8px;font-size:14px">${iconSpan('camera', 16)} Escanear QR para confirmar</button>
+      <div style="font-size:var(--fs-sm);color:var(--warn);margin-top:18px;font-weight:700">Esperando confirmación del gimnasio…</div>
       <div ${act('refreshPendingPayment')} style="font-size:var(--fs-sm);color:var(--muted);margin-top:14px;cursor:pointer;text-decoration:underline">¿Ya te confirmaron? Actualizar</div>`;
   }
 
   return `<div class="pane" style="display:flex;flex-direction:column;align-items:center;text-align:center">${errorBanner()}${body}</div>`;
+}
+
+// Pantalla de escaneo del QR de cobro (mismo mecanismo que viewScanCheckin
+// en owner.js, ver src/qr.js) pero del lado del cliente: apunta la cámara
+// al código que le muestra el mostrador y ACTIONS.handlePaymentScan
+// confirma el pago apenas lo lee — sin esperar al staff.
+export function viewClientScanPayment() {
+  const status = state.scanStatus;
+  return `<div class="pane">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <div class="back" ${act('exitScanPayment')}>&lsaquo;</div>
+      <div style="font-size:15px;font-weight:800">Escanear QR de pago</div>
+    </div>
+    ${state.scanError
+      ? `<div class="card" style="text-align:center;padding:28px 20px">
+          <div style="color:var(--danger);font-size:13px;font-weight:700;margin-bottom:6px">No pudimos abrir la cámara</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5">${esc(state.scanError)}</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.5">Mientras tanto, esperá a que el mostrador confirme tu pago desde su panel.</div>
+          <div style="display:flex;gap:18px;justify-content:center;margin-top:12px">
+            <div ${act('goToScanPayment')} style="font-size:12px;color:var(--ok);cursor:pointer;font-weight:700">Reintentar</div>
+            <div ${act('exitScanPayment')} style="font-size:12px;color:var(--info);cursor:pointer;font-weight:700">Volver a Pago</div>
+          </div>
+        </div>`
+      : `<div style="position:relative;border-radius:16px;overflow:hidden;background:#000;aspect-ratio:1/1">
+          <video id="qrScanVideo" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+          <div style="position:absolute;inset:16%;border:2px solid rgba(255,255,255,0.55);border-radius:16px;pointer-events:none"></div>
+        </div>
+        ${status ? `<div class="card" style="margin-top:14px;text-align:center;border-color:${status.ok ? 'var(--ok)' : 'var(--danger)'}">
+            <div style="font-size:13px;font-weight:700;color:${status.ok ? 'var(--ok)' : 'var(--danger)'}">${esc(status.text)}</div>
+            ${status.ok ? `<div ${act('exitScanPayment')} style="font-size:12px;color:var(--info);cursor:pointer;font-weight:700;margin-top:10px;text-decoration:underline">Volver a Pago</div>` : ''}
+          </div>` : `<div style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px">Apuntá la cámara al código que te muestra el mostrador</div>`}`}
+  </div>`;
 }
 
 // "Perfil" (pantalla nueva del plan) — datos propios + membresía, la
@@ -755,8 +792,11 @@ export function viewClientHome() {
 
   const days = daysUntil(client.membershipExpiresAt);
   const urgent = days !== null && days <= 1;
-  const plan = state.myClientPlan || { name: '—', price: 0 };
-  const alert = (days !== null && days <= 5) ? `<div class="alert${urgent ? '' : ' alert--warn'}" style="margin:0 22px 12px">
+  const plan = state.myClientPlan || { name: '—', price: 0, duration: 'mensual' };
+  // Los planes "diario" se pagan y vencen el mismo día — un aviso de "te
+  // quedan 5 días" no aplica ahí (ver migración payment_qr_flip.sql, mismo
+  // motivo por el que confirm_cash_payment() ya no suma +30 días fijos).
+  const alert = (days !== null && days <= 5 && plan.duration !== 'diario') ? `<div class="alert${urgent ? '' : ' alert--warn'}" style="margin:0 22px 12px">
       <div style="width:30px;height:30px;border-radius:8px;background:${urgent ? 'var(--danger-dim)' : 'var(--warn-dim)'};display:flex;align-items:center;justify-content:center;color:${urgent ? 'var(--danger)' : 'var(--warn)'};flex-shrink:0">${iconSpan('clock', 16)}</div>
       <div style="flex:1">
         <div style="font-size:var(--fs-sm);font-weight:800;color:${urgent ? 'var(--danger)' : 'var(--warn)'}">${days <= 0 ? '¡Tu plan vence hoy!' : days === 1 ? '¡Tu plan vence mañana!' : 'Tu plan vence en ' + days + ' días'}</div>
