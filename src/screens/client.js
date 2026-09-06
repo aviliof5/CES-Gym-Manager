@@ -12,13 +12,6 @@ import {
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
   devCredit, initials, daysUntil, commentCards, money, statusMeta,
 } from '../helpers.js';
-// Fase 16 — la tab "Plataforma" (generar invitación de dueño) no depende del
-// rol: is_platform_admin puede caer en una cuenta de cualquier rol (ver
-// docs/MIGRATION_PLAN.md Fase 16 seguimiento — el alta de cliente es la
-// única sin invitación, así que en la práctica termina siendo la más usada
-// para esto). Se reutiliza la misma vista que ya usa el panel de
-// dueño/admin en vez de duplicar el formulario acá.
-import { viewOwnerPlatform } from './owner.js';
 
 /* ---------------- cliente: registro ---------------- */
 
@@ -734,9 +727,8 @@ export function viewClientChat() {
   </div>`;
 }
 
-// "Plataforma" (Fase 16) se agrega condicionalmente en viewClientHome, solo
-// para is_platform_admin — ver el comentario del import de viewOwnerPlatform
-// más arriba.
+// (La vieja tab "Plataforma" — Fase 16, is_platform_admin sobre cualquier
+// rol — se movió a su propio panel dedicado, ver src/screens/platform.js.)
 const CLIENT_BASE_TABS = [
   ['inicio', 'Inicio', 'home'],
   ['rutina', 'Rutina', 'dumbbell'],
@@ -749,8 +741,7 @@ const CLIENT_BASE_TABS = [
 
 export function viewClientHome() {
   const client = state.myClient;
-  const isPlatformAdmin = !!(state.myProfile && state.myProfile.is_platform_admin);
-  const tabs = isPlatformAdmin ? [...CLIENT_BASE_TABS, ['plataforma', 'Plataforma', 'shield']] : CLIENT_BASE_TABS;
+  const tabs = CLIENT_BASE_TABS;
   const panes = {
     inicio: viewClientInicio,
     rutina: viewClientRutina,
@@ -759,9 +750,8 @@ export function viewClientHome() {
     reservas: viewClientReservas,
     pago: viewClientPago,
     perfil: viewClientPerfil,
-    plataforma: viewOwnerPlatform,
   };
-  const activeTab = (state.clientTab === 'plataforma' && !isPlatformAdmin) ? 'inicio' : state.clientTab;
+  const activeTab = state.clientTab;
 
   const days = daysUntil(client.membershipExpiresAt);
   const urgent = days !== null && days <= 1;

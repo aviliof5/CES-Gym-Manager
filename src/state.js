@@ -27,7 +27,10 @@ export const state = {
   // sin usar, create_gym() rechaza en el servidor (ver docs/SECURITY_AUDIT.md).
   ownerInviteToken: null,
   gymInvites: null, // {client, admin, trainer} códigos de ESTE gimnasio — lo carga el dueño/admin (ver enterOwnerDash)
-  platformInviteNote: '', platformInviteLink: '', // formulario de la tab "Plataforma" (solo is_platform_admin)
+  // Panel de plataforma (rol dedicado 'platform_admin', ver
+  // src/screens/platform.js) — platformGyms es la lista de todos los
+  // gimnasios + su dueño, cargada al entrar (ver enterPlatformDash).
+  platformInviteNote: '', platformInviteLink: '', platformGyms: [],
   inviteLinkCopied: false, // feedback transitorio del botón "Copiar link" del dueño
   inviteLinkCopyFailed: false, // idem, cuando el portapapeles del navegador deniega el permiso
   busy: false,

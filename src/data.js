@@ -88,7 +88,7 @@ export const ICON_PATHS = {
   chat: '<path d="M4 5h16v11H8l-4 4V5z"/>',
   clipboard: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M9 12l2 2 4-4"/>',
   idcard: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="11" r="2"/><path d="M6 16c.5-1.8 2-2.5 2.5-2.5S11 14.2 11.5 16M14 9h4M14 13h4"/>',
-  // Fase 16 — tab "Plataforma" (solo is_platform_admin).
+  // Panel de plataforma (ver src/screens/platform.js).
   shield: '<path d="M12 3l7 3v6c0 4.5-3 8-7 9-4-1-7-4.5-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
   run: '<circle cx="14" cy="5" r="2"/><path d="M9 20l2-5 2 1 2 5M8 13l3-3 2 2 3-1M6 9l3-2"/>',
   eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',

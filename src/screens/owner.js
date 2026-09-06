@@ -605,35 +605,10 @@ export function viewOwnerConfiguracion() {
   </div>`;
 }
 
-// Tab "Plataforma" (Fase 16) — solo la ve la cuenta marcada
-// is_platform_admin (hoy, solo el dueño real de Fight Club/CES, ver la
-// migración de la fase). Genera el link de un solo uso con el que alguien
-// puede registrar un gimnasio nuevo como dueño — el gate real está en
-// create_owner_invite() del lado servidor, esto es solo el formulario.
-export function viewOwnerPlatform() {
-  const link = state.platformInviteLink;
-  return `<div class="pane">
-    ${errorBanner()}
-    <div class="card--dashed" style="margin-bottom:18px">
-      <div style="font-size:13px;font-weight:700;color:var(--muted)">Generar invitación de dueño</div>
-      <div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Cada link es de un solo uso — quien lo abra puede registrar UN gimnasio nuevo como dueño.</div>
-      ${textField('platformInviteNote', 'Nota (ej. nombre del cliente) — opcional', state.platformInviteNote, { sm: true })}
-      <button ${act('generatePlatformInvite')} class="btn btn--brand" style="width:100%;padding:12px;font-size:13.5px;margin-top:10px">${state.busy ? 'Generando…' : 'Generar link de invitación'}</button>
-    </div>
-    ${link ? `<div class="card--dashed">
-      <div style="font-size:13px;font-weight:700;color:var(--muted)">Último link generado</div>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:4px">
-        <canvas class="qr-canvas" data-qr="${esc(link)}" data-qr-size="64"></canvas>
-        <div style="flex:1;min-width:0;font-size:11.5px;color:var(--text-soft);word-break:break-all">${esc(link)}</div>
-      </div>
-      <button ${act('copyInviteLink', link)} style="background:${state.inviteLinkCopyFailed ? 'transparent' : 'var(--brand)'};border:${state.inviteLinkCopyFailed ? '1px solid var(--danger)' : 'none'};border-radius:10px;padding:10px 16px;color:${state.inviteLinkCopyFailed ? 'var(--danger)' : '#fff'};font-weight:700;font-size:12.5px;cursor:pointer;width:100%;margin-top:10px">${state.inviteLinkCopied ? '¡Copiado!' : state.inviteLinkCopyFailed ? 'No se pudo copiar' : 'Copiar link'}</button>
-    </div>` : ''}
-  </div>`;
-}
-
 // Tabs base, iguales para dueño y administrador (paridad total) — la de
-// "Admins" se agrega condicionalmente en viewOwnerDash, solo para el dueño;
-// la de "Plataforma" (Fase 16), solo para is_platform_admin.
+// "Admins" se agrega condicionalmente en viewOwnerDash, solo para el dueño.
+// (La vieja tab "Plataforma" — Fase 16, is_platform_admin — se movió a su
+// propio panel dedicado, ver src/screens/platform.js.)
 const BASE_TABS = [
   ['panel', 'Panel', 'home'],
   ['socios', 'Socios', 'users'],
@@ -646,11 +621,9 @@ const BASE_TABS = [
 
 export function viewOwnerDash() {
   const isOwner = state.myProfile && state.myProfile.role === 'owner';
-  const isPlatformAdmin = !!(state.myProfile && state.myProfile.is_platform_admin);
   const tabs = [
     ...BASE_TABS,
     ...(isOwner ? [['admins', 'Admins', 'idcard']] : []),
-    ...(isPlatformAdmin ? [['plataforma', 'Plataforma', 'shield']] : []),
   ];
   const panes = {
     panel: viewOwnerPanel,
@@ -661,12 +634,8 @@ export function viewOwnerDash() {
     reportes: viewOwnerReportes,
     configuracion: viewOwnerConfiguracion,
     admins: viewOwnerAdmins,
-    plataforma: viewOwnerPlatform,
   };
-  const activeTab =
-    (state.ownerTab === 'admins' && !isOwner) ? 'panel' :
-    (state.ownerTab === 'plataforma' && !isPlatformAdmin) ? 'panel' :
-    state.ownerTab;
+  const activeTab = (state.ownerTab === 'admins' && !isOwner) ? 'panel' : state.ownerTab;
   return `<div class="dash-shell">
     <div class="dash-main">
       <div class="app-head">

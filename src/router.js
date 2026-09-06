@@ -31,6 +31,7 @@ import {
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 import { viewExerciseLibrary } from './screens/library.js';
+import { viewPlatformDash } from './screens/platform.js';
 
 const root = document.getElementById('app');
 
@@ -60,6 +61,7 @@ const SCREENS = {
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,
   clientPhotoRequired: viewClientPhotoRequired,
+  platformDash: viewPlatformDash,
 };
 
 /** Write a possibly-dotted state path, cloning the parent object. */

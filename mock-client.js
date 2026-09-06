@@ -70,7 +70,7 @@
 
   (function seed() {
     const gymId = 'gym-1';
-    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234', currency: 'USD' });
+    db.gyms.push({ id: gymId, name: 'PowerHouse Gym', address: 'Av. Central 123', hours: '6:00 - 22:00', invite_code: 'demo1234', currency: 'USD', created_at: new Date().toISOString() });
     // Fase 16 — un código de invitación por rol, ya no uno solo compartido.
     db.gymInvites.push({ gym_id: gymId, role: 'client', code: 'demo1234' }); // igual al invite_code legado de siempre
     db.gymInvites.push({ gym_id: gymId, role: 'admin', code: 'demoadmn' });
@@ -92,11 +92,13 @@
     // para migrar la cuenta real en producción, ver supabase/migrations/
     // 20260903000002_owner_role_fix_wrong_promotion.sql).
     mkUser('admin-1', 'owner', 'Avilio Fernández', 'admin@bola.app', '555-0100', { password: 'admin123' });
-    // Fase 16 — la cuenta real de dueño (fernandezavilio5@gmail.com en
-    // producción) también es la de administrador de plataforma, la única
-    // que genera invitaciones de dueño nuevas. Se marca acá para poder
-    // probar la tab "Plataforma" contra el mock sin tocar Supabase real.
-    db.profiles.find(p => p.id === 'admin-1').is_platform_admin = true;
+    // Rol dedicado de administrador de plataforma (ver
+    // supabase/migrations/20260905000500_platform_admin_role.sql) — cuenta
+    // propia, sin gym_id, para poder probar el panel de plataforma
+    // (src/screens/platform.js) contra el mock sin tocar Supabase real.
+    // Reemplaza el enfoque anterior (Fase 16) de marcar is_platform_admin=true
+    // sobre la cuenta de dueño de arriba.
+    db.profiles.push({ id: 'platform-1', role: 'platform_admin', gym_id: null, name: 'Admin de plataforma', email: 'plataforma@bola.app', phone: null, password: 'plataforma123' });
     mkUser('trainer-1', 'trainer', 'Marco Díaz', 'marco@bola.app', '555-0201', { password: 'coach123', specialty: 'Fuerza e hipertrofia', price: 20 });
     mkUser('trainer-2', 'trainer', 'Laura Gómez', 'laura@bola.app', '555-0202', { password: 'coach123', specialty: 'Pérdida de peso y cardio', price: 15 });
     mkUser('trainer-3', 'trainer', 'Diego Ruiz', 'diego@bola.app', '555-0203', { password: 'coach123', specialty: 'Funcional y movilidad', price: 10 });
@@ -875,10 +877,26 @@
       await wait();
       const s = requireAuth();
       const me = profileOf(s.id);
-      if (!me.is_platform_admin) throw new Error('Solo un administrador de la plataforma puede generar invitaciones de dueño.');
+      if (me.role !== 'platform_admin') throw new Error('Solo el administrador de la plataforma puede generar invitaciones de dueño.');
       const token = Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
       db.ownerInvites.push({ token, note: note || null, created_by: s.id, created_at: new Date().toISOString(), used_at: null, used_by_user_id: null });
       return token;
+    },
+    // Panel de plataforma (src/screens/platform.js) — todos los gimnasios +
+    // su dueño (si ya completó create_gym()).
+    async listGyms() {
+      await wait();
+      const s = requireAuth();
+      const me = profileOf(s.id);
+      if (me.role !== 'platform_admin') throw new Error('Solo el administrador de la plataforma puede ver esto.');
+      return db.gyms.map(g => {
+        const owner = db.profiles.find(p => p.gym_id === g.id && p.role === 'owner');
+        return {
+          id: g.id, name: g.name, address: g.address, currency: g.currency,
+          brandName: g.brand_name || '', createdAt: g.created_at || new Date().toISOString(),
+          ownerName: owner ? owner.name : '', ownerEmail: owner ? owner.email : '',
+        };
+      });
     },
   };
 

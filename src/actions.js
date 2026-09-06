@@ -176,11 +176,11 @@ export const ACTIONS = {
     setState({ gymInvites: { ...state.gymInvites, [role]: code } });
   },
 
-  // Tab "Plataforma" (solo visible si myProfile.is_platform_admin) — genera
-  // el link de un solo uso para que un dueño nuevo pueda registrarse. El
-  // gate real es create_owner_invite() en el servidor (exige
-  // app_is_platform_admin()); acá solo se arma el link para copiar/mostrar
-  // como QR (ver src/qr.js).
+  // Panel de plataforma (src/screens/platform.js, solo profile.role ===
+  // 'platform_admin') — genera el link de un solo uso para que un dueño
+  // nuevo pueda registrarse. El gate real es create_owner_invite() en el
+  // servidor (exige app_is_platform_admin()); acá solo se arma el link para
+  // copiar/mostrar como QR (ver src/qr.js).
   generatePlatformInvite: async () => {
     setState({ busy: true, error: '' });
     try {
@@ -721,6 +721,9 @@ export const ACTIONS = {
 // interrumpidos por confirmación de correo) no cambia, solo cómo se llega.
 export async function routeAfterLogin(profile) {
   state.myProfile = profile;
+  // Rol dedicado, sin gimnasio — entra directo a su propio panel, ver
+  // supabase/migrations/20260905000500_platform_admin_role.sql.
+  if (profile.role === 'platform_admin') { await enterPlatformDash(); return; }
   if (profile.role === 'owner') { await resumeOwnerSession(profile); return; }
   if (profile.role === 'admin') { await resumeAdminSession(profile); return; }
   if (profile.role === 'client') { await resumeClientSession(profile); return; }
@@ -729,7 +732,7 @@ export async function routeAfterLogin(profile) {
     await continueTrainerSignIn(profile);
     return;
   }
-  // No debería pasar — todo profile real tiene uno de los 4 roles — pero
+  // No debería pasar — todo profile real tiene uno de los 5 roles — pero
   // ante un dato inesperado, no dejar a nadie logueado sin panel a donde ir.
   await BolaAPI.auth.signOut();
   setState({ busy: false, screen: 'login', loginError: 'No pudimos identificar el rol de esta cuenta.' });
@@ -935,6 +938,13 @@ export async function handleCheckinScan(payload) {
 // Entrada compartida por el dueño y por un administrador ya aprobado —
 // paridad total (ver docs/ROLES_AND_PERMISSIONS.md). viewOwnerDash decide
 // internamente si muestra la tab de aprobar administradores según el rol.
+// Panel de plataforma (rol dedicado 'platform_admin', ver
+// src/screens/platform.js) — no tiene gimnasio ni tabbar, una sola pantalla.
+export async function enterPlatformDash() {
+  const platformGyms = await BolaAPI.platform.listGyms();
+  setState({ screen: 'platformDash', busy: false, platformGyms });
+}
+
 export async function enterOwnerDash() {
   const [clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites] = await Promise.all([
     BolaAPI.clients.listForGym(state.gym.id),
