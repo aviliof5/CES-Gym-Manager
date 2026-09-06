@@ -81,6 +81,10 @@ export const state = {
   trainersForGym: [],
   billingFilter: 'mensual',
   activeCharge: null,   // {paymentId, clientId, clientName, amount, status}
+  // El cliente confirma su propio cobro escaneando el QR de esta pantalla
+  // (ver ACTIONS.handlePaymentScan) — esto solo agranda ese mismo QR a
+  // pantalla completa para que sea más fácil de leer desde el mostrador.
+  chargeQrExpanded: false,
 
   // Etapa 2 — "Socios" (buscador + filtro + suspender).
   ownerClientQuery: '', ownerClientStatusFilter: 'todos',
