@@ -840,7 +840,7 @@ async function tryJoinViaGymInvite(next, expectedRole) {
     await BolaAPI.gyms.join(state.inviteGym.id);
     try { localStorage.removeItem(GYM_INVITE_KEY); } catch (_) {}
     if (next === 'clientSignUp') await continueClientSignUpAfterGym(state.inviteGym);
-    else if (next === 'adminSignUp') continueAdminSignUpAfterGym();
+    else if (next === 'adminSignUp') await continueAdminSignUpAfterGym();
     else if (next === 'trainerSignUp') continueTrainerSignUpAfterGym();
     return true;
   } catch (err) {
@@ -867,12 +867,17 @@ export async function continueClientSignUpAfterGym(gym) {
   setState({ busy: false, myProfile: profile, gym, plans, screen: 'clientReg2' });
 }
 
-export function continueAdminSignUpAfterGym() {
-  const r = state.adminReg;
-  setState({
-    busy: false, screen: 'adminPending', pendingAdminName: r.name,
-    adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
-  });
+// El link de invitación de administrador que se acaba de usar (ver
+// tryJoinViaGymInvite) ES la aprobación del dueño (join_gym() ya deja
+// gym_admins.status='approved' para este caso, ver la migración
+// 20260908000000_admin_auto_approve.sql) — así que en vez de forzar la
+// pantalla de "pendiente" a ciegas como antes, se reusa el mismo chequeo
+// de estado que ya hacía el login (continueAdminSignIn) para que ambos
+// caminos entren directo al panel cuando corresponde.
+export async function continueAdminSignUpAfterGym() {
+  setState({ adminReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' } });
+  const profile = await BolaAPI.auth.getMyProfile();
+  await continueAdminSignIn(profile);
 }
 
 export async function continueAdminSignIn(profile) {
