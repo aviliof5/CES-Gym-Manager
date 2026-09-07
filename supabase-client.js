@@ -754,6 +754,23 @@
     async notifyGymClients(title, body, type, relatedId) {
       return unwrap(await client.rpc('notify_gym_clients', { p_title: title, p_body: body, p_type: type, p_related_id: relatedId || null }));
     },
+    // Dirección contraria a las de arriba: cliente -> staff. Las inserta
+    // sola confirm_cash_payment() cuando el cliente confirma su propio pago
+    // escaneando el QR (ver 20260912000000_payment_accountability_and_client_lock.sql)
+    // — acá solo se leen/marcan, nunca se insertan desde el frontend.
+    async listForStaff() {
+      const rows = unwrap(await client.from('staff_notifications')
+        .select('id, gym_id, recipient_user_id, title, body, type, related_id, created_at, read_at')
+        .order('created_at', { ascending: false }));
+      return rows.map(n => ({
+        id: n.id, title: n.title, body: n.body, type: n.type, relatedId: n.related_id,
+        createdAt: n.created_at, readAt: n.read_at,
+      }));
+    },
+    async markStaffRead(notificationId) {
+      const { error } = await client.from('staff_notifications').update({ read_at: new Date().toISOString() }).eq('id', notificationId);
+      if (error) throw error;
+    },
   };
 
   /* ---------------- logros ---------------- */

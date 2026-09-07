@@ -200,6 +200,11 @@ export const state = {
   // un evento y le llega una a cada socio del gimnasio).
   notifications: [], notificationsReturn: null,
 
+  // Notificaciones al staff (dirección contraria: cliente confirma su pago
+  // escaneando el QR del mostrador -> le llega a dueño+admins quién cobró y
+  // hasta cuándo es válido, ver confirm_cash_payment()).
+  staffNotifications: [], staffNotificationsReturn: null,
+
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
 
