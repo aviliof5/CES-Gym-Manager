@@ -25,6 +25,18 @@ export function initials(name) {
   return (name || '').split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
 }
 
+// El círculo de "avatar" de siempre (iniciales) o, si hay una foto real
+// (ver ACTIONS.attachFaceUrls — clientes: face_photo_key), la foto
+// recortada al mismo círculo — mismo tamaño/posición donde ya se usaba
+// `class="avatar"`, así no hace falta tocar el layout de cada pantalla.
+// `extraStyle` es para los pocos casos que hoy agrandan el avatar con un
+// style inline (ej. el de Perfil, 48px en vez de 38px).
+export function avatar(name, url, extraClass, extraStyle) {
+  const cls = `avatar${extraClass ? ' ' + extraClass : ''}`;
+  if (!url) return `<div class="${cls}"${extraStyle ? ` style="${extraStyle}"` : ''}>${esc(initials(name))}</div>`;
+  return `<div class="${cls}" style="overflow:hidden;padding:0;${extraStyle || ''}"><img src="${esc(url)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"/></div>`;
+}
+
 // Devuelve entradas estructuradas {text, sets, reps, weightKg, restSeconds} —
 // ver EXERCISE_LIB en data.js. routines.generateAi() las guarda tal cual en
 // las columnas nuevas de routine_exercises (Etapa 2); `text` sigue yendo

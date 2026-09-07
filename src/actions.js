@@ -388,7 +388,7 @@ export const ACTIONS = {
     const paymentId = state.activeCharge.paymentId;
     try {
       await BolaAPI.payments.confirm(paymentId);
-      const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+      const clientsForGym = await attachFaceUrls(await BolaAPI.clients.listForGym(state.gym.id));
       setState({ clientsForGym, activeCharge: null, chargeQrExpanded: false });
     } catch (err) {
       if (!isNetworkError(err)) throw err;
@@ -413,12 +413,12 @@ export const ACTIONS = {
   confirmSuspendClient: async () => {
     if (!state.ownerSuspendingClientId) return;
     await BolaAPI.clients.suspend(state.ownerSuspendingClientId, state.ownerSuspendReason);
-    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+    const clientsForGym = await attachFaceUrls(await BolaAPI.clients.listForGym(state.gym.id));
     setState({ clientsForGym, ownerSuspendingClientId: null, ownerSuspendReason: '' });
   },
   unsuspendClient: async clientId => {
     await BolaAPI.clients.unsuspend(clientId);
-    const clientsForGym = await BolaAPI.clients.listForGym(state.gym.id);
+    const clientsForGym = await attachFaceUrls(await BolaAPI.clients.listForGym(state.gym.id));
     setState({ clientsForGym });
   },
 
@@ -1219,7 +1219,7 @@ export async function handlePaymentScan(payload) {
     }
     try {
       await BolaAPI.payments.confirm(data.id);
-      const client = await BolaAPI.clients.getSelf(state.myProfile.id);
+      const [client] = await attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]);
       if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
       // confirm_cash_payment() ya dejó membership_expires_at seteado según
       // el plan (diario/mensual/anual, ver la migración payment_qr_flip) —
@@ -1271,8 +1271,11 @@ export async function enterOwnerDash() {
     loadWithFallback(`trainerInterest:${gymId}`, () => BolaAPI.trainers.listInterestForGym(gymId)),
     loadWithFallback(`gymInvites:${gymId}`, () => BolaAPI.gyms.getInvites(gymId)),
   ]);
-  const clientsForGym = clientsRes.data, trainersForGym = trainersRes.data, plans = plansRes.data, equipment = equipmentRes.data,
+  const trainersForGym = trainersRes.data, plans = plansRes.data, equipment = equipmentRes.data,
     reviews = reviewsRes.data, gymAdminsForGym = adminsRes.data, todayCheckins = checkinsRes.data, trainerInterest = interestRes.data, gymInvites = invitesRes.data;
+  // Foto de rostro de cada socio (ver attachFaceUrls) — Socios la muestra
+  // en vez del círculo de iniciales cuando existe.
+  const clientsForGym = await attachFaceUrls(clientsRes.data);
   const coreStale = [clientsRes, trainersRes, plansRes, equipmentRes, reviewsRes, adminsRes, checkinsRes, interestRes, invitesRes].some(r => r.stale);
 
   // Etapa 2 — rating real por entrenador aprobado (Entrenadores/Reportes),
@@ -1317,7 +1320,10 @@ export async function enterOwnerDash() {
 }
 
 export async function enterClientHome() {
-  const client = await BolaAPI.clients.getSelf(state.myProfile.id);
+  const clientRaw = await BolaAPI.clients.getSelf(state.myProfile.id);
+  // Su propia foto de rostro (ver attachFaceUrls) — Perfil la muestra en
+  // vez del círculo de iniciales cuando existe.
+  const [client] = await attachFaceUrls([clientRaw]);
   const [plans, trainersForGym, reviews, equipment] = await Promise.all([
     BolaAPI.plans.list(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
@@ -1366,7 +1372,10 @@ export async function enterClientHome() {
 export async function enterTrainerDash(profile, gym, myTrainer) {
   const clientsRaw = (await BolaAPI.clients.listForGym(gym.id)).filter(c => c.trainerUserId === myTrainer.id);
   const plans = await BolaAPI.plans.list(gym.id);
-  const trainerClients = clientsRaw.map(c => ({
+  // Foto de rostro de cada cliente asignado (ver attachFaceUrls) — "Mis
+  // clientes" la muestra en vez del círculo de iniciales cuando existe.
+  const clientsWithFace = await attachFaceUrls(clientsRaw);
+  const trainerClients = clientsWithFace.map(c => ({
     ...c,
     plan: (plans.find(p => p.id === c.planId) || { name: '—' }).name,
   }));
@@ -1402,6 +1411,33 @@ export async function attachSignedUrls(rows) {
     ...r,
     url: r.storage_key ? await BolaAPI.photos.signedUrl(r.storage_key) : null,
   })));
+}
+
+// Igual idea que attachSignedUrls, pero para la foto de rostro de un
+// cliente (client_profiles.face_photo_key) — se sube una sola vez al
+// registrarse (ver confirmRequiredFacePhoto) y nunca cambia, así que a
+// diferencia de las fotos de progreso conviene cachear la signed URL en
+// memoria: la lista de socios/clientes se refresca seguido (cobrar, marcar
+// entrada, suspender…) y sin esto se le pediría a Storage una URL nueva
+// para cada foto en cada uno de esos refrescos, solo para mostrar la
+// misma imagen de siempre. No persiste entre sesiones — no hace falta,
+// dura lo mismo que la pestaña abierta.
+const faceUrlCache = new Map(); // facePhotoKey -> signedUrl
+export async function attachFaceUrls(clients) {
+  return Promise.all(clients.map(async c => {
+    if (!c.facePhotoKey) return c;
+    if (faceUrlCache.has(c.facePhotoKey)) return { ...c, faceUrl: faceUrlCache.get(c.facePhotoKey) };
+    try {
+      const faceUrl = await BolaAPI.photos.signedUrl(c.facePhotoKey);
+      faceUrlCache.set(c.facePhotoKey, faceUrl);
+      return { ...c, faceUrl };
+    } catch (err) {
+      // Storage caído/objeto borrado: no vale la pena romper toda la lista
+      // por una foto — cae al ícono de iniciales de siempre (ver avatar()
+      // en helpers.js).
+      return c;
+    }
+  }));
 }
 
 /* ============================ photo picking ============================ */
