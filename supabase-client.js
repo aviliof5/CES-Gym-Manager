@@ -583,6 +583,23 @@
     async getById(paymentId) {
       return unwrap(await client.from('payments').select('id, client_user_id, amount, status').eq('id', paymentId).single());
     },
+    // Realtime sobre los propios pagos — así el cliente se entera solo
+    // (sin recargar la página) apenas el staff confirma su cobro desde el
+    // panel, o lo confirma desde otro dispositivo propio. Postgres Realtime
+    // respeta la RLS de "self reads own payments" de abajo, así que este
+    // filtro por client_user_id no es una puerta de seguridad — es solo
+    // para no procesar cambios de pagos ajenos que ni deberían llegar acá.
+    // Requiere que `payments` esté agregada a la publicación
+    // `supabase_realtime` (ver 20260913000000_realtime_payments.sql).
+    subscribeToClient(clientUserId, onChange) {
+      const channel = client
+        .channel(`payments-client-${clientUserId}`)
+        .on('postgres_changes', {
+          event: '*', schema: 'public', table: 'payments', filter: `client_user_id=eq.${clientUserId}`,
+        }, onChange)
+        .subscribe();
+      return () => { client.removeChannel(channel); };
+    },
   };
 
   /* ---------------- reseñas ---------------- */
