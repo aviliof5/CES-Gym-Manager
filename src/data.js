@@ -6,6 +6,11 @@
 
 export const EQUIPMENT_SUGGESTIONS = ['Caminadora', 'Bicicleta estática', 'Rack de sentadillas', 'Banco de press', 'Mancuernas', 'Máquina de poleas', 'Remo'];
 export const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
+// Nombres completos, mismo orden que DAY_LABELS (0=Lunes..6=Domingo) — ver
+// routine_exercises.day_of_week (rutinas semanales, Etapa 2).
+export const WEEKDAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+// Índice de "hoy" en ese mismo orden (JS: domingo=0 -> acá lunes=0).
+export function todayWeekday() { return (new Date().getDay() + 6) % 7; }
 export const GOALS = [
   { id: 'perder_peso', label: 'Perder peso' },
   { id: 'ganar_musculo', label: 'Ganar músculo' },

@@ -454,7 +454,7 @@
   // supabase/migrations/20260905000300_etapa2_features_schema.sql). Se
   // exponen en camelCase, igual que mock-client.js.
   function shapeRoutineExercise(e) {
-    return { id: e.id, text: e.text, exerciseId: e.exercise_id, sets: e.sets, reps: e.reps, weightKg: e.weight_kg, restSeconds: e.rest_seconds, dayLabel: e.day_label };
+    return { id: e.id, text: e.text, exerciseId: e.exercise_id, sets: e.sets, reps: e.reps, weightKg: e.weight_kg, restSeconds: e.rest_seconds, dayLabel: e.day_label, dayOfWeek: e.day_of_week };
   }
 
   async function loadRoutine(clientUserId, source, goal) {
@@ -463,13 +463,16 @@
     const rows = unwrap(await q);
     if (!rows.length) return { id: null, exercises: [] };
     const exercises = unwrap(await client.from('routine_exercises')
-      .select('id, text, exercise_id, sets, reps, weight_kg, rest_seconds, day_label').eq('routine_id', rows[0].id).order('position'));
+      .select('id, text, exercise_id, sets, reps, weight_kg, rest_seconds, day_label, day_of_week').eq('routine_id', rows[0].id).order('position'));
     return { id: rows[0].id, exercises: exercises.map(shapeRoutineExercise) };
   }
 
   const routines = {
     getAi: (clientUserId, goal) => loadRoutine(clientUserId, 'ia', goal),
     getTrainer: (clientUserId) => loadRoutine(clientUserId, 'trainer', null),
+    // Rutina "Personalizada" — el propio cliente la arma (ver
+    // addPersonalExercise más abajo), no requiere entrenador.
+    getPersonal: (clientUserId) => loadRoutine(clientUserId, 'personal', null),
 
     // `entries` son objetos {text, sets, reps, weightKg, restSeconds,
     // exerciseId}, no strings sueltos — ver buildRoutine() en src/helpers.js.
@@ -494,6 +497,22 @@
       const { error } = await client.from('routine_exercises').insert({
         routine_id: routineId, position: nextPosition, text: entry.text, exercise_id: entry.exerciseId || null,
         sets: entry.sets ?? null, reps: entry.reps ?? null, weight_kg: entry.weightKg ?? null, rest_seconds: entry.restSeconds ?? 60,
+        day_label: entry.dayLabel || null, day_of_week: entry.dayOfWeek ?? null,
+      });
+      if (error) throw error;
+    },
+
+    // Rutina "Personalizada" — mismo patrón que addTrainerExercise (se
+    // agrega de a un ejercicio, no se reemplaza toda la rutina), pero el
+    // autor es el propio cliente.
+    async addPersonalExercise(clientUserId, entry) {
+      const routineId = await ensureRoutine(clientUserId, 'personal', null, clientUserId);
+      const maxRows = unwrap(await client.from('routine_exercises').select('position').eq('routine_id', routineId).order('position', { ascending: false }).limit(1));
+      const nextPosition = maxRows.length ? maxRows[0].position + 1 : 0;
+      const { error } = await client.from('routine_exercises').insert({
+        routine_id: routineId, position: nextPosition, text: entry.text, exercise_id: entry.exerciseId || null,
+        sets: entry.sets ?? null, reps: entry.reps ?? null, weight_kg: entry.weightKg ?? null, rest_seconds: entry.restSeconds ?? 60,
+        day_label: entry.dayLabel || null, day_of_week: entry.dayOfWeek ?? null,
       });
       if (error) throw error;
     },

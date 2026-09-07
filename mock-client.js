@@ -1765,7 +1765,7 @@
       id: e.id, text: e.text, exerciseId: e.exercise_id || null,
       sets: e.sets != null ? e.sets : null, reps: e.reps != null ? e.reps : null,
       weightKg: e.weight_kg != null ? e.weight_kg : null, restSeconds: e.rest_seconds != null ? e.rest_seconds : 60,
-      dayLabel: e.day_label || null,
+      dayLabel: e.day_label || null, dayOfWeek: e.day_of_week != null ? e.day_of_week : null,
     }));
   }
 
@@ -1778,6 +1778,12 @@
     async getTrainer(clientUserId) {
       await wait();
       const r = findRoutine(clientUserId, 'trainer', null);
+      return r ? { id: r.id, exercises: exercisesFor(r.id) } : { id: null, exercises: [] };
+    },
+    // Rutina "Personalizada" — el propio cliente la arma.
+    async getPersonal(clientUserId) {
+      await wait();
+      const r = findRoutine(clientUserId, 'personal', null);
       return r ? { id: r.id, exercises: exercisesFor(r.id) } : { id: null, exercises: [] };
     },
     // `entries` ahora son objetos {text, sets, reps, weightKg, restSeconds},
@@ -1799,6 +1805,20 @@
       db.routineExercises.push({
         id: uid('rex'), routine_id: routineId, position: nextPosition, exercise_id: entry.exerciseId || null,
         text: entry.text, sets: entry.sets ?? null, reps: entry.reps ?? null, weight_kg: entry.weightKg ?? null, rest_seconds: entry.restSeconds ?? 60,
+        day_label: entry.dayLabel || null, day_of_week: entry.dayOfWeek ?? null,
+      });
+    },
+    // Mismo patrón que addTrainerExercise, pero el autor es el propio
+    // cliente (rutina "Personalizada").
+    async addPersonalExercise(clientUserId, entry) {
+      await wait();
+      const routineId = ensureRoutine(clientUserId, 'personal', null, clientUserId);
+      const existing = db.routineExercises.filter(e => e.routine_id === routineId);
+      const nextPosition = existing.length ? Math.max(...existing.map(e => e.position)) + 1 : 0;
+      db.routineExercises.push({
+        id: uid('rex'), routine_id: routineId, position: nextPosition, exercise_id: entry.exerciseId || null,
+        text: entry.text, sets: entry.sets ?? null, reps: entry.reps ?? null, weight_kg: entry.weightKg ?? null, rest_seconds: entry.restSeconds ?? 60,
+        day_label: entry.dayLabel || null, day_of_week: entry.dayOfWeek ?? null,
       });
     },
     async removeExercise(exerciseId) { await wait(); db.routineExercises = db.routineExercises.filter(e => e.id !== exerciseId); },

@@ -3,7 +3,7 @@
 'use strict';
 
 import { state } from './state.js';
-import { iconSpan, ICON_PATHS, COUNTRY_CODES, EXERCISE_LIB, MESES } from './data.js';
+import { iconSpan, ICON_PATHS, COUNTRY_CODES, EXERCISE_LIB, MESES, WEEKDAY_NAMES, todayWeekday } from './data.js';
 
 // Formatea un importe con la moneda del gimnasio (gyms.currency, migración
 // 20260905000200). USD lleva el símbolo delante ($50); cualquier otra moneda
@@ -64,6 +64,20 @@ export function achievementBadge(iconKey, tier, earned, size) {
     <circle cx="12" cy="12" r="11" fill="url(#${gid})" stroke="${earned ? to : '#6a6a72'}" stroke-width="0.6"/>
     <g transform="translate(4.8 4.8) scale(0.6)" fill="none" stroke="${earned ? '#1a1420' : '#c9c9ce'}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
   </svg>`;
+}
+
+// Rutina semanal (Etapa 2 — "Personalizada" del cliente y "Crear rutina"
+// del entrenador ahora pueden asignar un día a cada ejercicio, ver
+// routine_exercises.day_of_week): si ALGUNO de los ejercicios tiene día
+// asignado, se considera semanal y esto filtra a los de HOY. Si ninguno
+// tiene día (con IA, o armada sin elegir día — el caso de siempre), se
+// devuelve la lista completa sin tocar — comportamiento idéntico al de
+// antes de que existiera esta función.
+export function exercisesForToday(exercises) {
+  const list = exercises || [];
+  if (!list.some(e => e.dayOfWeek != null)) return list;
+  const today = todayWeekday();
+  return list.filter(e => e.dayOfWeek === today);
 }
 
 // Devuelve entradas estructuradas {text, sets, reps, weightKg, restSeconds} —

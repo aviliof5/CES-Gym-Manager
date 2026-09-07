@@ -146,6 +146,11 @@ root.addEventListener('change', e => {
     ACTIONS.selectRoutineExercise(el.value);
     return;
   }
+  // Mismo caso que arriba, para la rutina "Personalizada" del cliente.
+  if (el.dataset.f === 'personalRoutineDraft.exerciseId') {
+    ACTIONS.selectPersonalRoutineExercise(el.value);
+    return;
+  }
   if (el.tagName === 'SELECT') setPath(el.dataset.f, el.value);
 });
 

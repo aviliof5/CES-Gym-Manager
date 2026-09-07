@@ -142,6 +142,10 @@ export const state = {
   aiGoal: 'perder_peso',
   aiRoutine: null,          // {id, exercises:[{id,text}]}
   trainerRoutineForMe: null,
+  // Rutina "Personalizada" — el propio cliente la arma, semanal (cada
+  // ejercicio puede ir a un día de la semana, ver routineDraft más abajo).
+  myPersonalRoutine: null,
+  personalRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60', dayOfWeek: '' },
   pendingPayment: null,     // {id, amount, status}
   // Sesión de entrenamiento en curso (pantalla "workout"). Etapa 2: además
   // del estado en memoria de siempre, ahora abre una fila real en
@@ -205,8 +209,9 @@ export const state = {
   trainerSelectedClientId: null,
   trainerSelectedClientDetail: null,   // {progress:[], routine:{id,exercises}, measurements:[], prs:[]}
   // Etapa 2 — "Crear rutina" ahora arma un ejercicio estructurado (biblioteca
-  // + sets/reps/peso/descanso), no un string suelto.
-  trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' },
+  // + sets/reps/peso/descanso), no un string suelto. dayOfWeek (opcional) la
+  // hace semanal — vacío sigue siendo "un solo bloque", como hasta ahora.
+  trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60', dayOfWeek: '' },
   trainerProfileDraft: { specialty: '', price: '' },
   // Etapa 2 — Panel (citas de hoy) y Calendario/agenda: sesiones de las
   // clases que este entrenador dicta (classes.trainer_user_id === myTrainer.id).
