@@ -311,7 +311,9 @@
       row.code = Math.random().toString(36).slice(2, 10);
       return row.code;
     },
-    async updateSettings(gymId, { currency, brandName, brandColor }) {
+    // name/address/hours: espeja supabase-client.js (ver 20260908000100) —
+    // opcionales, no tocan el dato si vienen vacíos.
+    async updateSettings(gymId, { currency, brandName, brandColor, name, address, hours }) {
       await wait();
       const s = requireAuth();
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio configuran el gimnasio.');
@@ -320,6 +322,9 @@
       if (currency && currency.trim()) gym.currency = currency.trim();
       gym.brand_name = (brandName || '').trim() || null;
       gym.brand_color = (brandColor || '').trim() || null;
+      if (name && name.trim()) gym.name = name.trim();
+      if (address && address.trim()) gym.address = address.trim();
+      if (hours && hours.trim()) gym.hours = hours.trim();
     },
     async join(gymId) {
       await wait();

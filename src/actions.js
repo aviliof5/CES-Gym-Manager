@@ -365,7 +365,10 @@ export const ACTIONS = {
     const d = state.gymConfigDraft;
     setState({ busy: true, error: '' });
     try {
-      await BolaAPI.gyms.updateSettings(state.gym.id, { currency: d.currency, brandName: d.brandName, brandColor: d.brandColor });
+      await BolaAPI.gyms.updateSettings(state.gym.id, {
+        currency: d.currency, brandName: d.brandName, brandColor: d.brandColor,
+        name: d.name, address: d.address, hours: d.hours,
+      });
       const gym = await BolaAPI.gyms.get(state.gym.id);
       setState({ busy: false, gym });
     } catch (err) {
@@ -1131,7 +1134,10 @@ export async function enterOwnerDash() {
     screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
     trainerRatingsById, attendanceEvents, attendanceSelectedDay: null, exercisesLib,
     ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
-    gymConfigDraft: { currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '' },
+    gymConfigDraft: {
+      currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '',
+      name: state.gym.name || '', address: state.gym.address || '', hours: state.gym.hours || '',
+    },
     busy: false,
   });
   if (window.CesAds) window.CesAds.hideBanner();
