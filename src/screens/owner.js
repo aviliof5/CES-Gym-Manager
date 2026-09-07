@@ -82,7 +82,7 @@ export function viewOwnerReg3() {
       ${errorBanner()}
       <div style="display:flex;gap:8px;margin-bottom:16px">
         ${textField('newEquipment', 'Ej. Máquina de poleas', state.newEquipment, { sm: true, style: 'flex:1' })}
-        <button ${act('addEquipmentFromInput')} class="btn btn--brand" style="padding:0 18px;font-size:20px">+</button>
+        <button ${act('addEquipmentFromInput')} class="btn btn--brand" style="flex:0 0 auto;width:auto;padding:0 18px;font-size:20px">+</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${state.equipment.length && suggestions ? '16px' : '0'}">${chips}</div>
       ${suggestions ? `<div class="eyebrow" style="margin-bottom:8px">Sugeridas</div><div style="display:flex;flex-wrap:wrap;gap:8px">${suggestions}</div>` : ''}
