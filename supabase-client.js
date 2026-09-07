@@ -195,8 +195,14 @@
     // Etapa 2 — "Configuración" (pantalla nueva). update_gym_settings()
     // exige app_role_is_staff() en el servidor (owner O admin) — la RLS de
     // gyms por sí sola solo dejaría escribir al dueño (ver la migración).
-    async updateSettings(gymId, { currency, brandName, brandColor }) {
-      const { error } = await client.rpc('update_gym_settings', { p_currency: currency, p_brand_name: brandName || null, p_brand_color: brandColor || null });
+    // name/address/hours son opcionales (ver 20260908000100) — permiten
+    // corregir los datos del gimnasio después del registro, sin tocarlos si
+    // no se mandan.
+    async updateSettings(gymId, { currency, brandName, brandColor, name, address, hours }) {
+      const { error } = await client.rpc('update_gym_settings', {
+        p_currency: currency, p_brand_name: brandName || null, p_brand_color: brandColor || null,
+        p_name: name || null, p_address: address || null, p_hours: hours || null,
+      });
       if (error) throw error;
     },
 
