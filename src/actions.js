@@ -9,8 +9,8 @@
 'use strict';
 
 import { state, setState } from './state.js';
-import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, money } from './helpers.js';
-import { DURATION_LABELS } from './data.js';
+import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, money, exercisesForToday } from './helpers.js';
+import { DURATION_LABELS, WEEKDAY_NAMES } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
 
@@ -584,8 +584,13 @@ export const ACTIONS = {
      workout_sessions y cada serie marcada se guarda en exercise_logs (peso
      y reps reales), no solo un check en memoria. ---- */
   startWorkout: async source => {
-    const routine = (source === 'trainer' ? state.trainerRoutineForMe : state.aiRoutine) || { exercises: [] };
-    if (!routine.exercises.length) return;
+    const routine = (source === 'trainer' ? state.trainerRoutineForMe : source === 'personal' ? state.myPersonalRoutine : state.aiRoutine) || { exercises: [] };
+    // Si la rutina es semanal (algún ejercicio con día asignado), arranca
+    // solo lo que le toca a HOY — "lo que te toca el día" — no la semana
+    // entera de una sola vez. Una rutina sin días asignados (con IA, o
+    // armada sin elegir día) sigue funcionando exactamente igual que antes.
+    const exercises = exercisesForToday(routine.exercises || []);
+    if (!exercises.length) return;
     clearRestTimer();
     // El ID de la sesión se elige ACÁ, no lo asigna el servidor — así,
     // aunque no haya señal en este momento, se puede seguir entrenando y
@@ -602,11 +607,11 @@ export const ACTIONS = {
       queueAction('workoutStart', { sessionId, clientUserId: state.myClient.id, gymId: state.gym.id, source });
       setState({ pendingSyncCount: getQueueSize() });
     }
-    const first = routine.exercises[0] || {};
+    const first = exercises[0] || {};
     setState({
       screen: 'workout',
       workout: {
-        sessionId, exercises: routine.exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false,
+        sessionId, exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false,
         weightInput: first.weightKg != null ? String(first.weightKg) : '', repsInput: defaultReps(first),
       },
     });
@@ -853,18 +858,52 @@ export const ACTIONS = {
     const d = state.trainerRoutineDraft;
     const text = d.text.trim();
     if (!text || !state.trainerSelectedClientId) return;
+    const dayOfWeek = d.dayOfWeek !== '' ? Number(d.dayOfWeek) : null;
     await BolaAPI.routines.addTrainerExercise(state.trainerSelectedClientId, state.myTrainer.id, {
       text, exerciseId: d.exerciseId || null,
       sets: d.sets ? Number(d.sets) : null, reps: d.reps ? d.reps : null,
       weightKg: d.weightKg ? Number(d.weightKg) : null, restSeconds: d.restSeconds ? Number(d.restSeconds) : 60,
+      dayOfWeek, dayLabel: dayOfWeek != null ? WEEKDAY_NAMES[dayOfWeek] : null,
     });
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
-    setState({ trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' }, trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
+    setState({ trainerRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60', dayOfWeek: '' }, trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
   },
   removeTrainerRoutineExercise: async exerciseId => {
     await BolaAPI.routines.removeExercise(exerciseId);
     const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
     setState({ trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
+  },
+
+  /* ---- Rutina "Personalizada" — el cliente arma la suya (mismo patrón
+     que "Crear rutina" del entrenador, de a un ejercicio, con día de la
+     semana opcional para que quede semanal). ---- */
+  selectPersonalRoutineExercise: exerciseId => {
+    const ex = state.exercisesLib.find(e => e.id === exerciseId);
+    setState({ personalRoutineDraft: { ...state.personalRoutineDraft, exerciseId, text: ex ? ex.name : '' } });
+  },
+  addPersonalRoutineExercise: async () => {
+    const d = state.personalRoutineDraft;
+    const text = d.text.trim();
+    if (!text || !state.myClient) return;
+    const dayOfWeek = d.dayOfWeek !== '' ? Number(d.dayOfWeek) : null;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.routines.addPersonalExercise(state.myClient.id, {
+        text, exerciseId: d.exerciseId || null,
+        sets: d.sets ? Number(d.sets) : null, reps: d.reps ? d.reps : null,
+        weightKg: d.weightKg ? Number(d.weightKg) : null, restSeconds: d.restSeconds ? Number(d.restSeconds) : 60,
+        dayOfWeek, dayLabel: dayOfWeek != null ? WEEKDAY_NAMES[dayOfWeek] : null,
+      });
+      const myPersonalRoutine = await BolaAPI.routines.getPersonal(state.myClient.id);
+      setState({ busy: false, personalRoutineDraft: { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60', dayOfWeek: '' }, myPersonalRoutine });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
+  removePersonalRoutineExercise: async exerciseId => {
+    await BolaAPI.routines.removeExercise(exerciseId);
+    const myPersonalRoutine = await BolaAPI.routines.getPersonal(state.myClient.id);
+    setState({ myPersonalRoutine });
   },
 
   /* ---- Etapa 2: mensajes con clientes asignados ---- */
@@ -1463,6 +1502,7 @@ export async function enterClientHome() {
   const progressRaw = await BolaAPI.progress.listForClient(client.id);
   const progressList = await attachSignedUrls(progressRaw);
   const trainerRoutineForMe = trainer ? await BolaAPI.routines.getTrainer(client.id) : null;
+  const myPersonalRoutine = await BolaAPI.routines.getPersonal(client.id);
   const aiRoutine = await BolaAPI.routines.getAi(client.id, client.physical.goal || 'perder_peso');
   const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
   const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
@@ -1487,7 +1527,7 @@ export async function enterClientHome() {
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
-    plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
+    plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, myPersonalRoutine, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },

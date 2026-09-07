@@ -6,11 +6,11 @@
 'use strict';
 
 import { state } from '../state.js';
-import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
+import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, WEEKDAY_NAMES, todayWeekday, iconSpan, brandMark } from '../data.js';
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
-  devCredit, initials, daysUntil, commentCards, money, statusMeta, avatar, achievementBadge,
+  devCredit, initials, daysUntil, commentCards, money, statusMeta, avatar, achievementBadge, exercisesForToday,
 } from '../helpers.js';
 
 /* ---------------- cliente: registro ---------------- */
@@ -253,31 +253,53 @@ function nextClassCard() {
   </div>`;
 }
 
-// "Entrenamiento de hoy" — cuál de las dos rutinas (la del entrenador si
-// tiene una cargada, si no la de IA) tiene ejercicios listos para arrancar.
+// "Entrenamiento de hoy" — prioridad entrenador > personalizada > IA (la
+// primera que tenga algo cargado). Si esa rutina es semanal (algún
+// ejercicio con día asignado) y hoy no le toca nada, se avisa "día de
+// descanso" en vez de mostrar la rutina de otra fuente sin avisar — si el
+// entrenador armó una semana con descanso el martes, el martes es
+// descanso, no "lo que diga la IA".
 function todayWorkoutCard() {
   const trainer = state.myClientTrainer;
   const trainerEx = (state.trainerRoutineForMe && state.trainerRoutineForMe.exercises) || [];
+  const personalEx = (state.myPersonalRoutine && state.myPersonalRoutine.exercises) || [];
   const aiEx = (state.aiRoutine && state.aiRoutine.exercises) || [];
-  const useTrainer = trainer && trainerEx.length > 0;
-  const exercises = useTrainer ? trainerEx : aiEx;
 
-  if (!exercises.length) {
+  let source, allEx, label;
+  if (trainer && trainerEx.length) { source = 'trainer'; allEx = trainerEx; label = `Rutina de ${esc(trainer.name.split(' ')[0])}`; }
+  else if (personalEx.length) { source = 'personal'; allEx = personalEx; label = 'Tu rutina'; }
+  else { source = 'ia'; allEx = aiEx; label = 'Rutina con IA'; }
+
+  if (!allEx.length) {
     return `<div class="row">
       <div class="row__body">
         <div class="row__title">Sin rutina todavía</div>
-        <div class="row__meta">Generá una con IA en la pestaña Rutina</div>
+        <div class="row__meta">Generá una con IA, armá la tuya, o pedile una a tu entrenador</div>
       </div>
       <div class="row__action" ${act('selectClientTab', 'rutina')}>Ir</div>
     </div>`;
   }
+
+  const todays = exercisesForToday(allEx);
+  const isWeekly = allEx.some(e => e.dayOfWeek != null);
+  if (isWeekly && !todays.length) {
+    return `<div class="row">
+      <div class="avatar avatar--sq" style="background:var(--ok-dim);color:var(--ok)">${iconSpan('check', 18)}</div>
+      <div class="row__body">
+        <div class="row__title">Hoy es día de descanso</div>
+        <div class="row__meta">${esc(label)} · ${esc(WEEKDAY_NAMES[todayWeekday()])}</div>
+      </div>
+      <div class="row__action" ${act('selectClientTab', 'rutina')}>Ver semana</div>
+    </div>`;
+  }
+
   return `<div class="row">
     <div class="avatar avatar--sq avatar--action">${iconSpan('dumbbell', 18)}</div>
     <div class="row__body">
-      <div class="row__title">${useTrainer ? `Rutina de ${esc(trainer.name.split(' ')[0])}` : 'Rutina con IA'}</div>
-      <div class="row__meta">${exercises.length} ${exercises.length === 1 ? 'ejercicio' : 'ejercicios'}</div>
+      <div class="row__title">${label}</div>
+      <div class="row__meta">${todays.length} ${todays.length === 1 ? 'ejercicio' : 'ejercicios'}${isWeekly ? ` · ${esc(WEEKDAY_NAMES[todayWeekday()])}` : ''}</div>
     </div>
-    <div class="row__action" ${act('startWorkout', useTrainer ? 'trainer' : 'ia')}>Comenzar</div>
+    <div class="row__action" ${act('startWorkout', source)}>Comenzar</div>
   </div>`;
 }
 
@@ -378,14 +400,88 @@ function groupedExerciseRows(exercises) {
   return days.map(d => `${sectionTitle(d.label, 'dumbbell', 'margin:14px 0 6px')}${d.items.map(exerciseRow).join('')}`).join('');
 }
 
+// Selector de día de la semana (opcional) para "Crear rutina"/"Personalizada"
+// — dejarlo en blanco sigue siendo "un solo bloque, sin días" como
+// funcionaba antes de que existiera la rutina semanal.
+function dayOfWeekSelect(field, value) {
+  return `<select class="field" data-f="${field}" style="margin-bottom:10px">
+    <option value="">Sin día asignado (un solo bloque)</option>
+    ${WEEKDAY_NAMES.map((name, i) => `<option value="${i}"${String(value) === String(i) ? ' selected' : ''}>${esc(name)}</option>`).join('')}
+  </select>`;
+}
+
+function personalRoutineForm() {
+  const d = state.personalRoutineDraft;
+  const exerciseOptions = state.exercisesLib.map(e => `<option value="${esc(e.id)}"${d.exerciseId === e.id ? ' selected' : ''}>${esc(e.name)}</option>`).join('');
+  return `<div class="card" style="margin-bottom:16px">
+    <select class="field" data-f="personalRoutineDraft.exerciseId" style="margin-bottom:10px">
+      <option value="">Elegí un ejercicio de la biblioteca (opcional)</option>
+      ${exerciseOptions}
+    </select>
+    ${textField('personalRoutineDraft.text', 'Nombre del ejercicio *', d.text, { style: 'margin-bottom:10px' })}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      ${textField('personalRoutineDraft.sets', 'Series', d.sets)}
+      ${textField('personalRoutineDraft.reps', 'Reps (ej. 8 o 10-8-6)', d.reps)}
+      ${textField('personalRoutineDraft.weightKg', 'Peso (kg)', d.weightKg)}
+      ${textField('personalRoutineDraft.restSeconds', 'Descanso (seg)', d.restSeconds)}
+    </div>
+    ${dayOfWeekSelect('personalRoutineDraft.dayOfWeek', d.dayOfWeek)}
+    <button class="btn btn--brand" style="width:100%;padding:12px;font-size:13px" ${act('addPersonalRoutineExercise')} ${(!d.text.trim() || state.busy) ? 'disabled' : ''}>${state.busy ? 'Agregando…' : '+ Agregar a mi rutina'}</button>
+  </div>`;
+}
+
+function personalExerciseRow(ex) {
+  const info = [ex.sets ? `${ex.sets} series` : null, ex.reps ? `${esc(String(ex.reps))} reps` : null, ex.weightKg != null ? `${ex.weightKg} kg` : null, ex.restSeconds ? `${ex.restSeconds}s descanso` : null].filter(Boolean).join(' · ');
+  return `<div class="row">
+    <div class="row__body">
+      <div class="row__title">${esc(ex.text)}</div>
+      ${info ? `<div class="row__meta">${info}</div>` : ''}
+    </div>
+    <div class="row__action" style="color:var(--danger)" ${act('removePersonalRoutineExercise', ex.id)}>Quitar</div>
+  </div>`;
+}
+
+function groupedPersonalRows(exercises) {
+  if (!exercises.some(e => e.dayLabel)) return exercises.map(personalExerciseRow).join('');
+  const days = [];
+  for (const ex of exercises) {
+    const label = ex.dayLabel || '—';
+    let d = days.find(d => d.label === label);
+    if (!d) { d = { label, items: [] }; days.push(d); }
+    d.items.push(ex);
+  }
+  return days.map(d => `${sectionTitle(d.label, 'dumbbell', 'margin:14px 0 6px')}${d.items.map(personalExerciseRow).join('')}`).join('');
+}
+
 export function viewClientRutina() {
   const trainer = state.myClientTrainer;
-  const source = trainer ? state.routineSource : 'ia';
+  const source = (state.routineSource === 'trainer' && !trainer) ? 'ia' : state.routineSource;
 
-  const toggle = trainer ? `<div class="seg">
+  const toggle = `<div class="seg">
       <div ${act('setRoutineSource', 'ia')} class="seg__item${source === 'ia' ? ' is-active' : ''}">Con IA</div>
-      <div ${act('setRoutineSource', 'trainer')} class="seg__item${source === 'trainer' ? ' is-active' : ''}">De ${esc(trainer.name.split(' ')[0])}</div>
-    </div>` : '';
+      ${trainer ? `<div ${act('setRoutineSource', 'trainer')} class="seg__item${source === 'trainer' ? ' is-active' : ''}">De ${esc(trainer.name.split(' ')[0])}</div>` : ''}
+      <div ${act('setRoutineSource', 'personal')} class="seg__item${source === 'personal' ? ' is-active' : ''}">Personalizada</div>
+    </div>`;
+
+  if (source === 'personal') {
+    const routine = state.myPersonalRoutine;
+    const exercises = (routine && routine.exercises) || [];
+    const todays = exercisesForToday(exercises);
+    const isWeekly = exercises.some(e => e.dayOfWeek != null);
+    return `<div class="pane">
+      ${errorBanner()}
+      ${sectionTitle('Tu rutina personalizada', 'dumbbell', 'margin-bottom:4px')}
+      <div class="hint">La armás vos — asignale un día a cada ejercicio para que quede semanal</div>
+      ${toggle}
+      ${libraryLink()}
+      ${programsLink()}
+      ${personalRoutineForm()}
+      ${exercises.length
+        ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('startWorkout', 'personal')} ${!todays.length && isWeekly ? 'disabled' : ''}>${isWeekly ? `Comenzar (${esc(WEEKDAY_NAMES[todayWeekday()])}${todays.length ? '' : ' · descanso'})` : 'Comenzar entrenamiento'}</button>
+           ${groupedPersonalRows(exercises)}`
+        : `<div class="empty"><div class="empty__title">Sin ejercicios todavía</div>Agregá el primero arriba</div>`}
+    </div>`;
+  }
 
   if (source === 'trainer') {
     const routine = state.trainerRoutineForMe;

@@ -6,7 +6,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { GOALS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
+import { GOALS, MESES, DAY_LABELS, WEEKDAY_NAMES, iconSpan, brandMark } from '../data.js';
 import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money, avatar } from '../helpers.js';
 
 // Una fila de la rutina del cliente, con su botón de "Quitar". Si vienen de
@@ -161,6 +161,10 @@ export function viewTrainerClientes() {
           ${textField('trainerRoutineDraft.weightKg', 'Peso (kg)', d.weightKg)}
           ${textField('trainerRoutineDraft.restSeconds', 'Descanso (seg)', d.restSeconds)}
         </div>
+        <select class="field" data-f="trainerRoutineDraft.dayOfWeek" style="margin-bottom:10px">
+          <option value="">Sin día asignado (un solo bloque)</option>
+          ${WEEKDAY_NAMES.map((name, i) => `<option value="${i}"${String(d.dayOfWeek) === String(i) ? ' selected' : ''}>${esc(name)}</option>`).join('')}
+        </select>
         <button class="btn btn--brand" style="width:100%;padding:12px;font-size:13px" ${act('addTrainerRoutineExercise')} ${!d.text.trim() ? 'disabled' : ''}>+ Agregar a la rutina</button>
       </div>
       ${routine.length ? routineRows(routine) : `<div class="empty"><div class="empty__title">Sin ejercicios</div>Todavía no armaste la rutina de este cliente</div>`}
