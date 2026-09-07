@@ -38,6 +38,17 @@ export const state = {
   offline: !navigator.onLine,
   showPassword: false,
 
+  // Resiliencia a mala señal (ver src/offline.js) — pendingSyncCount es
+  // cuántas acciones (marcar serie, check-in, confirmar cobro) quedaron
+  // en la cola local esperando que vuelva la conexión; dataStale marca
+  // que la pantalla actual está mostrando la última copia guardada de
+  // socios/admins/etc en vez de datos recién bajados (ver
+  // loadWithFallback en actions.js, usado en enterOwnerDash). Ninguno de
+  // los dos bloquea la pantalla — son solo avisos (ver pendingSyncBanner/
+  // staleDataBanner en helpers.js).
+  pendingSyncCount: 0,
+  dataStale: false,
+
   ownerTab: 'panel',
   clientTab: 'inicio',
   trainerTab: 'clientes',
@@ -106,9 +117,12 @@ export const state = {
   // — lee checkin_events de verdad). Mes actual cargado entero al entrar al
   // panel; el día elegido solo filtra en memoria, sin otro viaje al server.
   attendanceEvents: [], attendanceSelectedDay: null,
-  // Etapa 2 — "Configuración" (moneda, marca; los links de invitación viven
-  // acá, ya no repartidos en cada tab).
-  gymConfigDraft: { currency: 'USD', brandName: '', brandColor: '' },
+  // Etapa 2 — "Configuración" (moneda, marca, datos del gimnasio; los
+  // links de invitación viven acá, ya no repartidos en cada tab).
+  // name/address/hours: antes solo se cargaban una vez en el registro y no
+  // había forma de corregirlos después (ver migración
+  // 20260908000100_gym_settings_name_address_hours).
+  gymConfigDraft: { currency: 'USD', brandName: '', brandColor: '', name: '', address: '', hours: '' },
 
   reviews: [],
   newCommentText: '', newCommentRating: 5,

@@ -311,7 +311,9 @@
       row.code = Math.random().toString(36).slice(2, 10);
       return row.code;
     },
-    async updateSettings(gymId, { currency, brandName, brandColor }) {
+    // name/address/hours: espeja supabase-client.js (ver 20260908000100) —
+    // opcionales, no tocan el dato si vienen vacíos.
+    async updateSettings(gymId, { currency, brandName, brandColor, name, address, hours }) {
       await wait();
       const s = requireAuth();
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio configuran el gimnasio.');
@@ -320,6 +322,9 @@
       if (currency && currency.trim()) gym.currency = currency.trim();
       gym.brand_name = (brandName || '').trim() || null;
       gym.brand_color = (brandColor || '').trim() || null;
+      if (name && name.trim()) gym.name = name.trim();
+      if (address && address.trim()) gym.address = address.trim();
+      if (hours && hours.trim()) gym.hours = hours.trim();
     },
     async join(gymId) {
       await wait();
@@ -691,9 +696,13 @@
   /* ---------------- récords personales + sesiones de entrenamiento ---------------- */
 
   const workoutsApi = {
-    async start(clientUserId, gymId, source) {
+    // explicitId: espeja supabase-client.js (ver el comentario ahí) — el
+    // mock nunca falla por red, pero acepta el mismo parámetro para que la
+    // firma sea idéntica y el harness pueda probar el camino "con ID
+    // elegido de antemano" si hace falta.
+    async start(clientUserId, gymId, source, explicitId) {
       await wait();
-      const row = { id: uid('ws'), client_user_id: clientUserId, gym_id: gymId, source, started_at: new Date().toISOString(), finished_at: null };
+      const row = { id: explicitId || uid('ws'), client_user_id: clientUserId, gym_id: gymId, source, started_at: new Date().toISOString(), finished_at: null };
       db.workoutSessions.push(row);
       return row.id;
     },

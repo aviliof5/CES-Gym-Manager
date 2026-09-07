@@ -62,7 +62,13 @@ export function viewOwnerReg2() {
   </div>`;
 }
 
-export function viewOwnerReg3() {
+// Compartido entre el paso 3 del registro y la sección de equipo en
+// Configuración (ver viewOwnerConfiguracion) — antes el equipo solo se
+// cargaba una vez durante el registro y no había forma de agregar/sacar
+// una máquina después. opts.title/opts.subtitle dejan a cada pantalla
+// poner su propio encabezado sin duplicar la lista/input/sugeridas.
+function equipmentEditor(opts) {
+  const o = opts || {};
   const chips = state.equipment.map(e => `
     <div class="pill" style="display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px">
       <span>${esc(e.name)}</span>
@@ -73,19 +79,23 @@ export function viewOwnerReg3() {
   const suggestions = EQUIPMENT_SUGGESTIONS.filter(s => !have.has(s)).map(s =>
     `<div ${act('addEquipment', s)} style="background:var(--surface-dim);border:1px dashed var(--line-strong);border-radius:100px;padding:7px 13px;font-size:12.5px;color:var(--muted);cursor:pointer">+ ${s}</div>`).join('');
 
+  return `${o.title ? `<div class="title">${esc(o.title)}</div>` : ''}
+    ${o.subtitle ? `<div class="subtitle" style="margin-bottom:18px">${esc(o.subtitle)}</div>` : ''}
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      ${textField('newEquipment', 'Ej. Máquina de poleas', state.newEquipment, { sm: true, style: 'flex:1' })}
+      <button ${act('addEquipmentFromInput')} class="btn btn--brand" style="flex:0 0 auto;width:auto;padding:0 18px;font-size:20px">+</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${state.equipment.length && suggestions ? '16px' : '0'}">${chips}</div>
+    ${suggestions ? `<div class="eyebrow" style="margin-bottom:8px">Sugeridas</div><div style="display:flex;flex-wrap:wrap;gap:8px">${suggestions}</div>` : ''}`;
+}
+
+export function viewOwnerReg3() {
   return `<div class="col">
     ${stepHead('Paso 3 de 4 · Equipo disponible', 'goto:ownerReg2')}
     ${stepBars(3, 4, '')}
     <div class="form-body">
-      <div class="title">Máquinas y equipo</div>
-      <div class="subtitle" style="margin-bottom:18px">Agrega cada máquina que tenga tu gym. Esto ayuda a recomendar rutinas con IA a tus clientes.</div>
       ${errorBanner()}
-      <div style="display:flex;gap:8px;margin-bottom:16px">
-        ${textField('newEquipment', 'Ej. Máquina de poleas', state.newEquipment, { sm: true, style: 'flex:1' })}
-        <button ${act('addEquipmentFromInput')} class="btn btn--brand" style="padding:0 18px;font-size:20px">+</button>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${state.equipment.length && suggestions ? '16px' : '0'}">${chips}</div>
-      ${suggestions ? `<div class="eyebrow" style="margin-bottom:8px">Sugeridas</div><div style="display:flex;flex-wrap:wrap;gap:8px">${suggestions}</div>` : ''}
+      ${equipmentEditor({ title: 'Máquinas y equipo', subtitle: 'Agrega cada máquina que tenga tu gym. Esto ayuda a recomendar rutinas con IA a tus clientes.' })}
     </div>
     <div class="form-foot">
       <button class="btn btn--action" ${act('goto', 'ownerReg4')}>Continuar</button>
@@ -604,11 +614,19 @@ export function viewOwnerConfiguracion() {
     ${errorBanner()}
     ${sectionTitle('Configuración del gimnasio', 'settings', 'margin-bottom:12px')}
     <div class="card" style="margin-bottom:18px">
+      <div class="eyebrow" style="margin-bottom:10px">Datos del gimnasio</div>
+      ${textField('gymConfigDraft.name', 'Nombre del gimnasio', d.name, { style: 'margin-bottom:10px' })}
+      ${textField('gymConfigDraft.address', 'Dirección', d.address, { style: 'margin-bottom:10px' })}
+      ${textField('gymConfigDraft.hours', 'Horario (ej. 6:00 - 22:00)', d.hours, { style: 'margin-bottom:16px' })}
       <div class="eyebrow" style="margin-bottom:10px">Marca y moneda</div>
       ${textField('gymConfigDraft.currency', 'Moneda (código ISO, ej. USD, CUP, EUR)', d.currency, { style: 'margin-bottom:10px' })}
       ${textField('gymConfigDraft.brandName', 'Nombre de marca (opcional)', d.brandName, { style: 'margin-bottom:10px' })}
       ${textField('gymConfigDraft.brandColor', 'Color de acento en hex (opcional, ej. #E23744)', d.brandColor, { style: 'margin-bottom:10px' })}
       <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveGymConfig')}>${state.busy ? 'Guardando…' : 'Guardar cambios'}</button>
+    </div>
+    <div class="card" style="margin-bottom:18px">
+      <div class="eyebrow" style="margin-bottom:10px">Equipo disponible</div>
+      ${equipmentEditor({})}
     </div>
     <div class="row" ${act('openExerciseLibrary')}>
       <div class="row__body"><div class="row__title">Biblioteca de ejercicios</div><div class="row__meta">Catálogo global + el propio de tu gimnasio</div></div>
