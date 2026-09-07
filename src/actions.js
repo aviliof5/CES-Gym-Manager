@@ -9,7 +9,7 @@
 'use strict';
 
 import { state, setState } from './state.js';
-import { friendlyError, splitPhone, enrichClient, buildRoutine } from './helpers.js';
+import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate } from './helpers.js';
 import { DURATION_LABELS } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 
@@ -1080,7 +1080,12 @@ export async function handlePaymentScan(payload) {
     await BolaAPI.payments.confirm(data.id);
     const client = await BolaAPI.clients.getSelf(state.myProfile.id);
     if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
-    setState({ myClient: client, pendingPayment: null, scanStatus: { ok: true, text: '✓ Pago confirmado. ¡Gracias!' } });
+    // confirm_cash_payment() ya dejó membership_expires_at seteado según el
+    // plan (diario/mensual/anual, ver la migración payment_qr_flip) — se lo
+    // muestra de una para que quede claro hasta cuándo pagó, sin que tenga
+    // que ir a buscarlo a otra pantalla.
+    const vigencia = client.membershipExpiresAt ? ` Tu plan queda vigente hasta el ${formatDate(client.membershipExpiresAt)}.` : '';
+    setState({ myClient: client, pendingPayment: null, scanStatus: { ok: true, text: `✓ Pago confirmado.${vigencia}` } });
   } catch (err) {
     setState({ scanStatus: { ok: false, text: friendlyError(err) } });
   }

@@ -3,7 +3,7 @@
 'use strict';
 
 import { state } from './state.js';
-import { iconSpan, COUNTRY_CODES, EXERCISE_LIB } from './data.js';
+import { iconSpan, COUNTRY_CODES, EXERCISE_LIB, MESES } from './data.js';
 
 // Formatea un importe con la moneda del gimnasio (gyms.currency, migración
 // 20260905000200). USD lleva el símbolo delante ($50); cualquier otra moneda
@@ -61,6 +61,17 @@ export function daysUntil(dateStr) {
   if (!dateStr) return null;
   const ms = new Date(dateStr + 'T00:00:00') - new Date(new Date().toDateString());
   return Math.round(ms / 86400000);
+}
+
+// "6 oct" (mismo formato que ya usan los encabezados de calendario, ver
+// MESES en src/data.js) — agrega el año solo si no es el actual, para no
+// ensuciar el caso común pero sin perder claridad en un plan anual que
+// cruza fin de año.
+export function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T00:00:00');
+  const suffix = d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : '';
+  return `${d.getDate()} ${MESES[d.getMonth()]}${suffix}`;
 }
 
 // Enriches a raw client_profiles row (from BolaAPI.clients.*) with its plan
