@@ -153,8 +153,11 @@ export const state = {
 
   // Etapa 2 — Reservas y calendario de clases (pantalla nueva del plan).
   classesForGym: [], classSessions: [], myBookings: [], reservasSelectedDay: null,
-  // Etapa 2 — Logros / medallas (pantalla nueva del plan).
+  // Etapa 2 — Logros / medallas (pantalla nueva del plan). Biblioteca real
+  // de 1003 (ver 20260909000000_achievements_library.sql) — se navega por
+  // categoría y, en fuerza/cardio, por ejercicio (logrosExerciseFilter).
   achievementsCatalog: [], myAchievements: [],
+  logrosCategoryFilter: 'constancia', logrosExerciseFilter: null,
   // Etapa 2 — Progreso real: serie histórica de medidas + récords
   // personales + entrenamientos del mes (antes era solo fotos).
   bodyMeasurements: [], personalRecords: [], workoutsThisMonth: 0,

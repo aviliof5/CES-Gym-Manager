@@ -970,6 +970,11 @@ export const ACTIONS = {
       setState({ busy: false, error: friendlyError(err) });
     }
   },
+  /* ---- Logros — filtro por categoría y, en fuerza/cardio, por ejercicio
+     (ver viewClientLogros en client.js). ---- */
+  setLogrosCategory: cat => setState({ logrosCategoryFilter: cat, logrosExerciseFilter: null }),
+  setLogrosExercise: name => setState({ logrosExerciseFilter: name || null }),
+
   removeEvent: async sessionId => {
     setState({ busy: true, error: '' });
     try {

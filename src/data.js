@@ -99,6 +99,14 @@ export const ICON_PATHS = {
   chevronRight: '<path d="M9 5l7 7-7 7"/>',
   // Etapa 2 — "Configuración" (dueño/admin).
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 13a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V19a2 2 0 1 1-4 0v-.2a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H4a2 2 0 1 1 0-4h.2a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H10a1.6 1.6 0 0 0 1-1.5V4a2 2 0 1 1 4 0v.2a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V10a1.6 1.6 0 0 0 1.5 1H20a2 2 0 1 1 0 4h-.2a1.6 1.6 0 0 0-1.5 1z"/>',
+  // Logros (biblioteca de 1000, ver src/screens/logros.js) — íconos por
+  // categoría además de los que ya había (dumbbell=fuerza, calendar=clases,
+  // crown/star=constancia general).
+  heart: '<path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/>',
+  ruler: '<rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M7 7v3M11 7v4M15 7v3M19 7v4"/>',
+  flame: '<path d="M12 22c4.4 0 7-2.8 7-6.5C19 11 15 9 15 5c0 0-1 2.5-3 3.5C9 6 9 3 9 3 6 5.5 5 9 5 12c0 5 3 10 7 10z"/>',
+  medal: '<circle cx="12" cy="15" r="6"/><path d="M9 3l3 6 3-6M8 9l-3-6M16 9l3-6"/>',
+  trophy: '<path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4"/><path d="M10 15v3H8v2h8v-2h-2v-3"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de

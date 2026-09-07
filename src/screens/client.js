@@ -10,7 +10,7 @@ import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark 
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
-  devCredit, initials, daysUntil, commentCards, money, statusMeta, avatar,
+  devCredit, initials, daysUntil, commentCards, money, statusMeta, avatar, achievementBadge,
 } from '../helpers.js';
 
 /* ---------------- cliente: registro ---------------- */
@@ -550,22 +550,85 @@ export function viewClientProgreso() {
   </div>`;
 }
 
+// 1003 logros (constancia, fuerza/cardio por ejercicio, medidas, clases —
+// ver supabase/migrations/20260909000000_achievements_library.sql) no
+// entran en una sola grilla: se filtran por categoría, y fuerza/cardio
+// (810+90 de los 1003, uno por ejercicio × nivel) primero muestran un
+// directorio de ejercicios en vez de tirar cientos de tarjetas juntas.
+const LOGROS_CATS = [
+  ['constancia', 'Constancia', 'flame'],
+  ['fuerza', 'Fuerza', 'dumbbell'],
+  ['cardio', 'Cardio', 'run'],
+  ['medidas', 'Medidas', 'ruler'],
+  ['clases', 'Clases', 'calendar'],
+];
+
+function medalCard(a, mine) {
+  const earned = !!mine.earned_at;
+  const pct = Math.max(0, Math.min(100, Math.round((mine.progress / a.target) * 100)));
+  return `<div class="medal rise${earned ? ' is-earned' : ''}">
+    <div class="medal__disc" style="background:none;padding:0">${achievementBadge(a.icon, a.tier, earned, 52)}</div>
+    <div class="medal__name">${esc(a.name)}</div>
+    <div class="medal__hint">${earned ? 'Conseguido' : `${mine.progress}/${a.target}`}</div>
+    ${!earned ? `<div class="progress" style="margin-top:6px"><div class="progress__fill" style="width:${pct}%"></div></div>` : ''}
+  </div>`;
+}
+
 export function viewClientLogros() {
-  const cards = state.achievementsCatalog.map(a => {
-    const mine = state.myAchievements.find(m => m.achievement_id === a.id) || { progress: 0, earned_at: null };
-    const pct = Math.max(0, Math.min(100, Math.round((mine.progress / a.target) * 100)));
-    return `<div class="medal rise${mine.earned_at ? ' is-earned' : ''}">
-      <div class="medal__disc">${iconSpan(a.icon || 'crown', 28)}</div>
-      <div class="medal__name">${esc(a.name)}</div>
-      <div class="medal__hint">${mine.earned_at ? 'Conseguido' : `${mine.progress}/${a.target}`}</div>
-      ${!mine.earned_at ? `<div class="progress" style="margin-top:6px"><div class="progress__fill" style="width:${pct}%"></div></div>` : ''}
+  const catalog = state.achievementsCatalog;
+  const mineById = new Map(state.myAchievements.map(m => [m.achievement_id, m]));
+  const mineFor = a => mineById.get(a.id) || { progress: 0, earned_at: null };
+  const totalEarned = catalog.filter(a => mineFor(a).earned_at).length;
+
+  const cat = state.logrosCategoryFilter || 'constancia';
+  const inCat = catalog.filter(a => a.category === cat);
+  const catTabs = `<div class="seg" style="margin-bottom:14px">${LOGROS_CATS.map(([id, label]) =>
+    `<div ${act('setLogrosCategory', id)} class="seg__item${cat === id ? ' is-active' : ''}">${esc(label)}</div>`).join('')}</div>`;
+
+  const groupable = cat === 'fuerza' || cat === 'cardio';
+  const exFilter = state.logrosExerciseFilter;
+
+  if (groupable && !exFilter) {
+    // Directorio de ejercicios de esta categoría (peso o veces hechas,
+    // según el ejercicio — ver classify() en la migración) + los logros
+    // generales de la categoría (récords, volumen, variedad) arriba.
+    const general = inCat.filter(a => !a.exerciseName);
+    const byExercise = new Map();
+    inCat.filter(a => a.exerciseName).forEach(a => {
+      if (!byExercise.has(a.exerciseName)) byExercise.set(a.exerciseName, []);
+      byExercise.get(a.exerciseName).push(a);
+    });
+    const exRows = [...byExercise.entries()].map(([name, items]) => {
+      const earned = items.filter(a => mineFor(a).earned_at).length;
+      return `<div class="row" style="cursor:pointer" ${act('setLogrosExercise', name)}>
+        <div class="row__body"><div class="row__title">${esc(name)}</div><div class="row__meta">${earned}/${items.length} conseguidos</div></div>
+        <div class="row__action">${iconSpan('chevronRight', 16)}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="pane">
+      ${sectionTitle('Logros', 'crown', 'margin-bottom:2px')}
+      <div class="hint" style="margin-bottom:14px">${totalEarned}/${catalog.length} conseguidos en total</div>
+      ${catTabs}
+      ${general.length ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 10px;margin-bottom:20px">${general.map(a => medalCard(a, mineFor(a))).join('')}</div>` : ''}
+      <div class="eyebrow" style="margin-bottom:8px">Por ejercicio</div>
+      ${exRows}
     </div>`;
-  }).join('');
+  }
+
+  const items = groupable ? inCat.filter(a => a.exerciseName === exFilter) : inCat;
+  const backRow = groupable
+    ? `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="back" ${act('setLogrosExercise', '')}>&lsaquo;</div>
+        <div style="font-size:15px;font-weight:800">${esc(exFilter)}</div>
+      </div>`
+    : '';
 
   return `<div class="pane">
-    ${sectionTitle('Logros', 'crown', 'margin-bottom:4px')}
-    <div class="hint" style="margin-bottom:16px">Se desbloquean solos a medida que entrenás y hacés check-in</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 10px">${cards}</div>
+    ${groupable ? backRow : `${sectionTitle('Logros', 'crown', 'margin-bottom:2px')}
+      <div class="hint" style="margin-bottom:14px">${totalEarned}/${catalog.length} conseguidos en total</div>
+      ${catTabs}`}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px 10px">${items.map(a => medalCard(a, mineFor(a))).join('')}</div>
   </div>`;
 }
 
