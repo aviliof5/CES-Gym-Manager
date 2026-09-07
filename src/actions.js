@@ -23,6 +23,27 @@ function clearRestTimer() {
   if (restTimerId) { clearInterval(restTimerId); restTimerId = null; }
 }
 
+// Canal de Realtime (o su equivalente en el mock) al propio pago — mismo
+// patrón que restTimerId: un recurso vivo, no estado serializable. Se abre
+// al entrar a clientHome (ver enterClientHome) y se cierra en signOut, para
+// nunca dejar dos suscripciones corriendo si el cliente vuelve a entrar.
+let unsubscribeMyPayments = null;
+function stopWatchingMyPayments() {
+  if (unsubscribeMyPayments) { unsubscribeMyPayments(); unsubscribeMyPayments = null; }
+}
+
+// Re-lee el propio cobro pendiente y el propio estado (membership_status/
+// expires_at) — lo dispara tanto "¿Ya te confirmaron? Actualizar" (a mano)
+// como el canal de Realtime de abajo (solo). Antes esto vivía únicamente
+// adentro de ACTIONS.refreshPendingPayment; separado acá para que el
+// callback de Realtime lo pueda llamar igual sin duplicar el código.
+async function refreshMyPaymentState() {
+  if (!state.myClient) return; // ya cerró sesión o cambió de pantalla
+  const pendingPayment = await BolaAPI.payments.getPendingForClient(state.myClient.id);
+  const [client] = await attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]);
+  setState({ pendingPayment, myClient: client });
+}
+
 // ex.reps es texto ("8", "20 min", "circuito" — ver routine_exercises.reps)
 // — el campo de "reps hechas" del modo entrenamiento solo se precarga
 // cuando es puramente una cifra; si no, se deja vacío (ese ejercicio se
@@ -110,6 +131,7 @@ export const ACTIONS = {
   togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
 
   signOut: async () => {
+    stopWatchingMyPayments();
     await BolaAPI.auth.signOut();
     // Ver OWNER_INVITE_KEY/GYM_INVITE_KEY en router.js — no dejar una
     // invitación pegada al navegador para la próxima cuenta que se loguee ahí.
@@ -548,17 +570,7 @@ export const ACTIONS = {
   // router.js corta la cámara solo (ver QR_SCAN_SCREENS en render()) apenas
   // detecta que `screen` dejó de ser una pantalla de escaneo.
   exitScanPayment: () => setState({ screen: 'clientHome', clientTab: 'pago', scanError: '', scanStatus: null }),
-  refreshPendingPayment: async () => {
-    const pendingPayment = await BolaAPI.payments.getPendingForClient(state.myClient.id);
-    // Trae también el propio estado (membership_status/expires_at) — cubre
-    // el caso "el staff lo confirmó a mano desde su panel mientras el
-    // cliente esperaba acá" (handlePaymentScan ya se actualiza solo cuando
-    // confirma el propio cliente escaneando, pero este botón es la otra
-    // vía). Sin esto, la app se quedaba bloqueada aunque ya estuviera al
-    // día — solo se destrababa cerrando y volviendo a entrar.
-    const [client] = await attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]);
-    setState({ pendingPayment, myClient: client });
-  },
+  refreshPendingPayment: refreshMyPaymentState,
   setRoutineSource: v => setState({ routineSource: v }),
   setAiGoal: async v => {
     const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, v);
@@ -1569,6 +1581,12 @@ export async function enterClientHome() {
     pendingPayment, busy: false,
   });
   if (window.CesAds) window.CesAds.showBanner();
+  // Se entera solo, sin recargar la página, cuando el staff confirma el
+  // cobro desde su panel (o cuando lo confirma el propio cliente desde
+  // otro dispositivo) — ver BolaAPI.payments.subscribeToClient(). Se cierra
+  // la anterior primero por si entra dos veces seguidas a Inicio.
+  stopWatchingMyPayments();
+  unsubscribeMyPayments = BolaAPI.payments.subscribeToClient(client.id, refreshMyPaymentState);
   render();
 }
 

@@ -54,6 +54,16 @@
 
   let session = null; // {id, role}
 
+  // Espejo mínimo de payments.subscribeToClient() del lado real (Postgres
+  // Realtime) — acá no hay red, así que alcanza con un pub/sub en memoria:
+  // clientUserId -> Set de callbacks a avisar cuando alguien toca uno de
+  // sus pagos (createCashCharge/confirm/cancel, ver más abajo).
+  const paymentListeners = new Map();
+  function emitPaymentChange(clientUserId) {
+    const set = paymentListeners.get(clientUserId);
+    if (set) set.forEach(fn => { try { fn(); } catch (_) { /* un listener roto no debe tumbar al resto */ } });
+  }
+
   // Igual que normalizeEmail() en supabase-client.js — el mock recibe lo
   // mismo que mandaría la app real (ver emailField() en app.js).
   function normalizeEmail(raw) {
@@ -2232,6 +2242,7 @@
         .forEach(p => { p.status = 'cancelled'; });
       const id = uid('pay');
       db.payments.push({ id, client_user_id: clientUserId, gym_id: c.gym_id, amount: plan.price + (trainer ? trainer.price : 0), status: 'pending', created_by: s.id, confirmed_by: null, confirmed_at: null });
+      emitPaymentChange(clientUserId);
       return id;
     },
     // Confirma el staff (botón manual) o el propio cliente de ese cobro
@@ -2275,6 +2286,7 @@
           type: 'payment_confirmed', related_id: pay.id, created_at: new Date().toISOString(), read_at: null,
         }));
       }
+      emitPaymentChange(pay.client_user_id);
     },
     async cancel(paymentId) {
       await wait();
@@ -2283,6 +2295,7 @@
       const pay = db.payments.find(p => p.id === paymentId);
       if (!pay || pay.status !== 'pending') throw new Error('Este cobro ya fue procesado.');
       pay.status = 'cancelled';
+      emitPaymentChange(pay.client_user_id);
     },
     async getPendingForClient(clientUserId) {
       await wait();
@@ -2290,6 +2303,18 @@
       return rows.length ? { id: rows[0].id, amount: rows[0].amount, status: rows[0].status } : null;
     },
     async getById(paymentId) { await wait(); const p = db.payments.find(x => x.id === paymentId); return p ? { ...p } : null; },
+    // Espejo de payments.subscribeToClient() del lado real — ver
+    // paymentListeners más arriba. onChange se llama sin argumentos (igual
+    // que el callback real, que tampoco se usa por su payload — ambos lados
+    // solo lo usan como "algo cambió, volvé a preguntar").
+    subscribeToClient(clientUserId, onChange) {
+      if (!paymentListeners.has(clientUserId)) paymentListeners.set(clientUserId, new Set());
+      paymentListeners.get(clientUserId).add(onChange);
+      return () => {
+        const set = paymentListeners.get(clientUserId);
+        if (set) set.delete(onChange);
+      };
+    },
   };
 
   /* ---------------- reseñas ---------------- */
