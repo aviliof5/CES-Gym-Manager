@@ -715,7 +715,11 @@
 
   const achievementsApi = {
     async listCatalog() {
-      return unwrap(await client.from('achievements').select('id, code, name, description, icon, target, metric'));
+      const rows = unwrap(await client.from('achievements').select('id, code, name, description, icon, category, tier, exercise_name, target, metric'));
+      return rows.map(a => ({
+        id: a.id, code: a.code, name: a.name, description: a.description, icon: a.icon,
+        category: a.category, tier: a.tier, exerciseName: a.exercise_name, target: a.target, metric: a.metric,
+      }));
     },
     async listForClient(clientUserId) {
       return unwrap(await client.from('client_achievements').select('client_user_id, achievement_id, progress, earned_at').eq('client_user_id', clientUserId));

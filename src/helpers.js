@@ -3,7 +3,7 @@
 'use strict';
 
 import { state } from './state.js';
-import { iconSpan, COUNTRY_CODES, EXERCISE_LIB, MESES } from './data.js';
+import { iconSpan, ICON_PATHS, COUNTRY_CODES, EXERCISE_LIB, MESES } from './data.js';
 
 // Formatea un importe con la moneda del gimnasio (gyms.currency, migración
 // 20260905000200). USD lleva el símbolo delante ($50); cualquier otra moneda
@@ -35,6 +35,35 @@ export function avatar(name, url, extraClass, extraStyle) {
   const cls = `avatar${extraClass ? ' ' + extraClass : ''}`;
   if (!url) return `<div class="${cls}"${extraStyle ? ` style="${extraStyle}"` : ''}>${esc(initials(name))}</div>`;
   return `<div class="${cls}" style="overflow:hidden;padding:0;${extraStyle || ''}"><img src="${esc(url)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"/></div>`;
+}
+
+// Medalla de un logro (ver src/screens/logros.js) — un círculo con
+// degradé + el ícono de su categoría en el centro, coloreado según el
+// "tier" (1-2 bronce, 3-4 plata, 5-6 oro, 7-8 platino, 9+ diamante). Es una
+// imagen generada, no una foto: con 1003 logros no hay 1003 fotos reales
+// que mostrar, así que cada uno tiene su propia medalla distinta según
+// categoría+nivel en vez de un ícono plano repetido o una imagen inventada.
+const TIER_BANDS = [
+  { max: 2, from: '#8a5a3c', to: '#d9a066' },   // bronce
+  { max: 4, from: '#9098a3', to: '#e2e6ec' },   // plata
+  { max: 6, from: '#c9932c', to: '#ffd968' },   // oro
+  { max: 8, from: '#4fa8ae', to: '#bdf4f0' },   // platino
+  { max: Infinity, from: '#6a5ce8', to: '#c9baff' }, // diamante
+];
+let badgeSeq = 0;
+export function achievementBadge(iconKey, tier, earned, size) {
+  const s = size || 56;
+  const band = TIER_BANDS.find(b => (tier || 1) <= b.max);
+  const [from, to] = earned ? [band.from, band.to] : ['#3a3a40', '#55555c'];
+  const gid = `badge${++badgeSeq}`;
+  const paths = ICON_PATHS[iconKey] || ICON_PATHS.crown;
+  return `<svg viewBox="0 0 24 24" width="${s}" height="${s}" style="${earned ? '' : 'opacity:0.55'}">
+    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="${from}"/><stop offset="100%" stop-color="${to}"/>
+    </linearGradient></defs>
+    <circle cx="12" cy="12" r="11" fill="url(#${gid})" stroke="${earned ? to : '#6a6a72'}" stroke-width="0.6"/>
+    <g transform="translate(4.8 4.8) scale(0.6)" fill="none" stroke="${earned ? '#1a1420' : '#c9c9ce'}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">${paths}</g>
+  </svg>`;
 }
 
 // Devuelve entradas estructuradas {text, sets, reps, weightKg, restSeconds} —
