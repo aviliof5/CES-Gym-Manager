@@ -189,8 +189,12 @@ export const state = {
   // classSessions son las mismas que ya usan cliente ("Reservas") y
   // entrenador ("Calendario") — son del gimnasio entero, no por rol.
   ownerCalendarReturn: null, ownerCalendarSelectedDay: null, showEventForm: false,
-  eventDraft: { name: '', description: '', trainerUserId: '', date: '', time: '', durationMinutes: '60', capacity: '20' },
+  eventDraft: { name: '', description: '', trainerUserId: '', date: '', time: '', durationMinutes: '60', capacity: '20', price: '' },
   classBookingsForGym: [],
+
+  // Notificaciones al cliente (ver notify_gym_clients() — dueño/admin crea
+  // un evento y le llega una a cada socio del gimnasio).
+  notifications: [], notificationsReturn: null,
 
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',

@@ -9,7 +9,7 @@
 'use strict';
 
 import { state, setState } from './state.js';
-import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate } from './helpers.js';
+import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, money } from './helpers.js';
 import { DURATION_LABELS } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
@@ -952,19 +952,29 @@ export const ACTIONS = {
     const name = d.name.trim();
     if (!name || !d.date || !d.time) { setState({ error: 'Completá el nombre, la fecha y la hora.' }); return; }
     const startsAtIso = new Date(`${d.date}T${d.time}`).toISOString();
+    const price = d.price.trim() ? Number(d.price) : null;
     setState({ busy: true, error: '' });
     try {
-      await BolaAPI.classes.createEvent(state.gym.id, {
+      const sessionId = await BolaAPI.classes.createEvent(state.gym.id, {
         name, description: d.description.trim() || null, trainerUserId: d.trainerUserId || null,
-        durationMinutes: Number(d.durationMinutes) || 60, capacity: Number(d.capacity) || 20, startsAtIso,
+        durationMinutes: Number(d.durationMinutes) || 60, capacity: Number(d.capacity) || 20, price, startsAtIso,
       });
       const [classesForGym, classSessions] = await Promise.all([
         BolaAPI.classes.listForGym(state.gym.id),
         BolaAPI.classes.listSessions(state.gym.id),
       ]);
+      // Le llega a todos los socios del gimnasio (notify_gym_clients, ver
+      // migración) — si falla (por ejemplo sin señal) el evento ya quedó
+      // creado igual, así que no lo tratamos como error bloqueante.
+      const body = `${formatDate(d.date)} a las ${d.time}${price ? ` · ${money(price)}` : ''}${d.description.trim() ? ` — ${d.description.trim()}` : ''}`;
+      try {
+        await BolaAPI.notifications.notifyGymClients(`Nuevo evento: ${name}`, body, 'event_created', sessionId);
+      } catch (err) {
+        if (!isNetworkError(err)) throw err;
+      }
       setState({
         busy: false, classesForGym, classSessions, showEventForm: false,
-        eventDraft: { name: '', description: '', trainerUserId: '', date: '', time: '', durationMinutes: '60', capacity: '20' },
+        eventDraft: { name: '', description: '', trainerUserId: '', date: '', time: '', durationMinutes: '60', capacity: '20', price: '' },
       });
     } catch (err) {
       setState({ busy: false, error: friendlyError(err) });
@@ -987,6 +997,22 @@ export const ACTIONS = {
       setState({ busy: false, classesForGym, classSessions, classBookingsForGym });
     } catch (err) {
       setState({ busy: false, error: friendlyError(err) });
+    }
+  },
+
+  /* ---- Notificaciones del cliente (dueño/admin le avisa de un evento
+     nuevo — ver notify_gym_clients() y ACTIONS.createEvent). ---- */
+  openNotifications: () => setState({ notificationsReturn: state.screen, screen: 'notifications' }),
+  closeNotifications: () => setState({ screen: state.notificationsReturn || 'clientHome', notificationsReturn: null }),
+  markNotificationRead: async notificationId => {
+    const n = state.notifications.find(x => x.id === notificationId);
+    if (!n || n.readAt) return;
+    // Optimista: se ve leída al toque, sin esperar la vuelta del servidor.
+    setState({ notifications: state.notifications.map(x => x.id === notificationId ? { ...x, readAt: new Date().toISOString() } : x) });
+    try {
+      await BolaAPI.notifications.markRead(notificationId);
+    } catch (err) {
+      if (!isNetworkError(err)) throw err;
     }
   },
 };
@@ -1443,7 +1469,7 @@ export async function enterClientHome() {
 
   // Etapa 2 — clases/reservas, logros, medidas/récords y (si tiene
   // entrenador asignado) su propia calificación existente sobre él.
-  const [classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth] = await Promise.all([
+  const [classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications] = await Promise.all([
     BolaAPI.classes.listForGym(state.gym.id),
     BolaAPI.classes.listSessions(state.gym.id, new Date().toISOString()),
     BolaAPI.classes.listMyBookings(client.id),
@@ -1452,6 +1478,7 @@ export async function enterClientHome() {
     BolaAPI.measurements.listForClient(client.id),
     BolaAPI.workouts.getPersonalRecords(client.id),
     BolaAPI.workouts.countThisMonth(client.id),
+    BolaAPI.notifications.listForClient(client.id),
   ]);
   const myTrainerRating = trainer
     ? (await BolaAPI.trainerReviews.listForTrainer(trainer.id)).find(r => r.client_user_id === client.id) || null
@@ -1462,7 +1489,7 @@ export async function enterClientHome() {
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
     plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
-    classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth,
+    classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
     conversationId: null, messages: [], messageDraft: '',
     pendingPayment: null, busy: false,

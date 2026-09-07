@@ -40,6 +40,7 @@
     classes: [],              // {id, gym_id, name, description, trainer_user_id, duration_minutes, capacity}
     classSessions: [],        // {id, class_id, gym_id, starts_at}
     classBookings: [],        // {id, session_id, client_user_id, gym_id, status}
+    notifications: [],        // {id, gym_id, client_user_id, title, body, type, related_id, created_at, read_at}
     achievements: [],         // {id, code, name, description, icon, target, metric}
     clientAchievements: [],   // {client_user_id, achievement_id, progress, earned_at}
     bodyMeasurements: [],     // {id, client_user_id, taken_at, weight_kg, body_fat_pct, waist_cm, chest_cm, arm_cm, thigh_cm}
@@ -1902,11 +1903,11 @@
 
     // Dueño/admin crea un evento del calendario — clase + sesión de una sola
     // vez (ver createEvent en supabase-client.js, mismo contrato).
-    async createEvent(gymId, { name, description, trainerUserId, durationMinutes, capacity, startsAtIso }) {
+    async createEvent(gymId, { name, description, trainerUserId, durationMinutes, capacity, price, startsAtIso }) {
       await wait();
       const s = requireAuth();
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio crean eventos.');
-      const cls = { id: uid('cls'), gym_id: gymId, name, description: description || null, trainer_user_id: trainerUserId || null, duration_minutes: durationMinutes || 60, capacity: capacity || 20 };
+      const cls = { id: uid('cls'), gym_id: gymId, name, description: description || null, trainer_user_id: trainerUserId || null, duration_minutes: durationMinutes || 60, capacity: capacity || 20, price: price ?? null };
       db.classes.push(cls);
       const session = { id: uid('cs'), class_id: cls.id, gym_id: gymId, starts_at: startsAtIso };
       db.classSessions.push(session);
@@ -1922,6 +1923,38 @@
     async listBookingsForGym(gymId) {
       await wait();
       return db.classBookings.filter(b => b.gym_id === gymId).map(b => ({ ...b }));
+    },
+  };
+
+  /* ---------------- notificaciones ---------------- */
+  // Una fila por cliente — mismo criterio que notify_gym_clients() del lado
+  // real (ver 20260910000000_events_price_and_notifications.sql). Solo
+  // staff puede crearlas, un cliente solo lee/marca leídas las suyas.
+
+  const notificationsApi = {
+    async listForClient(clientUserId) {
+      await wait();
+      return db.notifications.filter(n => n.client_user_id === clientUserId)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(n => ({ id: n.id, title: n.title, body: n.body, type: n.type, relatedId: n.related_id, createdAt: n.created_at, readAt: n.read_at }));
+    },
+    async markRead(notificationId) {
+      await wait();
+      const s = requireAuth();
+      const row = db.notifications.find(n => n.id === notificationId && n.client_user_id === s.id);
+      if (row && !row.read_at) row.read_at = new Date().toISOString();
+    },
+    async notifyGymClients(title, body, type, relatedId) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio puede enviar notificaciones.');
+      const me = profileOf(s.id);
+      const clients = db.clientProfiles.filter(c => c.gym_id === me.gym_id);
+      clients.forEach(c => db.notifications.push({
+        id: uid('ntf'), gym_id: me.gym_id, client_user_id: c.user_id, title, body: body || null,
+        type: type || 'event_created', related_id: relatedId || null, created_at: new Date().toISOString(), read_at: null,
+      }));
+      return clients.length;
     },
   };
 
@@ -2285,7 +2318,7 @@
 
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
-    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
+    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
   };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

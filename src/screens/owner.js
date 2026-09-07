@@ -591,10 +591,12 @@ function eventForm() {
       ${textField('eventDraft.date', 'Fecha', d.date, { type: 'date' })}
       ${textField('eventDraft.time', 'Hora', d.time, { type: 'time' })}
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
       ${textField('eventDraft.durationMinutes', 'Duración (min)', d.durationMinutes, { type: 'number' })}
       ${textField('eventDraft.capacity', 'Cupo', d.capacity, { type: 'number' })}
+      ${textField('eventDraft.price', `Precio (${(state.gym && state.gym.currency) || 'USD'}, opcional)`, d.price, { type: 'number' })}
     </div>
+    <div class="hint" style="margin-bottom:10px">Al crear el evento le llega una notificación a todos los socios del gimnasio</div>
     <button class="btn btn--brand" style="width:100%;padding:12px;font-size:13px" ${act('createEvent')} ${(!d.name.trim() || !d.date || !d.time || state.busy) ? 'disabled' : ''}>${state.busy ? 'Creando…' : '+ Crear evento'}</button>
   </div>`;
 }
@@ -636,7 +638,7 @@ export function viewOwnerCalendario() {
         <div class="avatar avatar--sq avatar--brand">${iconSpan('dumbbell', 18)}</div>
         <div style="flex:1">
           <div style="font-size:14.5px;font-weight:700">${esc(cls.name || 'Evento')}</div>
-          <div class="row__meta">${esc(formatSessionWhen(s.starts_at))} · ${cls.duration_minutes || 60} min · ${bookings.length}/${cls.capacity || '—'} reservados${trainer ? ' · ' + esc(trainer.name) : ''}</div>
+          <div class="row__meta">${esc(formatSessionWhen(s.starts_at))} · ${cls.duration_minutes || 60} min · ${bookings.length}/${cls.capacity || '—'} reservados${cls.price != null ? ' · ' + money(cls.price) : ''}${trainer ? ' · ' + esc(trainer.name) : ''}</div>
           ${cls.description ? `<div class="hint" style="margin-top:4px">${esc(cls.description)}</div>` : ''}
         </div>
         <div style="color:var(--danger);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap" ${act('removeEvent', s.id)}>Eliminar</div>
@@ -655,12 +657,12 @@ export function viewOwnerCalendario() {
     </div>
     <div class="form-body">
       ${errorBanner()}
-      <div ${act('toggleEventForm')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:12px">${iconSpan('plus', 14)} ${state.showEventForm ? 'Cancelar' : 'Crear evento'}</div>
-      ${state.showEventForm ? eventForm() : ''}
       <div class="cal" style="margin-bottom:16px">
         <div class="cal__head"><div class="cal__month">${MESES[month]} ${year}</div></div>
         <div class="cal__grid">${DAY_LABELS.map(d => `<div class="cal__dow">${d}</div>`).join('')}${cells.join('')}</div>
       </div>
+      <button class="btn ${state.showEventForm ? 'btn--ghost' : 'btn--brand'}" style="width:100%;padding:16px;font-size:15px;margin-bottom:16px" ${act('toggleEventForm')}>${state.showEventForm ? 'Cancelar' : `${iconSpan('plus', 18)} Crear evento`}</button>
+      ${state.showEventForm ? eventForm() : ''}
       ${list}
     </div>
   </div>`;
