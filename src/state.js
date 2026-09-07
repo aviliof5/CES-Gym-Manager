@@ -181,6 +181,14 @@ export const state = {
   programTemplates: [], programTemplateItems: [],
   programReturn: null, programExpandedId: null, programApplyContext: null,
 
+  // Calendario del dueño/admin: crea eventos (clase + sesión de una vez,
+  // ver ACTIONS.createEvent) y ve quién reservó cada uno. classesForGym/
+  // classSessions son las mismas que ya usan cliente ("Reservas") y
+  // entrenador ("Calendario") — son del gimnasio entero, no por rol.
+  ownerCalendarReturn: null, ownerCalendarSelectedDay: null, showEventForm: false,
+  eventDraft: { name: '', description: '', trainerUserId: '', date: '', time: '', durationMinutes: '60', capacity: '20' },
+  classBookingsForGym: [],
+
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
 

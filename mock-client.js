@@ -897,6 +897,30 @@
       if (!row) throw new Error('Esa reserva no existe o no es tuya.');
       row.status = 'cancelado';
     },
+
+    // Dueño/admin crea un evento del calendario — clase + sesión de una sola
+    // vez (ver createEvent en supabase-client.js, mismo contrato).
+    async createEvent(gymId, { name, description, trainerUserId, durationMinutes, capacity, startsAtIso }) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio crean eventos.');
+      const cls = { id: uid('cls'), gym_id: gymId, name, description: description || null, trainer_user_id: trainerUserId || null, duration_minutes: durationMinutes || 60, capacity: capacity || 20 };
+      db.classes.push(cls);
+      const session = { id: uid('cs'), class_id: cls.id, gym_id: gymId, starts_at: startsAtIso };
+      db.classSessions.push(session);
+      return session.id;
+    },
+    async removeSession(sessionId) {
+      await wait();
+      const s = requireAuth();
+      if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio borran eventos.');
+      db.classSessions = db.classSessions.filter(cs => cs.id !== sessionId);
+      db.classBookings = db.classBookings.filter(b => b.session_id !== sessionId); // on delete cascade, del lado del mock
+    },
+    async listBookingsForGym(gymId) {
+      await wait();
+      return db.classBookings.filter(b => b.gym_id === gymId).map(b => ({ ...b }));
+    },
   };
 
   /* ---------------- logros ---------------- */

@@ -938,6 +938,52 @@ export const ACTIONS = {
       setState({ busy: false, error: friendlyError(err) });
     }
   },
+
+  /* ---- Calendario de eventos (dueño/admin) — crean clase+sesión de una
+     vez y ven quién reservó cada una. Reserva en sí la sigue haciendo el
+     cliente desde su tab "Reservas" (book_class, ya existía); esto es solo
+     la mitad que faltaba: crear el evento y ver las reservas hechas. ---- */
+  openOwnerCalendar: () => setState({ ownerCalendarReturn: state.screen, screen: 'ownerCalendar', ownerCalendarSelectedDay: null, showEventForm: false }),
+  closeOwnerCalendar: () => setState({ screen: state.ownerCalendarReturn || 'ownerDash', ownerCalendarReturn: null }),
+  selectOwnerCalendarDay: day => setState({ ownerCalendarSelectedDay: day }),
+  toggleEventForm: () => setState({ showEventForm: !state.showEventForm, error: '' }),
+  createEvent: async () => {
+    const d = state.eventDraft;
+    const name = d.name.trim();
+    if (!name || !d.date || !d.time) { setState({ error: 'Completá el nombre, la fecha y la hora.' }); return; }
+    const startsAtIso = new Date(`${d.date}T${d.time}`).toISOString();
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.classes.createEvent(state.gym.id, {
+        name, description: d.description.trim() || null, trainerUserId: d.trainerUserId || null,
+        durationMinutes: Number(d.durationMinutes) || 60, capacity: Number(d.capacity) || 20, startsAtIso,
+      });
+      const [classesForGym, classSessions] = await Promise.all([
+        BolaAPI.classes.listForGym(state.gym.id),
+        BolaAPI.classes.listSessions(state.gym.id),
+      ]);
+      setState({
+        busy: false, classesForGym, classSessions, showEventForm: false,
+        eventDraft: { name: '', description: '', trainerUserId: '', date: '', time: '', durationMinutes: '60', capacity: '20' },
+      });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
+  removeEvent: async sessionId => {
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.classes.removeSession(sessionId);
+      const [classesForGym, classSessions, classBookingsForGym] = await Promise.all([
+        BolaAPI.classes.listForGym(state.gym.id),
+        BolaAPI.classes.listSessions(state.gym.id),
+        BolaAPI.classes.listBookingsForGym(state.gym.id),
+      ]);
+      setState({ busy: false, classesForGym, classSessions, classBookingsForGym });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
 };
 
 /* ============================ screen-entry helpers ============================ */
@@ -1337,17 +1383,26 @@ export async function enterOwnerDash() {
   const exercisesLibRes = await loadWithFallback(`exercisesLib:${gymId}`, () => BolaAPI.exercisesLib.list(gymId));
   const programTemplatesRes = await loadWithFallback(`programTemplates`, () => BolaAPI.programTemplates.list());
   const programTemplateItemsRes = await loadWithFallback(`programTemplateItems`, () => BolaAPI.programTemplates.listItems());
+  // Calendario: mismas classesForGym/classSessions que ya cargan cliente
+  // ("Reservas") y entrenador ("Calendario") — acá se suma quién reservó
+  // cada sesión, que solo dueño/admin puede ver (RLS: "staff reads bookings
+  // in their gym").
+  const classesRes = await loadWithFallback(`classesForGym:${gymId}`, () => BolaAPI.classes.listForGym(gymId));
+  const classSessionsRes = await loadWithFallback(`classSessions:${gymId}`, () => BolaAPI.classes.listSessions(gymId));
+  const classBookingsRes = await loadWithFallback(`classBookingsForGym:${gymId}`, () => BolaAPI.classes.listBookingsForGym(gymId));
 
   Object.assign(state, {
     screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
     trainerRatingsById, attendanceEvents: attendanceRes.data, attendanceSelectedDay: null, exercisesLib: exercisesLibRes.data,
     programTemplates: programTemplatesRes.data, programTemplateItems: programTemplateItemsRes.data,
+    classesForGym: classesRes.data, classSessions: classSessionsRes.data, classBookingsForGym: classBookingsRes.data,
     ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
     gymConfigDraft: {
       currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '',
       name: state.gym.name || '', address: state.gym.address || '', hours: state.gym.hours || '',
     },
-    dataStale: coreStale || attendanceRes.stale || exercisesLibRes.stale || programTemplatesRes.stale || programTemplateItemsRes.stale,
+    dataStale: coreStale || attendanceRes.stale || exercisesLibRes.stale || programTemplatesRes.stale || programTemplateItemsRes.stale
+      || classesRes.stale || classSessionsRes.stale || classBookingsRes.stale,
     busy: false,
   });
   if (window.CesAds) window.CesAds.hideBanner();

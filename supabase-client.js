@@ -680,6 +680,33 @@
       const { error } = await client.rpc('cancel_booking', { p_booking_id: bookingId });
       if (error) throw error;
     },
+
+    // Dueño/admin crea un evento del calendario — una "clase" (catálogo) y
+    // su "sesión" (el horario concreto) de una sola vez, para que en el
+    // frontend sea una única acción ("crear evento"), no dos. RLS directo
+    // (classes/class_sessions son "staff manages", igual que equipment) —
+    // sin RPC porque no hay ninguna regla de cupo/carrera acá, a diferencia
+    // de reservar.
+    async createEvent(gymId, { name, description, trainerUserId, durationMinutes, capacity, startsAtIso }) {
+      const cls = unwrap(await client.from('classes').insert({
+        gym_id: gymId, name, description: description || null, trainer_user_id: trainerUserId || null,
+        duration_minutes: durationMinutes || 60, capacity: capacity || 20,
+      }).select('id').single());
+      const session = unwrap(await client.from('class_sessions').insert({
+        class_id: cls.id, gym_id: gymId, starts_at: startsAtIso,
+      }).select('id').single());
+      return session.id;
+    },
+    async removeSession(sessionId) {
+      const { error } = await client.from('class_sessions').delete().eq('id', sessionId);
+      if (error) throw error;
+    },
+    // Todas las reservas del gimnasio (para que dueño/admin vean quién
+    // reservó qué) — el nombre del cliente y la clase se resuelven del lado
+    // del frontend contra clientsForGym/classSessions, ya cargados.
+    async listBookingsForGym(gymId) {
+      return unwrap(await client.from('class_bookings').select('id, session_id, client_user_id, gym_id, status, created_at').eq('gym_id', gymId));
+    },
   };
 
   /* ---------------- logros ---------------- */
