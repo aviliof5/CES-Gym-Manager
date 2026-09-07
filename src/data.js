@@ -115,6 +115,9 @@ export const ICON_PATHS = {
   // Notificaciones al cliente cuando dueño/admin crea un evento (ver
   // src/actions.js createEvent / notify_gym_clients()).
   bell: '<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  // Bloqueo de la app para el cliente que no pagó (ver viewClientHome,
+  // "como se lleva el control para que no entren sin pagar").
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de

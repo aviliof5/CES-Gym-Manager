@@ -764,6 +764,45 @@ const BASE_TABS = [
   ['configuracion', 'Config', 'settings'],
 ];
 
+// Campanita de notificaciones del staff (dirección contraria a la del
+// cliente: acá avisa que un socio confirmó su propio pago escaneando el QR
+// — ver confirm_cash_payment() y ACTIONS.markStaffNotificationRead).
+function staffBellIcon() {
+  const unread = state.staffNotifications.filter(n => !n.readAt).length;
+  return `<div ${act('openStaffNotifications')} style="position:relative;cursor:pointer;color:var(--text)">
+    ${iconSpan('bell', 18)}
+    ${unread ? `<span style="position:absolute;top:-5px;right:-7px;background:var(--action);color:#fff;font-size:9px;font-weight:800;min-width:15px;height:15px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;line-height:1">${unread > 9 ? '9+' : unread}</span>` : ''}
+  </div>`;
+}
+
+function formatStaffNotifWhen(iso) {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getDate()} ${MESES[d.getMonth()]} · ${hh}:${mm}`;
+}
+
+export function viewStaffNotifications() {
+  const list = state.staffNotifications;
+  const rows = list.length ? list.map(n => `<div class="row" style="cursor:pointer;align-items:flex-start" ${act('markStaffNotificationRead', n.id)}>
+      ${!n.readAt ? `<div style="width:8px;height:8px;border-radius:50%;background:var(--action);margin-top:7px;flex-shrink:0"></div>` : `<div style="width:8px;flex-shrink:0"></div>`}
+      <div class="row__body">
+        <div class="row__title" style="font-weight:${n.readAt ? '600' : '800'}">${esc(n.title)}</div>
+        ${n.body ? `<div class="row__meta">${esc(n.body)}</div>` : ''}
+        <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:2px">${formatStaffNotifWhen(n.createdAt)}</div>
+      </div>
+    </div>`).join('') : `<div class="empty"><div class="empty__title">Sin notificaciones</div>Acá te vamos a avisar cuando un socio confirme su pago escaneando el QR — quién lo cobró y hasta cuándo queda válido</div>`;
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('closeStaffNotifications')}>&lsaquo;</div>
+      <div class="step-label">Notificaciones</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="form-body">${rows}</div>
+  </div>`;
+}
+
 export function viewOwnerDash() {
   const isOwner = state.myProfile && state.myProfile.role === 'owner';
   const tabs = [
@@ -791,7 +830,10 @@ export function viewOwnerDash() {
             <div class="app-sub">${isOwner ? 'Panel de dueño' : 'Panel de administrador'}</div>
           </div>
         </div>
-        <div ${act('signOut')} class="link-muted">Salir</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          ${staffBellIcon()}
+          <div ${act('signOut')} class="link-muted">Salir</div>
+        </div>
       </div>
       ${(panes[activeTab] || panes.panel)()}
       ${devCredit()}

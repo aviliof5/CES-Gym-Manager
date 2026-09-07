@@ -994,7 +994,6 @@ export function viewClientNotifications() {
 
 export function viewClientHome() {
   const client = state.myClient;
-  const tabs = CLIENT_BASE_TABS;
   const panes = {
     inicio: viewClientInicio,
     rutina: viewClientRutina,
@@ -1004,7 +1003,21 @@ export function viewClientHome() {
     pago: viewClientPago,
     perfil: viewClientPerfil,
   };
-  const activeTab = state.clientTab;
+  // Cliente sin pago al día (vencido, o "pendiente" = todavía no hizo su
+  // primer pago) solo puede usar "Pago" hasta ponerse al día — antes esto
+  // era nada más un badge visual en Socios, nada se lo impedía usar acá
+  // adentro (ver conversación 2026-09-07, "como se lleva el control para
+  // que no entren sin pagar"). El check-in físico en el gimnasio lo sigue
+  // autorizando el staff a mano (eso es un tema aparte, de mostrador); esto
+  // es el candado del lado de la app. "suspendido" queda afuera a propósito
+  // — es una decisión manual del staff, no de plata: pagar no lo resuelve,
+  // lo tiene que reactivar el gimnasio.
+  const locked = client.status === 'vencido' || client.status === 'pendiente';
+  const activeTab = locked ? 'pago' : state.clientTab;
+  // Los demás tabs se quedan clickeables (evita una tabbar que parece rota)
+  // pero cualquiera de ellos vuelve a caer en Pago (activeTab de arriba) —
+  // el candado con el 🔒 en la etiqueta avisa por qué antes de tocarlo.
+  const tabs = locked ? CLIENT_BASE_TABS.map(([id, label, ic]) => id === 'pago' ? [id, label, ic] : [id, `🔒 ${label}`, ic]) : CLIENT_BASE_TABS;
 
   const days = daysUntil(client.membershipExpiresAt);
   const urgent = days !== null && days <= 1;
@@ -1012,7 +1025,7 @@ export function viewClientHome() {
   // Los planes "diario" se pagan y vencen el mismo día — un aviso de "te
   // quedan 5 días" no aplica ahí (ver migración payment_qr_flip.sql, mismo
   // motivo por el que confirm_cash_payment() ya no suma +30 días fijos).
-  const alert = (days !== null && days <= 5 && plan.duration !== 'diario') ? `<div class="alert${urgent ? '' : ' alert--warn'}" style="margin:0 22px 12px">
+  const expiryAlert = (!locked && days !== null && days <= 5 && plan.duration !== 'diario') ? `<div class="alert${urgent ? '' : ' alert--warn'}" style="margin:0 22px 12px">
       <div style="width:30px;height:30px;border-radius:8px;background:${urgent ? 'var(--danger-dim)' : 'var(--warn-dim)'};display:flex;align-items:center;justify-content:center;color:${urgent ? 'var(--danger)' : 'var(--warn)'};flex-shrink:0">${iconSpan('clock', 16)}</div>
       <div style="flex:1">
         <div style="font-size:var(--fs-sm);font-weight:800;color:${urgent ? 'var(--danger)' : 'var(--warn)'}">${days <= 0 ? '¡Tu plan vence hoy!' : days === 1 ? '¡Tu plan vence mañana!' : 'Tu plan vence en ' + days + ' días'}</div>
@@ -1020,6 +1033,14 @@ export function viewClientHome() {
       </div>
       <div ${act('goPayTab')} style="font-size:var(--fs-sm);font-weight:700;color:${urgent ? 'var(--danger)' : 'var(--warn)'};cursor:pointer;white-space:nowrap">Pagar</div>
     </div>` : '';
+  const lockBanner = locked ? `<div class="alert" style="margin:0 22px 12px">
+      <div style="width:30px;height:30px;border-radius:8px;background:var(--danger-dim);display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0">${iconSpan('lock', 16)}</div>
+      <div style="flex:1">
+        <div style="font-size:var(--fs-sm);font-weight:800;color:var(--danger)">App bloqueada</div>
+        <div class="alert__text">${client.status === 'pendiente' ? 'Todavía no registramos ningún pago tuyo.' : 'Tu membresía está vencida.'} Pagá el servicio para restablecer el uso completo de la app.</div>
+      </div>
+    </div>` : '';
+  const alert = lockBanner || expiryAlert;
 
   return `<div class="dash-shell">
     <div class="dash-main">

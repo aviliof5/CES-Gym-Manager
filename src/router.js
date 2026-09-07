@@ -23,7 +23,7 @@ import {
   viewBoot, viewLanding, viewLogin, viewConfirmCode, viewInviteWelcome, viewTrainerReg, viewGymPicker,
 } from './screens/auth.js';
 import {
-  viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash, viewScanCheckin, viewOwnerCalendario,
+  viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash, viewScanCheckin, viewOwnerCalendario, viewStaffNotifications,
 } from './screens/owner.js';
 import { viewAdminReg, viewAdminPending } from './screens/admin.js';
 import {
@@ -73,6 +73,7 @@ const SCREENS = {
   programTemplates: viewProgramTemplates,
   ownerCalendar: viewOwnerCalendario,
   notifications: viewClientNotifications,
+  staffNotifications: viewStaffNotifications,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,

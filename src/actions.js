@@ -550,7 +550,14 @@ export const ACTIONS = {
   exitScanPayment: () => setState({ screen: 'clientHome', clientTab: 'pago', scanError: '', scanStatus: null }),
   refreshPendingPayment: async () => {
     const pendingPayment = await BolaAPI.payments.getPendingForClient(state.myClient.id);
-    setState({ pendingPayment });
+    // Trae también el propio estado (membership_status/expires_at) — cubre
+    // el caso "el staff lo confirmó a mano desde su panel mientras el
+    // cliente esperaba acá" (handlePaymentScan ya se actualiza solo cuando
+    // confirma el propio cliente escaneando, pero este botón es la otra
+    // vía). Sin esto, la app se quedaba bloqueada aunque ya estuviera al
+    // día — solo se destrababa cerrando y volviendo a entrar.
+    const [client] = await attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]);
+    setState({ pendingPayment, myClient: client });
   },
   setRoutineSource: v => setState({ routineSource: v }),
   setAiGoal: async v => {
@@ -1054,6 +1061,23 @@ export const ACTIONS = {
       if (!isNetworkError(err)) throw err;
     }
   },
+
+  /* ---- Notificaciones del staff (dirección contraria: el cliente confirma
+     su propio pago escaneando el QR del mostrador -> le llega a dueño y
+     admins quién generó el cobro y hasta cuándo es válido, ver
+     confirm_cash_payment()). ---- */
+  openStaffNotifications: () => setState({ staffNotificationsReturn: state.screen, screen: 'staffNotifications' }),
+  closeStaffNotifications: () => setState({ screen: state.staffNotificationsReturn || 'ownerDash', staffNotificationsReturn: null }),
+  markStaffNotificationRead: async notificationId => {
+    const n = state.staffNotifications.find(x => x.id === notificationId);
+    if (!n || n.readAt) return;
+    setState({ staffNotifications: state.staffNotifications.map(x => x.id === notificationId ? { ...x, readAt: new Date().toISOString() } : x) });
+    try {
+      await BolaAPI.notifications.markStaffRead(notificationId);
+    } catch (err) {
+      if (!isNetworkError(err)) throw err;
+    }
+  },
 };
 
 /* ============================ screen-entry helpers ============================ */
@@ -1460,19 +1484,23 @@ export async function enterOwnerDash() {
   const classesRes = await loadWithFallback(`classesForGym:${gymId}`, () => BolaAPI.classes.listForGym(gymId));
   const classSessionsRes = await loadWithFallback(`classSessions:${gymId}`, () => BolaAPI.classes.listSessions(gymId));
   const classBookingsRes = await loadWithFallback(`classBookingsForGym:${gymId}`, () => BolaAPI.classes.listBookingsForGym(gymId));
+  // Quién cobró un pago que el cliente confirmó solo (escaneando el QR),
+  // y hasta cuándo quedó válido — ver confirm_cash_payment().
+  const staffNotificationsRes = await loadWithFallback(`staffNotifications:${gymId}`, () => BolaAPI.notifications.listForStaff());
 
   Object.assign(state, {
     screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
     trainerRatingsById, attendanceEvents: attendanceRes.data, attendanceSelectedDay: null, exercisesLib: exercisesLibRes.data,
     programTemplates: programTemplatesRes.data, programTemplateItems: programTemplateItemsRes.data,
     classesForGym: classesRes.data, classSessions: classSessionsRes.data, classBookingsForGym: classBookingsRes.data,
+    staffNotifications: staffNotificationsRes.data,
     ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
     gymConfigDraft: {
       currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '',
       name: state.gym.name || '', address: state.gym.address || '', hours: state.gym.hours || '',
     },
     dataStale: coreStale || attendanceRes.stale || exercisesLibRes.stale || programTemplatesRes.stale || programTemplateItemsRes.stale
-      || classesRes.stale || classSessionsRes.stale || classBookingsRes.stale,
+      || classesRes.stale || classSessionsRes.stale || classBookingsRes.stale || staffNotificationsRes.stale,
     busy: false,
   });
   if (window.CesAds) window.CesAds.hideBanner();
@@ -1523,6 +1551,12 @@ export async function enterClientHome() {
   const myTrainerRating = trainer
     ? (await BolaAPI.trainerReviews.listForTrainer(trainer.id)).find(r => r.client_user_id === client.id) || null
     : null;
+  // Antes esto quedaba en null hasta que el cliente tocara la tab "Pago" a
+  // mano (selectClientTab la recién ahí la pedía) — un cliente vencido/
+  // pendiente que entraba directo a Inicio no se enteraba de si YA tenía un
+  // cobro esperando. Con el bloqueo de app (ver viewClientHome) que lo manda
+  // derecho a Pago apenas entra, cargarlo acá es obligatorio, no cosmético.
+  const pendingPayment = await BolaAPI.payments.getPendingForClient(client.id);
 
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
@@ -1532,7 +1566,7 @@ export async function enterClientHome() {
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
     conversationId: null, messages: [], messageDraft: '',
-    pendingPayment: null, busy: false,
+    pendingPayment, busy: false,
   });
   if (window.CesAds) window.CesAds.showBanner();
   render();

@@ -22,7 +22,7 @@
     progress: [],         // {id, client_user_id, storage_key, taken_at}
     routines: [],          // {id, client_user_id, source, goal, author_user_id}
     routineExercises: [],  // {id, routine_id, position, text}
-    payments: [],           // {id, client_user_id, gym_id, amount, status, confirmed_by, confirmed_at}
+    payments: [],           // {id, client_user_id, gym_id, amount, status, created_by, confirmed_by, confirmed_at}
     reviews: [],
     checkinEvents: [],       // {id, gym_id, client_user_id, checked_in_by, created_at}
     trainerInterest: [],      // {candidate_user_id, client_user_id, gym_id}
@@ -41,6 +41,7 @@
     classSessions: [],        // {id, class_id, gym_id, starts_at}
     classBookings: [],        // {id, session_id, client_user_id, gym_id, status}
     notifications: [],        // {id, gym_id, client_user_id, title, body, type, related_id, created_at, read_at}
+    staffNotifications: [],   // {id, gym_id, recipient_user_id, title, body, type, related_id, created_at, read_at} — cliente -> staff (pago confirmado por QR)
     achievements: [],         // {id, code, name, description, icon, target, metric}
     clientAchievements: [],   // {client_user_id, achievement_id, progress, earned_at}
     bodyMeasurements: [],     // {id, client_user_id, taken_at, weight_kg, body_fat_pct, waist_cm, chest_cm, arm_cm, thigh_cm}
@@ -1976,6 +1977,23 @@
       }));
       return clients.length;
     },
+    // Dirección contraria: cliente -> staff. Las crea SOLO payments.confirm()
+    // más abajo cuando el cliente confirma su propio pago escaneando el QR
+    // (ver 20260912000000_payment_accountability_and_client_lock.sql del
+    // lado real) — acá solo se leen/marcan.
+    async listForStaff() {
+      await wait();
+      const s = requireAuth();
+      return db.staffNotifications.filter(n => n.recipient_user_id === s.id)
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .map(n => ({ id: n.id, title: n.title, body: n.body, type: n.type, relatedId: n.related_id, createdAt: n.created_at, readAt: n.read_at }));
+    },
+    async markStaffRead(notificationId) {
+      await wait();
+      const s = requireAuth();
+      const row = db.staffNotifications.find(n => n.id === notificationId && n.recipient_user_id === s.id);
+      if (row && !row.read_at) row.read_at = new Date().toISOString();
+    },
   };
 
   /* ---------------- logros ---------------- */
@@ -2205,7 +2223,7 @@
       const plan = db.plans.find(p => p.id === c.plan_id) || { price: 0 };
       const trainer = c.trainer_user_id ? db.trainers.find(t => t.user_id === c.trainer_user_id) : null;
       const id = uid('pay');
-      db.payments.push({ id, client_user_id: clientUserId, gym_id: c.gym_id, amount: plan.price + (trainer ? trainer.price : 0), status: 'pending', confirmed_by: null, confirmed_at: null });
+      db.payments.push({ id, client_user_id: clientUserId, gym_id: c.gym_id, amount: plan.price + (trainer ? trainer.price : 0), status: 'pending', created_by: s.id, confirmed_by: null, confirmed_at: null });
       return id;
     },
     // Confirma el staff (botón manual) o el propio cliente de ese cobro
@@ -2227,7 +2245,28 @@
       const days = plan && plan.duration === 'diario' ? 1 : plan && plan.duration === 'anual' ? 365 : 30;
       c.membership_status = 'al_dia';
       c.last_payment_at = new Date().toISOString();
-      c.membership_expires_at = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+      const expiresIso = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+      c.membership_expires_at = expiresIso;
+
+      // Aviso al staff SOLO si confirmó el propio cliente (escaneo) — si fue
+      // el staff a mano, no hace falta avisarle a sí mismo (mismo criterio
+      // que confirm_cash_payment() del lado real).
+      if (isOwnClient) {
+        const clientProfile = profileOf(pay.client_user_id);
+        const collector = pay.created_by ? profileOf(pay.created_by) : null;
+        const gym = db.gyms.find(g => g.id === pay.gym_id);
+        const [dd, mm, yyyy] = [expiresIso.slice(8, 10), expiresIso.slice(5, 7), expiresIso.slice(0, 4)];
+        const title = `${(clientProfile && clientProfile.name) || 'Un socio'} confirmó su pago por QR`;
+        const body = `Cobrado por ${(collector && collector.name) || 'el mostrador (sin registrar)'} · ${pay.amount} ${(gym && gym.currency) || 'USD'} · Válido hasta ${dd}/${mm}/${yyyy}`;
+        const staffIds = [
+          ...db.profiles.filter(p => p.gym_id === pay.gym_id && p.role === 'owner').map(p => p.id),
+          ...db.gymAdmins.filter(a => a.gym_id === pay.gym_id && a.status === 'approved').map(a => a.user_id),
+        ];
+        staffIds.forEach(recipientId => db.staffNotifications.push({
+          id: uid('sntf'), gym_id: pay.gym_id, recipient_user_id: recipientId, title, body,
+          type: 'payment_confirmed', related_id: pay.id, created_at: new Date().toISOString(), read_at: null,
+        }));
+      }
     },
     async cancel(paymentId) {
       await wait();
