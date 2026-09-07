@@ -891,9 +891,12 @@ export const ACTIONS = {
 
   /* ---- Etapa 2: "Biblioteca de ejercicios" (pantalla transversal #23,
      compartida por los 3 roles) ---- */
-  openExerciseLibrary: () => setState({ libraryReturn: state.screen, screen: 'exerciseLibrary', libraryQuery: '', libraryMuscleFilter: 'todos' }),
+  openExerciseLibrary: () => setState({ libraryReturn: state.screen, screen: 'exerciseLibrary', libraryQuery: '', libraryMuscleFilter: 'todos', libraryLevelFilter: 'todos', libraryExpandedId: null }),
   closeExerciseLibrary: () => setState({ screen: state.libraryReturn || 'clientHome', libraryReturn: null }),
   setLibraryMuscleFilter: v => setState({ libraryMuscleFilter: v }),
+  setLibraryLevelFilter: v => setState({ libraryLevelFilter: v }),
+  openLibraryDetail: id => setState({ libraryExpandedId: id }),
+  closeLibraryDetail: () => setState({ libraryExpandedId: null }),
   addLibraryExercise: async () => {
     const d = state.libraryDraft;
     if (!d.name.trim()) return;
@@ -1324,11 +1327,15 @@ export async function enterClientHome() {
   // Su propia foto de rostro (ver attachFaceUrls) — Perfil la muestra en
   // vez del círculo de iniciales cuando existe.
   const [client] = await attachFaceUrls([clientRaw]);
-  const [plans, trainersForGym, reviews, equipment] = await Promise.all([
+  const [plans, trainersForGym, reviews, equipment, exercisesLib] = await Promise.all([
     BolaAPI.plans.list(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
     BolaAPI.reviews.listForGym(state.gym.id),
     BolaAPI.equipment.list(state.gym.id),
+    // Biblioteca de ejercicios (ver libraryLink() en viewClientRutina) — antes
+    // no se cargaba acá y abrir "Ver biblioteca de ejercicios" rompía la app
+    // para el cliente (state.exercisesLib quedaba undefined).
+    BolaAPI.exercisesLib.list(state.gym.id),
   ]);
   const plan = plans.find(p => p.id === client.planId) || null;
   const trainer = client.trainerUserId ? trainersForGym.find(t => t.id === client.trainerUserId) : null;
@@ -1358,7 +1365,7 @@ export async function enterClientHome() {
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
-    plans, trainersForGym, reviews, equipment, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
+    plans, trainersForGym, reviews, equipment, exercisesLib, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },

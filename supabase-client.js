@@ -607,9 +607,12 @@
 
   const exercisesLib = {
     async list(gymId) {
-      const rows = unwrap(await client.from('exercises').select('id, gym_id, name, muscle_group, equipment_name, media_key, description')
+      const rows = unwrap(await client.from('exercises').select('id, gym_id, name, muscle_group, equipment_name, media_key, description, level, goal, kind, suggested_sets, suggested_reps, suggested_rest_seconds')
         .or(`gym_id.is.null,gym_id.eq.${gymId}`));
-      return rows.map(e => ({ id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description }));
+      return rows.map(e => ({
+        id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description,
+        level: e.level, goal: e.goal, kind: e.kind, suggestedSets: e.suggested_sets, suggestedReps: e.suggested_reps, suggestedRestSeconds: e.suggested_rest_seconds,
+      }));
     },
     async add(gymId, { name, muscleGroup, equipmentName, description }) {
       const row = unwrap(await client.from('exercises')

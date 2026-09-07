@@ -169,8 +169,9 @@ export const state = {
   // guarda a qué screen volver (clientHome/trainerDash/ownerDash) — las
   // tabs de cada dashboard (clientTab/trainerTab/ownerTab) no se tocan al
   // entrar, así que vuelven solas a como estaban.
-  libraryReturn: null, libraryQuery: '', libraryMuscleFilter: 'todos',
+  libraryReturn: null, libraryQuery: '', libraryMuscleFilter: 'todos', libraryLevelFilter: 'todos', libraryExpandedId: null,
   libraryDraft: { name: '', muscleGroup: '', equipmentName: '', description: '' },
+  exercisesLib: [], // se recarga siempre al entrar a un panel (ver enter*Home/Dash en actions.js) — el default vacío es solo para no romper antes de esa carga.
 
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
