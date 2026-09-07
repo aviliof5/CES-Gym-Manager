@@ -10,7 +10,7 @@ import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, WEEKDAY_NAMES, today
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
-  devCredit, initials, daysUntil, commentCards, money, statusMeta, avatar, achievementBadge, exercisesForToday,
+  devCredit, initials, daysUntil, formatDate, commentCards, money, statusMeta, avatar, achievementBadge, exercisesForToday,
 } from '../helpers.js';
 
 /* ---------------- cliente: registro ---------------- */
@@ -789,13 +789,25 @@ export function viewClientReservas() {
 }
 
 export function viewClientPago() {
+  const client = state.myClient;
   const plan = state.myClientPlan || { name: '—', price: 0, duration: 'mensual' };
   const trainer = state.myClientTrainer;
   const total = plan.price + (trainer ? trainer.price : 0);
   const pending = state.pendingPayment;
   let body = '';
 
-  if (!pending) {
+  if (!pending && client.status === 'al_dia') {
+    // Ya pagó y no hay ningún cobro esperando confirmación — antes esto
+    // caía en la misma rama que "nunca pagó" ("aún no hay un cobro
+    // generado"), que sonaba a que le faltaba pagar aunque ya estuviera al
+    // día. Acá se le muestra hasta cuándo queda vigente su plan.
+    body = `<div class="card" style="width:100%;border-radius:16px;padding:24px;margin-top:20px">
+      <div style="width:44px;height:44px;border-radius:50%;background:var(--ok-dim);display:flex;align-items:center;justify-content:center;color:var(--ok);margin:0 auto 12px">${iconSpan('check', 22)}</div>
+      <div class="eyebrow">Estás al día</div>
+      <div style="font-family:var(--font-display);font-size:22px;margin-top:6px">${esc(plan.name)}</div>
+      <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:10px">Tu plan queda vigente hasta el ${formatDate(client.membershipExpiresAt)}.</div>
+    </div>`;
+  } else if (!pending) {
     body = `<div class="card" style="width:100%;border-radius:16px;padding:24px;margin-top:20px">
       <div class="eyebrow">Próximo pago</div>
       <div style="font-family:var(--font-display);font-size:28px;margin-top:6px">${money(total)}</div>

@@ -2222,6 +2222,14 @@
       const c = db.clientProfiles.find(x => x.user_id === clientUserId);
       const plan = db.plans.find(p => p.id === c.plan_id) || { price: 0 };
       const trainer = c.trainer_user_id ? db.trainers.find(t => t.user_id === c.trainer_user_id) : null;
+      // Un cliente solo tiene UN cobro pendiente a la vez — si le quedaba
+      // uno de antes sin confirmar ni cancelar, se cancela solo al generar
+      // uno nuevo (ver 20260912000100_cancel_stale_pending_charges.sql,
+      // mismo bug que del lado real: sin esto, getPendingForClient() podía
+      // seguir mostrando ese viejo aunque el cliente ya hubiera pagado con
+      // uno más nuevo).
+      db.payments.filter(p => p.client_user_id === clientUserId && p.status === 'pending')
+        .forEach(p => { p.status = 'cancelled'; });
       const id = uid('pay');
       db.payments.push({ id, client_user_id: clientUserId, gym_id: c.gym_id, amount: plan.price + (trainer ? trainer.price : 0), status: 'pending', created_by: s.id, confirmed_by: null, confirmed_at: null });
       return id;
