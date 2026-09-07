@@ -10,7 +10,7 @@ import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark 
 import {
   esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
-  devCredit, initials, daysUntil, commentCards, money, statusMeta,
+  devCredit, initials, daysUntil, commentCards, money, statusMeta, avatar,
 } from '../helpers.js';
 
 /* ---------------- cliente: registro ---------------- */
@@ -691,7 +691,7 @@ export function viewClientPerfil() {
   return `<div class="pane">
     ${errorBanner()}
     <div class="row">
-      <div class="avatar avatar--sq avatar--brand" style="width:48px;height:48px;font-size:16px">${esc(initials(client.name))}</div>
+      ${avatar(client.name, client.faceUrl, 'avatar--sq avatar--brand', 'width:48px;height:48px;font-size:16px')}
       <div class="row__body">
         <div class="row__title">${esc(client.name)}</div>
         <div class="row__meta">${esc(client.email)} · ${esc(client.phone)}</div>

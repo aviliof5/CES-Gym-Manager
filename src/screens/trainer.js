@@ -7,7 +7,7 @@
 
 import { state } from '../state.js';
 import { GOALS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
-import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money } from '../helpers.js';
+import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money, avatar } from '../helpers.js';
 
 export function viewTrainerPending() {
   return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;position:relative;z-index:0">
@@ -93,6 +93,7 @@ export function viewTrainerClientes() {
       ${errorBanner()}
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
         <div class="back" ${act('closeClientDetail')}>&lsaquo;</div>
+        ${avatar(selected.name, selected.faceUrl, 'avatar--sq avatar--action')}
         <div style="flex:1">
           <div style="font-size:15px;font-weight:800">${esc(selected.name)}</div>
           <div style="font-size:11.5px;color:var(--muted);margin-top:1px">${esc(selected.plan)} · ${esc(goalLabel)}</div>
@@ -161,7 +162,7 @@ export function viewTrainerClientes() {
     ${filtered.length ? filtered.map(c => {
       const meta = statusMeta(c.status);
       return `<div class="row" style="cursor:pointer" ${act('openClientDetail', c.id)}>
-        <div class="avatar avatar--sq avatar--action">${esc(initials(c.name))}</div>
+        ${avatar(c.name, c.faceUrl, 'avatar--sq avatar--action')}
         <div class="row__body">
           <div class="row__title">${esc(c.name)}</div>
           <div class="row__meta">${esc(c.plan)}</div>

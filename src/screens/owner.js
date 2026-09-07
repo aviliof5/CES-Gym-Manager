@@ -12,7 +12,7 @@ import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, br
 import {
   esc, act, stepHead, stepBars, errorBanner, textField, sectionTitle,
   tabsMarkup, devCredit, initials, statusMeta, enrichClient, commentCards, money,
-  emailField, phoneField, passwordField, passwordStrength, daysUntil,
+  emailField, phoneField, passwordField, passwordStrength, daysUntil, avatar,
 } from '../helpers.js';
 
 /* ---------------- dueño: registro ---------------- */
@@ -165,7 +165,7 @@ export function viewOwnerSocios() {
     return `<div class="card" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
         <div style="display:flex;align-items:center;gap:10px">
-          <div class="avatar">${esc(initials(c.name))}</div>
+          ${avatar(c.name, c.faceUrl)}
           <div>
             <div style="font-size:14.5px;font-weight:700">${esc(c.name)}</div>
             <div style="font-size:12px;color:var(--muted);margin-top:2px">${esc(c.plan)} · ${money(c.amount)}</div>
