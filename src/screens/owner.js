@@ -632,6 +632,10 @@ export function viewOwnerConfiguracion() {
       <div class="row__body"><div class="row__title">Biblioteca de ejercicios</div><div class="row__meta">Catálogo global + el propio de tu gimnasio</div></div>
       <div class="row__action">${iconSpan('chevronRight', 16)}</div>
     </div>
+    <div class="row" ${act('openProgramTemplates')}>
+      <div class="row__body"><div class="row__title">Programas de entrenamiento</div><div class="row__meta">Plantillas de rutina que usan tus entrenadores</div></div>
+      <div class="row__action">${iconSpan('chevronRight', 16)}</div>
+    </div>
     ${sectionTitle('Links de invitación', 'idcard', 'margin-bottom:8px')}
     <div class="hint" style="margin-bottom:12px">Un link por rol, reutilizable — quien lo abre queda unido directo a tu gimnasio con ESE rol, sin elegir de una lista.</div>
     ${inviteCard('client')}

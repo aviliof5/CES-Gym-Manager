@@ -9,6 +9,33 @@ import { state } from '../state.js';
 import { GOALS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
 import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money, avatar } from '../helpers.js';
 
+// Una fila de la rutina del cliente, con su botón de "Quitar". Si vienen de
+// aplicar un programa (ver applyProgramTemplate en actions.js) traen
+// dayLabel y se agrupan con un encabezado por día; una rutina armada
+// ejercicio por ejercicio (sin dayLabel) se ve igual que siempre.
+function routineExerciseRow(ex) {
+  const info = [ex.sets ? `${ex.sets} series` : null, ex.reps ? `${esc(String(ex.reps))} reps` : null, ex.weightKg != null ? `${ex.weightKg} kg` : null, ex.restSeconds ? `${ex.restSeconds}s descanso` : null].filter(Boolean).join(' · ');
+  return `<div class="row">
+    <div class="row__body">
+      <div class="row__title">${esc(ex.text)}</div>
+      ${info ? `<div class="row__meta">${info}</div>` : ''}
+    </div>
+    <div class="row__action" style="color:var(--danger)" ${act('removeTrainerRoutineExercise', ex.id)}>Quitar</div>
+  </div>`;
+}
+
+function routineRows(routine) {
+  if (!routine.some(e => e.dayLabel)) return routine.map(routineExerciseRow).join('');
+  const days = [];
+  for (const ex of routine) {
+    const label = ex.dayLabel || '—';
+    let d = days.find(d => d.label === label);
+    if (!d) { d = { label, items: [] }; days.push(d); }
+    d.items.push(ex);
+  }
+  return days.map(d => `${sectionTitle(d.label, 'dumbbell', 'margin:14px 0 6px')}${d.items.map(routineExerciseRow).join('')}`).join('');
+}
+
 export function viewTrainerPending() {
   return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px;position:relative;z-index:0">
     <div class="gym-watermark gym-watermark--amber">${iconSpan('clipboard')}</div>
@@ -120,7 +147,8 @@ export function viewTrainerClientes() {
 
       ${sectionTitle('Crear rutina', 'zap')}
       <div class="hint" style="margin-bottom:10px">Estos ejercicios se muestran al cliente si elige "De tu entrenador"</div>
-      <div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:10px">${iconSpan('dumbbell', 14)} Ver biblioteca completa</div>
+      <div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:6px">${iconSpan('dumbbell', 14)} Ver biblioteca completa</div>
+      <div ${act('openProgramTemplates', 'trainer')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:10px">${iconSpan('dumbbell', 14)} Usar un programa (reemplaza la rutina actual)</div>
       <div class="card" style="margin-bottom:16px">
         <select class="field" data-f="trainerRoutineDraft.exerciseId" style="margin-bottom:10px">
           <option value="">Elegí un ejercicio de la biblioteca (opcional)</option>
@@ -135,17 +163,7 @@ export function viewTrainerClientes() {
         </div>
         <button class="btn btn--brand" style="width:100%;padding:12px;font-size:13px" ${act('addTrainerRoutineExercise')} ${!d.text.trim() ? 'disabled' : ''}>+ Agregar a la rutina</button>
       </div>
-      ${routine.length ? routine.map(ex => {
-        const info = [ex.sets ? `${ex.sets} series` : null, ex.reps ? `${esc(String(ex.reps))} reps` : null, ex.weightKg != null ? `${ex.weightKg} kg` : null, ex.restSeconds ? `${ex.restSeconds}s descanso` : null].filter(Boolean).join(' · ');
-        return `<div class="row">
-          <div class="row__body">
-            <div class="row__title">${esc(ex.text)}</div>
-            ${info ? `<div class="row__meta">${info}</div>` : ''}
-          </div>
-          <div class="row__action" style="color:var(--danger)" ${act('removeTrainerRoutineExercise', ex.id)}>Quitar</div>
-        </div>`;
-      }).join('')
-        : `<div class="empty"><div class="empty__title">Sin ejercicios</div>Todavía no armaste la rutina de este cliente</div>`}
+      ${routine.length ? routineRows(routine) : `<div class="empty"><div class="empty__title">Sin ejercicios</div>Todavía no armaste la rutina de este cliente</div>`}
     </div>`;
   }
 

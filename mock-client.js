@@ -35,6 +35,8 @@
     // Etapas 2-4 del rediseño (ver supabase/migrations/20260905000300) —
     // mismas tablas, mismas reglas, del lado del mock.
     exercises: [],            // {id, gym_id|null, name, muscle_group, equipment_name, media_key, description}
+    programTemplates: [],      // {id, name, level, goal, days_per_week, duration_label} — catálogo global (Programas del xlsx)
+    programTemplateItems: [],  // {id, program_id, day_label, day_position, position, exercise_id, exercise_name, sets, reps, rest_seconds}
     classes: [],              // {id, gym_id, name, description, trainer_user_id, duration_minutes, capacity}
     classSessions: [],        // {id, class_id, gym_id, starts_at}
     classBookings: [],        // {id, session_id, client_user_id, gym_id, status}
@@ -135,19 +137,228 @@
     db.reviews.push({ id: uid('rv'), gym_id: gymId, client_user_id: 'client-1', rating: 5, text: 'Excelente atención y máquinas nuevas.', created_at: '2026-07-10' });
     db.reviews.push({ id: uid('rv'), gym_id: gymId, client_user_id: 'client-2', rating: 4, text: 'Falta más espacio en horario pico.', created_at: '2026-07-08' });
 
-    // ---- Etapas 2-4: biblioteca de ejercicios (global, gym_id null — mismo
-    // seed que supabase/migrations/20260905000300_etapa2_features_schema.sql) ----
+    // ---- Etapas 2-4: biblioteca de ejercicios (global, gym_id null — 90
+    // ejercicios reales de Fight_Club_Gym_Base_Datos_Entrenamiento.xlsx, ver
+    // supabase/migrations/20260908000200_exercise_library_real_content.sql) ----
     [
-      ['Press de banca', 'Pecho', 'Banco de press'],
-      ['Sentadilla con barra', 'Piernas', 'Rack de sentadillas'],
-      ['Peso muerto', 'Espalda', null],
-      ['Press militar', 'Hombros', null],
-      ['Curl con barra', 'Brazos', 'Mancuernas'],
-      ['Sprint en cinta', 'Cardio', 'Caminadora'],
-      ['Remo con mancuerna', 'Espalda', 'Mancuernas'],
-      ['Circuito funcional', 'Cuerpo completo', null],
-    ].forEach(([name, muscle_group, equipment_name]) =>
-      db.exercises.push({ id: uid('ex'), gym_id: null, name, muscle_group, equipment_name, media_key: null, description: null }));
+      ["Sentadilla con barra", "Piernas", "Barra", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Baja con control manteniendo el tronco estable y sube empujando el suelo.", 3, "8-12", 90],
+      ["Sentadilla goblet", "Piernas", "Mancuerna", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Sentadilla frontal", "Piernas", "Barra", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Sentadilla hack", "Piernas", "Máquina hack", "Intermedio", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Prensa de piernas", "Piernas", "Prensa", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Peso muerto rumano", "Piernas", "Barra", "Intermedio", "Hipertrofia", "Compuesto", "Lleva la cadera hacia atrás con rodillas ligeramente flexionadas y vuelve extendiendo la cadera.", 3, "8-12", 90],
+      ["Peso muerto con mancuernas", "Piernas", "Mancuernas", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Hip thrust con barra", "Glúteos", "Barra", "Intermedio", "Hipertrofia", "Compuesto", "Extiende la cadera hasta quedar alineado, evitando hiperextender la zona lumbar.", 3, "8-12", 90],
+      ["Puente de glúteos", "Glúteos", "Peso corporal", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Zancadas caminando", "Piernas", "Mancuernas", "Intermedio", "Hipertrofia", "Unilateral", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Zancada atrás", "Piernas", "Mancuernas", "Principiante", "Hipertrofia", "Unilateral", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Split squat búlgaro", "Piernas", "Mancuernas", "Intermedio", "Hipertrofia", "Unilateral", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Step-up", "Piernas", "Banco + mancuernas", "Principiante", "Hipertrofia", "Unilateral", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Extensión de piernas", "Cuádriceps", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Curl femoral tumbado", "Isquiotibiales", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Curl femoral sentado", "Isquiotibiales", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Elevación de talones de pie", "Pantorrillas", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Elevación de talones sentado", "Pantorrillas", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Abducción de cadera", "Glúteos", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Aducción de cadera", "Piernas", "Máquina", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press de banca con barra", "Pecho", "Barra + banco", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Desciende la barra de forma controlada hacia el pecho y empuja sin perder estabilidad escapular.", 3, "8-12", 90],
+      ["Press inclinado con barra", "Pecho", "Barra + banco", "Intermedio", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press de banca con mancuernas", "Pecho", "Mancuernas + banco", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press inclinado con mancuernas", "Pecho", "Mancuernas + banco", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press en máquina", "Pecho", "Máquina", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Fondos en paralelas", "Pecho/Tríceps", "Paralelas", "Avanzado", "Fuerza/Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Aperturas con mancuernas", "Pecho", "Mancuernas + banco", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Cruce de poleas", "Pecho", "Poleas", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Flexiones", "Pecho", "Peso corporal", "Principiante", "Fuerza/Resistencia", "Compuesto", "Desciende manteniendo cuerpo alineado y empuja el suelo hasta extender los brazos.", 3, "8-12", 90],
+      ["Press militar con barra", "Hombros", "Barra", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press de hombros con mancuernas", "Hombros", "Mancuernas", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press de hombros en máquina", "Hombros", "Máquina", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Elevaciones laterales", "Hombros", "Mancuernas", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Elevaciones laterales en polea", "Hombros", "Polea", "Intermedio", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Pájaros con mancuernas", "Hombros", "Mancuernas", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Face pull", "Hombros/Espalda", "Polea + cuerda", "Principiante", "Hipertrofia/Salud de hombro", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Encogimientos con mancuernas", "Trapecios", "Mancuernas", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Dominadas", "Espalda", "Barra fija", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Tira del cuerpo hacia la barra manteniendo el control durante todo el recorrido.", 3, "8-12", 90],
+      ["Dominadas asistidas", "Espalda", "Máquina asistida", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Jalón al pecho", "Espalda", "Polea", "Principiante", "Hipertrofia", "Compuesto", "Lleva la barra hacia la parte alta del pecho manteniendo el torso estable.", 3, "8-12", 90],
+      ["Remo con barra", "Espalda", "Barra", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Remo con mancuerna", "Espalda", "Mancuerna", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Remo sentado en polea", "Espalda", "Polea", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Remo en máquina", "Espalda", "Máquina", "Principiante", "Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Pullover en polea", "Espalda", "Polea", "Intermedio", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Curl de bíceps con barra", "Bíceps", "Barra", "Principiante", "Hipertrofia", "Aislamiento", "Flexiona los codos sin balancear el tronco y baja de forma controlada.", 3, "8-12", 90],
+      ["Curl alterno con mancuernas", "Bíceps", "Mancuernas", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Curl martillo", "Bíceps", "Mancuernas", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Curl predicador", "Bíceps", "Banco predicador", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Curl en polea", "Bíceps", "Polea", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press cerrado", "Tríceps", "Barra + banco", "Intermedio", "Fuerza/Hipertrofia", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Press francés", "Tríceps", "Barra EZ + banco", "Intermedio", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Extensión de tríceps en polea", "Tríceps", "Polea + cuerda", "Principiante", "Hipertrofia", "Aislamiento", "Extiende los codos manteniendo los brazos cerca del cuerpo.", 3, "8-12", 90],
+      ["Extensión de tríceps sobre cabeza", "Tríceps", "Mancuerna", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Patada de tríceps", "Tríceps", "Mancuerna", "Principiante", "Hipertrofia", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Plancha", "Core", "Peso corporal", "Principiante", "Core/Resistencia", "Isométrico", "Mantén el cuerpo alineado, abdomen activo y respiración controlada.", 3, "8-12", 90],
+      ["Plancha lateral", "Core", "Peso corporal", "Principiante", "Core/Resistencia", "Isométrico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Crunch", "Core", "Peso corporal", "Principiante", "Core", "Aislamiento", "Flexiona el tronco con control sin tirar del cuello.", 3, "8-12", 90],
+      ["Crunch en polea", "Core", "Polea", "Intermedio", "Hipertrofia/Core", "Aislamiento", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Elevación de rodillas", "Core", "Barra fija", "Principiante", "Core", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Elevación de piernas", "Core", "Barra fija", "Intermedio", "Core", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Dead bug", "Core", "Peso corporal", "Principiante", "Core/Control motor", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Bird dog", "Core", "Peso corporal", "Principiante", "Core/Control motor", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Mountain climbers", "Core/Cardio", "Peso corporal", "Principiante", "Acondicionamiento", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Burpees", "Full body", "Peso corporal", "Intermedio", "Acondicionamiento", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Jumping jacks", "Full body", "Peso corporal", "Principiante", "Calentamiento/Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Cuerda de saltar", "Cardio", "Cuerda", "Principiante", "Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Sprint en cinta", "Cardio", "Cinta", "Intermedio", "Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Caminata inclinada", "Cardio", "Cinta", "Principiante", "Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Bicicleta estática", "Cardio", "Bicicleta", "Principiante", "Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Remo ergómetro", "Cardio", "Remo", "Intermedio", "Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Battle ropes", "Full body", "Cuerdas", "Intermedio", "Acondicionamiento", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Kettlebell swing", "Full body", "Kettlebell", "Intermedio", "Potencia/Condición", "Balístico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Farmer walk", "Full body", "Mancuernas", "Principiante", "Fuerza/Condición", "Locomoción", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Turkish get-up", "Full body", "Kettlebell", "Avanzado", "Fuerza/Control", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Clean con kettlebell", "Full body", "Kettlebell", "Avanzado", "Potencia", "Explosivo", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Box jump", "Piernas", "Cajón", "Intermedio", "Potencia", "Explosivo", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Lanzamiento de balón medicinal", "Full body", "Balón medicinal", "Intermedio", "Potencia", "Explosivo", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Golpes al saco", "Boxeo", "Saco de boxeo", "Principiante", "Boxeo/Cardio", "Dinámico", "Golpea con técnica, rotación de cadera y control de la distancia.", 3, "8-12", 90],
+      ["Sombra de boxeo", "Boxeo", "Peso corporal", "Principiante", "Boxeo/Cardio", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Combinación jab-cross", "Boxeo", "Saco/Guantes", "Principiante", "Boxeo/Técnica", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Hook al saco", "Boxeo", "Saco/Guantes", "Intermedio", "Boxeo/Técnica", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Uppercut al saco", "Boxeo", "Saco/Guantes", "Intermedio", "Boxeo/Técnica", "Dinámico", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Burpee + golpe", "Boxeo/Condición", "Peso corporal + saco", "Intermedio", "Acondicionamiento", "Compuesto", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Movilidad de tobillo", "Movilidad", "Peso corporal", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Rotación torácica", "Movilidad", "Peso corporal", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Estiramiento flexor de cadera", "Movilidad", "Peso corporal", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Estiramiento de isquiotibiales", "Movilidad", "Peso corporal", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Estiramiento de pectoral", "Movilidad", "Pared", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+      ["Estiramiento de dorsal", "Movilidad", "Banco", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
+    ].forEach(([name, muscle_group, equipment_name, level, goal, kind, description, suggested_sets, suggested_reps, suggested_rest_seconds]) =>
+      db.exercises.push({ id: uid('ex'), gym_id: null, name, muscle_group, equipment_name, media_key: null, description, level, goal, kind, suggested_sets, suggested_reps, suggested_rest_seconds }));
+
+    // ---- Programas y rutinas de plantilla (global, gym_id null — 10
+    // programas + 97 asignaciones de Fight_Club_Gym_Base_Datos_Entrenamiento.xlsx,
+    // ver supabase/migrations/20260908000300_program_templates.sql) ----
+    const programIdBySheet = {};
+    [
+      ["P01", "Inicio 3 días", "Principiante", "Hipertrofia general", 3, "45-60 min"],
+      ["P02", "Full Body 3 días", "Principiante", "Fuerza general", 3, "45-60 min"],
+      ["P03", "Full Body Intermedio", "Intermedio", "Hipertrofia", 3, "60 min"],
+      ["P04", "Upper / Lower 4 días", "Intermedio", "Hipertrofia", 4, "60-75 min"],
+      ["P05", "Push Pull Legs", "Intermedio", "Hipertrofia", 6, "60-75 min"],
+      ["P06", "Fuerza 5x5", "Intermedio", "Fuerza", 3, "60 min"],
+      ["P07", "Pérdida de grasa + fuerza", "Principiante", "Pérdida de grasa", 4, "45-60 min"],
+      ["P08", "Boxeo + acondicionamiento", "Principiante", "Boxeo/Condición", 3, "45-60 min"],
+      ["P09", "Boxeo + fuerza", "Intermedio", "Boxeo/Fuerza", 4, "60-75 min"],
+      ["P10", "Core y acondicionamiento", "Principiante", "Core/Resistencia", 3, "30-45 min"],
+    ].forEach(([sheetId, name, level, goal, days_per_week, duration_label]) => {
+      const id = uid('prog');
+      programIdBySheet[sheetId] = id;
+      db.programTemplates.push({ id, name, level, goal, days_per_week, duration_label });
+    });
+    [
+      ["P01", "Día 1", 1, 1, "Sentadilla goblet", "Sentadilla goblet", 3, "10-12", 90],
+      ["P01", "Día 1", 1, 2, "Press de banca con mancuernas", "Press de banca con mancuernas", 3, "8-12", 90],
+      ["P01", "Día 1", 1, 3, "Jalón al pecho", "Jalón al pecho", 3, "10-12", 90],
+      ["P01", "Día 1", 1, 4, "Peso muerto rumano", "Peso muerto rumano", 2, "10-12", 90],
+      ["P01", "Día 1", 1, 5, "Plancha", "Plancha", 3, "30-45 s", 60],
+      ["P01", "Día 2", 2, 1, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 90],
+      ["P01", "Día 2", 2, 2, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 90],
+      ["P01", "Día 2", 2, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "10-12", 90],
+      ["P01", "Día 2", 2, 4, "Hip thrust con barra", "Hip thrust con barra", 3, "10-12", 90],
+      ["P01", "Día 2", 2, 5, "Crunch", "Crunch", 3, "12-15", 60],
+      ["P01", "Día 3", 3, 1, "Zancada atrás", "Zancada atrás", 3, "8-10/lado", 90],
+      ["P01", "Día 3", 3, 2, null, "Press de máquina", 3, "10-12", 90],
+      ["P01", "Día 3", 3, 3, "Dominadas asistidas", "Dominadas asistidas", 3, "8-12", 90],
+      ["P01", "Día 3", 3, 4, "Curl femoral sentado", "Curl femoral sentado", 3, "10-15", 75],
+      ["P01", "Día 3", 3, 5, "Plancha lateral", "Plancha lateral", 3, "30 s/lado", 60],
+      ["P02", "Día 1", 1, 1, "Sentadilla goblet", "Sentadilla goblet", 3, "8-12", 120],
+      ["P02", "Día 1", 1, 2, "Press de banca con mancuernas", "Press de banca con mancuernas", 3, "8-12", 120],
+      ["P02", "Día 1", 1, 3, "Remo con mancuerna", "Remo con mancuerna", 3, "8-12", 120],
+      ["P02", "Día 1", 1, 4, "Hip thrust con barra", "Hip thrust con barra", 3, "10-12", 90],
+      ["P02", "Día 1", 1, 5, "Plancha", "Plancha", 3, "30-45 s", 60],
+      ["P02", "Día 2", 2, 1, "Prensa de piernas", "Prensa de piernas", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 2, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 3, "Jalón al pecho", "Jalón al pecho", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 4, "Peso muerto rumano", "Peso muerto rumano", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 5, "Crunch", "Crunch", 3, "12-15", 60],
+      ["P02", "Día 3", 3, 1, "Zancadas caminando", "Zancadas caminando", 3, "8-10/lado", 90],
+      ["P02", "Día 3", 3, 2, "Press en máquina", "Press en máquina", 3, "8-12", 90],
+      ["P02", "Día 3", 3, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "8-12", 90],
+      ["P02", "Día 3", 3, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P02", "Día 3", 3, 5, "Plancha lateral", "Plancha lateral", 3, "30-45 s/lado", 60],
+      ["P03", "Día 1", 1, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P03", "Día 1", 1, 2, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P03", "Día 1", 1, 3, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P03", "Día 1", 1, 4, "Elevaciones laterales", "Elevaciones laterales", 3, "12-15", 60],
+      ["P03", "Día 1", 1, 5, "Curl de bíceps con barra", "Curl de bíceps con barra", 3, "10-12", 75],
+      ["P03", "Día 2", 2, 1, "Peso muerto rumano", "Peso muerto rumano", 4, "6-10", 150],
+      ["P03", "Día 2", 2, 2, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 4, "8-12", 120],
+      ["P03", "Día 2", 2, 3, "Jalón al pecho", "Jalón al pecho", 4, "8-12", 120],
+      ["P03", "Día 2", 2, 4, "Hip thrust con barra", "Hip thrust con barra", 3, "8-12", 120],
+      ["P03", "Día 2", 2, 5, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P03", "Día 3", 3, 1, "Prensa de piernas", "Prensa de piernas", 4, "8-12", 120],
+      ["P03", "Día 3", 3, 2, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 4, "8-12", 120],
+      ["P03", "Día 3", 3, 3, "Remo en máquina", "Remo en máquina", 4, "8-12", 120],
+      ["P03", "Día 3", 3, 4, "Curl femoral sentado", "Curl femoral sentado", 3, "10-15", 75],
+      ["P03", "Día 3", 3, 5, "Crunch en polea", "Crunch en polea", 3, "10-15", 60],
+      ["P04", "Día 1 Upper", 1, 1, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P04", "Día 1 Upper", 1, 2, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P04", "Día 1 Upper", 1, 3, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P04", "Día 1 Upper", 1, 4, "Jalón al pecho", "Jalón al pecho", 3, "8-12", 120],
+      ["P04", "Día 1 Upper", 1, 5, "Curl de bíceps con barra", "Curl de bíceps con barra", 3, "10-12", 75],
+      ["P04", "Día 1 Upper", 1, 6, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P04", "Día 2 Lower", 2, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P04", "Día 2 Lower", 2, 2, "Peso muerto rumano", "Peso muerto rumano", 4, "8-10", 150],
+      ["P04", "Día 2 Lower", 2, 3, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 120],
+      ["P04", "Día 2 Lower", 2, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P04", "Día 2 Lower", 2, 5, "Elevación de talones de pie", "Elevación de talones de pie", 4, "10-15", 60],
+      ["P04", "Día 3 Upper", 3, 1, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 4, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 2, "Remo sentado en polea", "Remo sentado en polea", 4, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 3, "Press de hombros en máquina", "Press de hombros en máquina", 3, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 4, "Dominadas asistidas", "Dominadas asistidas", 3, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 5, "Curl martillo", "Curl martillo", 3, "10-12", 75],
+      ["P04", "Día 3 Upper", 3, 6, "Press francés", "Press francés", 3, "10-12", 75],
+      ["P04", "Día 4 Lower", 4, 1, "Sentadilla hack", "Sentadilla hack", 4, "8-12", 120],
+      ["P04", "Día 4 Lower", 4, 2, "Hip thrust con barra", "Hip thrust con barra", 4, "8-12", 120],
+      ["P04", "Día 4 Lower", 4, 3, "Zancada atrás", "Zancada atrás", 3, "10/lado", 90],
+      ["P04", "Día 4 Lower", 4, 4, "Curl femoral sentado", "Curl femoral sentado", 3, "10-15", 75],
+      ["P04", "Día 4 Lower", 4, 5, "Elevación de talones sentado", "Elevación de talones sentado", 4, "12-15", 60],
+      ["P05", "Push", 1, 1, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P05", "Push", 1, 2, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 3, "8-12", 120],
+      ["P05", "Push", 1, 3, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P05", "Push", 1, 4, "Elevaciones laterales", "Elevaciones laterales", 4, "12-15", 60],
+      ["P05", "Push", 1, 5, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P05", "Pull", 2, 1, "Dominadas", "Dominadas", 4, "6-10", 150],
+      ["P05", "Pull", 2, 2, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P05", "Pull", 2, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "8-12", 120],
+      ["P05", "Pull", 2, 4, "Face pull", "Face pull", 3, "12-15", 60],
+      ["P05", "Pull", 2, 5, "Curl martillo", "Curl martillo", 3, "10-12", 75],
+      ["P05", "Legs", 3, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P05", "Legs", 3, 2, "Peso muerto rumano", "Peso muerto rumano", 4, "8-10", 150],
+      ["P05", "Legs", 3, 3, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 120],
+      ["P05", "Legs", 3, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P05", "Legs", 3, 5, "Elevación de talones de pie", "Elevación de talones de pie", 4, "10-15", 60],
+      ["P05", "Push 2", 4, 1, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P05", "Push 2", 4, 2, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 3, "8-12", 120],
+      ["P05", "Push 2", 4, 3, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P05", "Push 2", 4, 4, "Elevaciones laterales", "Elevaciones laterales", 4, "12-15", 60],
+      ["P05", "Push 2", 4, 5, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P05", "Pull 2", 5, 1, "Dominadas", "Dominadas", 4, "6-10", 150],
+      ["P05", "Pull 2", 5, 2, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P05", "Pull 2", 5, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "8-12", 120],
+      ["P05", "Pull 2", 5, 4, "Face pull", "Face pull", 3, "12-15", 60],
+      ["P05", "Pull 2", 5, 5, "Curl martillo", "Curl martillo", 3, "10-12", 75],
+      ["P05", "Legs 2", 6, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P05", "Legs 2", 6, 2, "Peso muerto rumano", "Peso muerto rumano", 4, "8-10", 150],
+      ["P05", "Legs 2", 6, 3, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 120],
+      ["P05", "Legs 2", 6, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P05", "Legs 2", 6, 5, "Elevación de talones de pie", "Elevación de talones de pie", 4, "10-15", 60],
+    ].forEach(([sheetId, day_label, day_position, position, exerciseLookupName, exercise_name, sets, reps, rest_seconds]) => {
+      const ex = exerciseLookupName && db.exercises.find(e => e.gym_id === null && e.name === exerciseLookupName);
+      db.programTemplateItems.push({
+        id: uid('pti'), program_id: programIdBySheet[sheetId], day_label, day_position, position,
+        exercise_id: ex ? ex.id : null, exercise_name, sets, reps, rest_seconds,
+      });
+    });
 
     // ---- Logros (catálogo global) ----
     [
@@ -552,6 +763,7 @@
       id: e.id, text: e.text, exerciseId: e.exercise_id || null,
       sets: e.sets != null ? e.sets : null, reps: e.reps != null ? e.reps : null,
       weightKg: e.weight_kg != null ? e.weight_kg : null, restSeconds: e.rest_seconds != null ? e.rest_seconds : 60,
+      dayLabel: e.day_label || null,
     }));
   }
 
@@ -588,6 +800,40 @@
       });
     },
     async removeExercise(exerciseId) { await wait(); db.routineExercises = db.routineExercises.filter(e => e.id !== exerciseId); },
+    // Aplica una plantilla de programa entera a la rutina del cliente —
+    // reemplaza los ejercicios existentes de "De tu entrenador" (igual que
+    // generateAi reemplaza los de la rutina con IA), pero conservando
+    // day_label para que la app pueda mostrar el programa día por día.
+    // `items` ya viene aplanado y ordenado (ver applyProgramTemplate en
+    // src/actions.js): [{dayLabel, exerciseId, exerciseName, sets, reps, restSeconds}]
+    async applyProgramTemplate(clientUserId, trainerUserId, items) {
+      await wait();
+      const routineId = ensureRoutine(clientUserId, 'trainer', null, trainerUserId);
+      db.routineExercises = db.routineExercises.filter(e => e.routine_id !== routineId);
+      items.forEach((it, i) => db.routineExercises.push({
+        id: uid('rex'), routine_id: routineId, position: i, exercise_id: it.exerciseId || null,
+        text: it.exerciseName, sets: it.sets ?? null, reps: it.reps ?? null, weight_kg: null,
+        rest_seconds: it.restSeconds ?? 60, day_label: it.dayLabel || null,
+      }));
+    },
+  };
+
+  /* ---------------- programas de entrenamiento (plantillas) ---------------- */
+
+  const programTemplates = {
+    async list() {
+      await wait();
+      return db.programTemplates.map(p => ({
+        id: p.id, name: p.name, level: p.level, goal: p.goal, daysPerWeek: p.days_per_week, durationLabel: p.duration_label,
+      }));
+    },
+    async listItems() {
+      await wait();
+      return db.programTemplateItems.map(it => ({
+        id: it.id, programId: it.program_id, dayLabel: it.day_label, dayPosition: it.day_position, position: it.position,
+        exerciseId: it.exercise_id, exerciseName: it.exercise_name, sets: it.sets, reps: it.reps, restSeconds: it.rest_seconds,
+      }));
+    },
   };
 
   /* ---------------- biblioteca de ejercicios ---------------- */
@@ -596,7 +842,10 @@
     async list(gymId) {
       await wait();
       return db.exercises.filter(e => e.gym_id === null || e.gym_id === gymId)
-        .map(e => ({ id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description }));
+        .map(e => ({
+          id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description,
+          level: e.level, goal: e.goal, kind: e.kind, suggestedSets: e.suggested_sets, suggestedReps: e.suggested_reps, suggestedRestSeconds: e.suggested_rest_seconds,
+        }));
     },
     async add(gymId, { name, muscleGroup, equipmentName, description }) {
       await wait();
@@ -935,7 +1184,7 @@
 
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
-    exercisesLib, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
+    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
   };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

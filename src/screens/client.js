@@ -359,7 +359,24 @@ export function exerciseRow(ex) {
   </div>`;
 }
 
-const libraryLink = () => `<div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:12px">${iconSpan('dumbbell', 14)} Ver biblioteca de ejercicios</div>`;
+const libraryLink = () => `<div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:8px">${iconSpan('dumbbell', 14)} Ver biblioteca de ejercicios</div>`;
+const programsLink = () => `<div ${act('openProgramTemplates')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:12px">${iconSpan('dumbbell', 14)} Ver programas de entrenamiento</div>`;
+
+// Si el entrenador armó la rutina aplicando un programa (ver
+// applyProgramTemplate), los ejercicios traen dayLabel — se agrupan con un
+// encabezado por día. Las rutinas de siempre (sin dayLabel, con IA o
+// armadas ejercicio por ejercicio) se ven exactamente igual que antes.
+function groupedExerciseRows(exercises) {
+  if (!exercises.some(e => e.dayLabel)) return exercises.map(exerciseRow).join('');
+  const days = [];
+  for (const ex of exercises) {
+    const label = ex.dayLabel || '—';
+    let d = days.find(d => d.label === label);
+    if (!d) { d = { label, items: [] }; days.push(d); }
+    d.items.push(ex);
+  }
+  return days.map(d => `${sectionTitle(d.label, 'dumbbell', 'margin:14px 0 6px')}${d.items.map(exerciseRow).join('')}`).join('');
+}
 
 export function viewClientRutina() {
   const trainer = state.myClientTrainer;
@@ -379,9 +396,10 @@ export function viewClientRutina() {
       <div class="hint">Creada y actualizada por ${esc(trainer.name)}</div>
       ${toggle}
       ${libraryLink()}
+      ${programsLink()}
       ${exercises.length
         ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin:12px 0 16px;width:100%" ${act('startWorkout', 'trainer')}>Comenzar entrenamiento</button>
-           ${exercises.map(exerciseRow).join('')}`
+           ${groupedExerciseRows(exercises)}`
         : `<div class="empty"><div class="empty__title">Sin rutina</div>Tu entrenador aún no ha creado tu rutina.<br/>Mientras tanto, probá la rutina con IA.</div>`}
       ${trainerCandidatesSection()}
     </div>`;

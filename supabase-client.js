@@ -454,7 +454,7 @@
   // supabase/migrations/20260905000300_etapa2_features_schema.sql). Se
   // exponen en camelCase, igual que mock-client.js.
   function shapeRoutineExercise(e) {
-    return { id: e.id, text: e.text, exerciseId: e.exercise_id, sets: e.sets, reps: e.reps, weightKg: e.weight_kg, restSeconds: e.rest_seconds };
+    return { id: e.id, text: e.text, exerciseId: e.exercise_id, sets: e.sets, reps: e.reps, weightKg: e.weight_kg, restSeconds: e.rest_seconds, dayLabel: e.day_label };
   }
 
   async function loadRoutine(clientUserId, source, goal) {
@@ -463,7 +463,7 @@
     const rows = unwrap(await q);
     if (!rows.length) return { id: null, exercises: [] };
     const exercises = unwrap(await client.from('routine_exercises')
-      .select('id, text, exercise_id, sets, reps, weight_kg, rest_seconds').eq('routine_id', rows[0].id).order('position'));
+      .select('id, text, exercise_id, sets, reps, weight_kg, rest_seconds, day_label').eq('routine_id', rows[0].id).order('position'));
     return { id: rows[0].id, exercises: exercises.map(shapeRoutineExercise) };
   }
 
@@ -501,6 +501,42 @@
     async removeExercise(exerciseId) {
       const { error } = await client.from('routine_exercises').delete().eq('id', exerciseId);
       if (error) throw error;
+    },
+
+    // Aplica una plantilla de programa entera a la rutina del cliente —
+    // reemplaza los ejercicios existentes de "De tu entrenador" (igual que
+    // generateAi reemplaza los de la rutina con IA), pero conservando
+    // day_label para que la app pueda mostrar el programa día por día.
+    // `items` ya viene aplanado y ordenado (ver applyProgramTemplate en
+    // src/actions.js): [{dayLabel, exerciseId, exerciseName, sets, reps, restSeconds}]
+    async applyProgramTemplate(clientUserId, trainerUserId, items) {
+      const routineId = await ensureRoutine(clientUserId, 'trainer', null, trainerUserId);
+      const { error: delErr } = await client.from('routine_exercises').delete().eq('routine_id', routineId);
+      if (delErr) throw delErr;
+      if (items.length) {
+        const rows = items.map((it, i) => ({
+          routine_id: routineId, position: i, text: it.exerciseName, exercise_id: it.exerciseId || null,
+          sets: it.sets ?? null, reps: it.reps ?? null, weight_kg: null, rest_seconds: it.restSeconds ?? 60, day_label: it.dayLabel || null,
+        }));
+        const { error } = await client.from('routine_exercises').insert(rows);
+        if (error) throw error;
+      }
+    },
+  };
+
+  /* ---------------- programas de entrenamiento (plantillas) ---------------- */
+
+  const programTemplates = {
+    async list() {
+      const rows = unwrap(await client.from('program_templates').select('id, name, level, goal, days_per_week, duration_label'));
+      return rows.map(p => ({ id: p.id, name: p.name, level: p.level, goal: p.goal, daysPerWeek: p.days_per_week, durationLabel: p.duration_label }));
+    },
+    async listItems() {
+      const rows = unwrap(await client.from('program_template_items').select('id, program_id, day_label, day_position, position, exercise_id, exercise_name, sets, reps, rest_seconds'));
+      return rows.map(it => ({
+        id: it.id, programId: it.program_id, dayLabel: it.day_label, dayPosition: it.day_position, position: it.position,
+        exerciseId: it.exercise_id, exerciseName: it.exercise_name, sets: it.sets, reps: it.reps, restSeconds: it.rest_seconds,
+      }));
     },
   };
 
@@ -607,9 +643,12 @@
 
   const exercisesLib = {
     async list(gymId) {
-      const rows = unwrap(await client.from('exercises').select('id, gym_id, name, muscle_group, equipment_name, media_key, description')
+      const rows = unwrap(await client.from('exercises').select('id, gym_id, name, muscle_group, equipment_name, media_key, description, level, goal, kind, suggested_sets, suggested_reps, suggested_rest_seconds')
         .or(`gym_id.is.null,gym_id.eq.${gymId}`));
-      return rows.map(e => ({ id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description }));
+      return rows.map(e => ({
+        id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description,
+        level: e.level, goal: e.goal, kind: e.kind, suggestedSets: e.suggested_sets, suggestedReps: e.suggested_reps, suggestedRestSeconds: e.suggested_rest_seconds,
+      }));
     },
     async add(gymId, { name, muscleGroup, equipmentName, description }) {
       const row = unwrap(await client.from('exercises')
@@ -744,6 +783,6 @@
 
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
-    exercisesLib, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
+    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
   };
 })();
