@@ -38,6 +38,17 @@ export const state = {
   offline: !navigator.onLine,
   showPassword: false,
 
+  // Resiliencia a mala señal (ver src/offline.js) — pendingSyncCount es
+  // cuántas acciones (marcar serie, check-in, confirmar cobro) quedaron
+  // en la cola local esperando que vuelva la conexión; dataStale marca
+  // que la pantalla actual está mostrando la última copia guardada de
+  // socios/admins/etc en vez de datos recién bajados (ver
+  // loadWithFallback en actions.js, usado en enterOwnerDash). Ninguno de
+  // los dos bloquea la pantalla — son solo avisos (ver pendingSyncBanner/
+  // staleDataBanner en helpers.js).
+  pendingSyncCount: 0,
+  dataStale: false,
+
   ownerTab: 'panel',
   clientTab: 'inicio',
   trainerTab: 'clientes',

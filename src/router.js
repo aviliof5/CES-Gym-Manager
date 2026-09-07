@@ -14,9 +14,10 @@
 'use strict';
 
 import { state, setState } from './state.js';
-import { offlineBanner, friendlyError } from './helpers.js';
-import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan } from './actions.js';
+import { offlineBanner, pendingSyncBanner, staleDataBanner, friendlyError } from './helpers.js';
+import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan, flushPendingQueue } from './actions.js';
 import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
+import { getQueueSize } from './offline.js';
 
 import {
   viewBoot, viewLanding, viewLogin, viewConfirmCode, viewInviteWelcome, viewTrainerReg, viewGymPicker,
@@ -181,7 +182,7 @@ function cameraErrorMessage(err) {
 
 export function render() {
   const snapshot = captureFocus();
-  root.innerHTML = (state.offline ? offlineBanner() : '') + (SCREENS[state.screen] || viewLanding)();
+  root.innerHTML = (state.offline ? offlineBanner() : '') + pendingSyncBanner() + staleDataBanner() + (SCREENS[state.screen] || viewLanding)();
   restoreFocus(snapshot);
   paintQrCodes(root);
 
@@ -211,7 +212,16 @@ export function render() {
 // Se actualiza apenas cambia la conexión (no hace falta que el usuario
 // intente hacer algo primero para enterarse de que no tiene internet).
 window.addEventListener('offline', () => setState({ offline: true }));
-window.addEventListener('online', () => setState({ offline: false }));
+window.addEventListener('online', () => { setState({ offline: false }); flushPendingQueue(); });
+
+// Los eventos 'online'/'offline' del navegador avisan bien de un corte
+// total (modo avión), pero con MALA señal (el caso real que motivó esto —
+// conexión lenta/intermitente, no ausente) suelen no dispararse nunca: el
+// navegador sigue creyéndose "online" aunque cada request tarde o falle.
+// Por eso, además de reaccionar al evento, se reintenta la cola sola cada
+// rato — flushQueue ya no hace nada si está vacía, así que este intervalo
+// es gratis el 99% del tiempo.
+setInterval(() => { if (getQueueSize()) flushPendingQueue(); }, 20000);
 
 /* ============================ boot ============================ */
 // Al cargar: si hay sesión guardada, saltar directo al panel que
@@ -226,6 +236,11 @@ function entryScreen() {
 
 async function boot() {
   render();
+  // Si la app se cerró con acciones pendientes de una visita anterior (ver
+  // src/offline.js) y ahora abre con señal, se mandan solas — sin esperar
+  // a que la persona haga algo primero. No se espera esta promesa: no
+  // tiene que bloquear el resto del arranque si tarda.
+  flushPendingQueue();
   let session;
   try {
     session = await BolaAPI.auth.getSession();
