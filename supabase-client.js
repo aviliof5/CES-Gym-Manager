@@ -662,10 +662,10 @@
 
   const classesApi = {
     async listForGym(gymId) {
-      return unwrap(await client.from('classes').select('id, gym_id, name, description, trainer_user_id, duration_minutes, capacity').eq('gym_id', gymId));
+      return unwrap(await client.from('classes').select('id, gym_id, name, description, trainer_user_id, duration_minutes, capacity, price').eq('gym_id', gymId));
     },
     async listSessions(gymId, fromIso) {
-      let q = client.from('class_sessions').select('id, class_id, gym_id, starts_at, classes(id, name, description, trainer_user_id, duration_minutes, capacity)').eq('gym_id', gymId);
+      let q = client.from('class_sessions').select('id, class_id, gym_id, starts_at, classes(id, name, description, trainer_user_id, duration_minutes, capacity, price)').eq('gym_id', gymId);
       if (fromIso) q = q.gte('starts_at', fromIso);
       const rows = unwrap(await q.order('starts_at'));
       return rows.map(s => ({ id: s.id, class_id: s.class_id, gym_id: s.gym_id, starts_at: s.starts_at, class: s.classes }));
@@ -687,10 +687,10 @@
     // (classes/class_sessions son "staff manages", igual que equipment) —
     // sin RPC porque no hay ninguna regla de cupo/carrera acá, a diferencia
     // de reservar.
-    async createEvent(gymId, { name, description, trainerUserId, durationMinutes, capacity, startsAtIso }) {
+    async createEvent(gymId, { name, description, trainerUserId, durationMinutes, capacity, price, startsAtIso }) {
       const cls = unwrap(await client.from('classes').insert({
         gym_id: gymId, name, description: description || null, trainer_user_id: trainerUserId || null,
-        duration_minutes: durationMinutes || 60, capacity: capacity || 20,
+        duration_minutes: durationMinutes || 60, capacity: capacity || 20, price: price ?? null,
       }).select('id').single());
       const session = unwrap(await client.from('class_sessions').insert({
         class_id: cls.id, gym_id: gymId, starts_at: startsAtIso,
@@ -706,6 +706,34 @@
     // del frontend contra clientsForGym/classSessions, ya cargados.
     async listBookingsForGym(gymId) {
       return unwrap(await client.from('class_bookings').select('id, session_id, client_user_id, gym_id, status, created_at').eq('gym_id', gymId));
+    },
+  };
+
+  /* ---------------- notificaciones ---------------- */
+  // Una fila por cliente (no una tabla "broadcast" + lectura aparte) — ver
+  // notify_gym_clients() en 20260910000000_events_price_and_notifications.sql.
+  // Solo esa función (security definer, solo staff) puede crear filas
+  // nuevas; el cliente únicamente lee las suyas y las marca leídas.
+
+  const notificationsApi = {
+    async listForClient(clientUserId) {
+      const rows = unwrap(await client.from('notifications')
+        .select('id, gym_id, client_user_id, title, body, type, related_id, created_at, read_at')
+        .eq('client_user_id', clientUserId).order('created_at', { ascending: false }));
+      return rows.map(n => ({
+        id: n.id, title: n.title, body: n.body, type: n.type, relatedId: n.related_id,
+        createdAt: n.created_at, readAt: n.read_at,
+      }));
+    },
+    async markRead(notificationId) {
+      const { error } = await client.from('notifications').update({ read_at: new Date().toISOString() }).eq('id', notificationId);
+      if (error) throw error;
+    },
+    // title/body ya vienen redactados del lado del frontend (ver
+    // ACTIONS.createEvent) — acá solo se manda al catálogo de clientes del
+    // propio gimnasio vía RPC.
+    async notifyGymClients(title, body, type, relatedId) {
+      return unwrap(await client.rpc('notify_gym_clients', { p_title: title, p_body: body, p_type: type, p_related_id: relatedId || null }));
     },
   };
 
@@ -814,6 +842,6 @@
 
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
-    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
+    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
   };
 })();

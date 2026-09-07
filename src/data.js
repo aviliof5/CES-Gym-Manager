@@ -107,6 +107,9 @@ export const ICON_PATHS = {
   flame: '<path d="M12 22c4.4 0 7-2.8 7-6.5C19 11 15 9 15 5c0 0-1 2.5-3 3.5C9 6 9 3 9 3 6 5.5 5 9 5 12c0 5 3 10 7 10z"/>',
   medal: '<circle cx="12" cy="15" r="6"/><path d="M9 3l3 6 3-6M8 9l-3-6M16 9l3-6"/>',
   trophy: '<path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 5H3v2a4 4 0 0 0 4 4M19 5h2v2a4 4 0 0 1-4 4"/><path d="M10 15v3H8v2h8v-2h-2v-3"/>',
+  // Notificaciones al cliente cuando dueño/admin crea un evento (ver
+  // src/actions.js createEvent / notify_gym_clients()).
+  bell: '<path d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de
