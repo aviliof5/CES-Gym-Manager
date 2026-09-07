@@ -195,8 +195,14 @@
     // Etapa 2 — "Configuración" (pantalla nueva). update_gym_settings()
     // exige app_role_is_staff() en el servidor (owner O admin) — la RLS de
     // gyms por sí sola solo dejaría escribir al dueño (ver la migración).
-    async updateSettings(gymId, { currency, brandName, brandColor }) {
-      const { error } = await client.rpc('update_gym_settings', { p_currency: currency, p_brand_name: brandName || null, p_brand_color: brandColor || null });
+    // name/address/hours son opcionales (ver 20260908000100) — permiten
+    // corregir los datos del gimnasio después del registro, sin tocarlos si
+    // no se mandan.
+    async updateSettings(gymId, { currency, brandName, brandColor, name, address, hours }) {
+      const { error } = await client.rpc('update_gym_settings', {
+        p_currency: currency, p_brand_name: brandName || null, p_brand_color: brandColor || null,
+        p_name: name || null, p_address: address || null, p_hours: hours || null,
+      });
       if (error) throw error;
     },
 
@@ -669,8 +675,17 @@
   /* ---------------- récords personales + sesiones de entrenamiento ---------------- */
 
   const workoutsApi = {
-    async start(clientUserId, gymId, source) {
-      const row = unwrap(await client.from('workout_sessions').insert({ client_user_id: clientUserId, gym_id: gymId, source }).select('id').single());
+    // explicitId (opcional): resiliencia a mala señal (ver src/offline.js
+    // ACTIONS.startWorkout) — deja elegir el ID de la sesión ANTES de
+    // saber si hay conexión, para poder seguir entrenando y encolando
+    // series con ese mismo ID aunque la creación de la fila todavía no le
+    // haya llegado al servidor. La política RLS ("self manages own
+    // workout sessions") no exige que el ID lo genere Postgres, así que
+    // esto es seguro: sigue siendo el propio auth.uid() quien inserta.
+    async start(clientUserId, gymId, source, explicitId) {
+      const payload = { client_user_id: clientUserId, gym_id: gymId, source };
+      if (explicitId) payload.id = explicitId;
+      const row = unwrap(await client.from('workout_sessions').insert(payload).select('id').single());
       return row.id;
     },
     async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg) {
