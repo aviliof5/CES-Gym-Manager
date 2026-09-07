@@ -357,6 +357,7 @@ export function viewOwnerPanel() {
       ${alerts.map(a => `<div class="alert alert--warn"><div class="alert__text" style="flex:1">${esc(a.text)}</div><div ${act('ownerTab', a.tab)} style="color:var(--warn);font-weight:700;cursor:pointer;white-space:nowrap;font-size:var(--fs-sm)">Ver</div></div>`).join('')}` : ''}
     ${sectionTitle('Accesos rápidos', 'zap', 'margin:20px 0 8px')}
     <div class="row" ${act('ownerTab', 'socios')}><div class="row__body"><div class="row__title">Socios</div><div class="row__meta">Buscar, filtrar, cobrar, suspender</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
+    <div class="row" ${act('openOwnerCalendar')}><div class="row__body"><div class="row__title">Calendario</div><div class="row__meta">Crear eventos y ver quién reservó</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
     <div class="row" ${act('ownerTab', 'asistencia')}><div class="row__body"><div class="row__title">Asistencia</div><div class="row__meta">Check-ins reales del mes</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
     <div class="row" ${act('ownerTab', 'reportes')}><div class="row__body"><div class="row__title">Reportes</div><div class="row__meta">Ingresos, retención, reseñas</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
     <div class="row" ${act('ownerTab', 'configuracion')}><div class="row__body"><div class="row__title">Configuración</div><div class="row__meta">Moneda, marca, links de invitación</div></div><div class="row__action">${iconSpan('chevronRight', 16)}</div></div>
@@ -559,6 +560,109 @@ export function viewOwnerAsistencia() {
     </div>
     <div class="hint" style="margin-bottom:10px">${dayEvents.length} ${dayEvents.length === 1 ? 'check-in' : 'check-ins'} este día</div>
     ${list}
+  </div>`;
+}
+
+/* ---------------- Calendario de eventos (dueño/admin crean, ven reservas) ----------------
+   Distinto de "Asistencia" arriba (esa es check-in real al llegar al gym).
+   Acá se crean las clases/eventos que el cliente reserva desde su tab
+   "Reservas" y el entrenador ve en su "Calendario" — classesForGym/
+   classSessions son las mismas listas, cargadas para todo el gimnasio. */
+
+const WEEKDAYS_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+function formatSessionWhen(iso) {
+  const d = new Date(iso);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${WEEKDAYS_SHORT[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]} · ${hh}:${mm}`;
+}
+
+function eventForm() {
+  const d = state.eventDraft;
+  const approvedTrainers = state.trainersForGym.filter(t => t.status === 'approved');
+  return `<div class="card" style="margin-bottom:16px">
+    ${textField('eventDraft.name', 'Nombre del evento *', d.name, { style: 'margin-bottom:10px' })}
+    ${textField('eventDraft.description', 'Descripción (opcional)', d.description, { style: 'margin-bottom:10px' })}
+    <select class="field" data-f="eventDraft.trainerUserId" style="margin-bottom:10px">
+      <option value="">Sin entrenador asignado (opcional)</option>
+      ${approvedTrainers.map(t => `<option value="${esc(t.id)}"${d.trainerUserId === t.id ? ' selected' : ''}>${esc(t.name)}</option>`).join('')}
+    </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      ${textField('eventDraft.date', 'Fecha', d.date, { type: 'date' })}
+      ${textField('eventDraft.time', 'Hora', d.time, { type: 'time' })}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      ${textField('eventDraft.durationMinutes', 'Duración (min)', d.durationMinutes, { type: 'number' })}
+      ${textField('eventDraft.capacity', 'Cupo', d.capacity, { type: 'number' })}
+    </div>
+    <button class="btn btn--brand" style="width:100%;padding:12px;font-size:13px" ${act('createEvent')} ${(!d.name.trim() || !d.date || !d.time || state.busy) ? 'disabled' : ''}>${state.busy ? 'Creando…' : '+ Crear evento'}</button>
+  </div>`;
+}
+
+export function viewOwnerCalendario() {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstOffset = dayIndexMon(new Date(year, month, 1));
+  const todayNum = now.getDate();
+  const selectedDay = state.ownerCalendarSelectedDay || todayNum;
+
+  const sessionsByDay = {};
+  state.classSessions.forEach(s => {
+    const d = new Date(s.starts_at);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      (sessionsByDay[d.getDate()] = sessionsByDay[d.getDate()] || []).push(s);
+    }
+  });
+
+  const cells = [];
+  for (let i = 0; i < firstOffset; i++) cells.push('<div class="cal__day is-muted"></div>');
+  for (let day = 1; day <= daysInMonth; day++) {
+    const cls = ['cal__day'];
+    if (day === todayNum) cls.push('is-today');
+    if (day === selectedDay) cls.push('is-selected');
+    if (sessionsByDay[day]) cls.push('has-event');
+    cells.push(`<div class="${cls.join(' ')}" ${act('selectOwnerCalendarDay', day)}>${day}</div>`);
+  }
+
+  const daySessions = (sessionsByDay[selectedDay] || []).slice().sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  const list = daySessions.length ? daySessions.map(s => {
+    const cls = s.class || {};
+    const trainer = cls.trainer_user_id ? state.trainersForGym.find(t => t.id === cls.trainer_user_id) : null;
+    const bookings = state.classBookingsForGym.filter(b => b.session_id === s.id && b.status === 'reservado');
+    const names = bookings.map(b => (state.clientsForGym.find(c => c.id === b.client_user_id) || {}).name || 'Socio');
+    return `<div class="card" style="margin-bottom:10px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div class="avatar avatar--sq avatar--brand">${iconSpan('dumbbell', 18)}</div>
+        <div style="flex:1">
+          <div style="font-size:14.5px;font-weight:700">${esc(cls.name || 'Evento')}</div>
+          <div class="row__meta">${esc(formatSessionWhen(s.starts_at))} · ${cls.duration_minutes || 60} min · ${bookings.length}/${cls.capacity || '—'} reservados${trainer ? ' · ' + esc(trainer.name) : ''}</div>
+          ${cls.description ? `<div class="hint" style="margin-top:4px">${esc(cls.description)}</div>` : ''}
+        </div>
+        <div style="color:var(--danger);font-size:var(--fs-sm);font-weight:700;cursor:pointer;white-space:nowrap" ${act('removeEvent', s.id)}>Eliminar</div>
+      </div>
+      ${names.length
+        ? `<div class="eyebrow" style="margin:10px 0 6px">Reservaron (${names.length})</div>${names.map(n => `<div style="font-size:var(--fs-sm);color:var(--text-soft);padding:3px 0">${esc(n)}</div>`).join('')}`
+        : `<div class="hint" style="margin-top:10px">Nadie reservó todavía</div>`}
+    </div>`;
+  }).join('') : `<div class="empty"><div class="empty__title">Sin eventos este día</div>Elegí otro día o creá uno nuevo</div>`;
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('closeOwnerCalendar')}>&lsaquo;</div>
+      <div class="step-label">Calendario</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="form-body">
+      ${errorBanner()}
+      <div ${act('toggleEventForm')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:12px">${iconSpan('plus', 14)} ${state.showEventForm ? 'Cancelar' : 'Crear evento'}</div>
+      ${state.showEventForm ? eventForm() : ''}
+      <div class="cal" style="margin-bottom:16px">
+        <div class="cal__head"><div class="cal__month">${MESES[month]} ${year}</div></div>
+        <div class="cal__grid">${DAY_LABELS.map(d => `<div class="cal__dow">${d}</div>`).join('')}${cells.join('')}</div>
+      </div>
+      ${list}
+    </div>
   </div>`;
 }
 
