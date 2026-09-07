@@ -909,6 +909,35 @@ export const ACTIONS = {
       setState({ busy: false, error: friendlyError(err) });
     }
   },
+
+  /* ---- Programas de entrenamiento (plantillas — ver
+     supabase/migrations/20260908000300_program_templates.sql). Mismo
+     screen para los 3 roles; `context` distingue "solo mirar" (null,
+     cliente/entrenador consultando) de "elegir uno para armar la rutina de
+     este cliente" ('trainer', abierto desde "Crear rutina"). ---- */
+  openProgramTemplates: context => setState({ programReturn: state.screen, screen: 'programTemplates', programExpandedId: null, programApplyContext: context || null }),
+  closeProgramTemplates: () => setState({ screen: state.programReturn || 'clientHome', programReturn: null, programApplyContext: null }),
+  openProgramDetail: id => setState({ programExpandedId: id }),
+  closeProgramDetail: () => setState({ programExpandedId: null }),
+  applyProgramTemplate: async programId => {
+    if (state.programApplyContext !== 'trainer' || !state.trainerSelectedClientId || !state.myTrainer) return;
+    const items = state.programTemplateItems
+      .filter(it => it.programId === programId)
+      .sort((a, b) => (a.dayPosition - b.dayPosition) || (a.position - b.position))
+      .map(it => ({ dayLabel: it.dayLabel, exerciseId: it.exerciseId, exerciseName: it.exerciseName, sets: it.sets, reps: it.reps, restSeconds: it.restSeconds }));
+    if (!items.length) return;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.routines.applyProgramTemplate(state.trainerSelectedClientId, state.myTrainer.id, items);
+      const routine = await BolaAPI.routines.getTrainer(state.trainerSelectedClientId);
+      setState({
+        busy: false, screen: state.programReturn || 'trainerDash', programReturn: null, programApplyContext: null, programExpandedId: null,
+        trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine },
+      });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
 };
 
 /* ============================ screen-entry helpers ============================ */
@@ -1306,16 +1335,19 @@ export async function enterOwnerDash() {
   const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).toISOString();
   const attendanceRes = await loadWithFallback(`attendanceEvents:${gymId}:${monthStart}`, () => BolaAPI.checkins.listRangeForGym(gymId, monthStart, monthEnd));
   const exercisesLibRes = await loadWithFallback(`exercisesLib:${gymId}`, () => BolaAPI.exercisesLib.list(gymId));
+  const programTemplatesRes = await loadWithFallback(`programTemplates`, () => BolaAPI.programTemplates.list());
+  const programTemplateItemsRes = await loadWithFallback(`programTemplateItems`, () => BolaAPI.programTemplates.listItems());
 
   Object.assign(state, {
     screen: 'ownerDash', ownerTab: 'panel', clientsForGym, trainersForGym, plans, equipment, reviews, gymAdminsForGym, todayCheckins, trainerInterest, gymInvites,
     trainerRatingsById, attendanceEvents: attendanceRes.data, attendanceSelectedDay: null, exercisesLib: exercisesLibRes.data,
+    programTemplates: programTemplatesRes.data, programTemplateItems: programTemplateItemsRes.data,
     ownerClientQuery: '', ownerClientStatusFilter: 'todos', ownerSuspendingClientId: null, ownerSuspendReason: '',
     gymConfigDraft: {
       currency: state.gym.currency || 'USD', brandName: state.gym.brand_name || '', brandColor: state.gym.brand_color || '',
       name: state.gym.name || '', address: state.gym.address || '', hours: state.gym.hours || '',
     },
-    dataStale: coreStale || attendanceRes.stale || exercisesLibRes.stale,
+    dataStale: coreStale || attendanceRes.stale || exercisesLibRes.stale || programTemplatesRes.stale || programTemplateItemsRes.stale,
     busy: false,
   });
   if (window.CesAds) window.CesAds.hideBanner();
@@ -1327,7 +1359,7 @@ export async function enterClientHome() {
   // Su propia foto de rostro (ver attachFaceUrls) — Perfil la muestra en
   // vez del círculo de iniciales cuando existe.
   const [client] = await attachFaceUrls([clientRaw]);
-  const [plans, trainersForGym, reviews, equipment, exercisesLib] = await Promise.all([
+  const [plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems] = await Promise.all([
     BolaAPI.plans.list(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
     BolaAPI.reviews.listForGym(state.gym.id),
@@ -1336,6 +1368,9 @@ export async function enterClientHome() {
     // no se cargaba acá y abrir "Ver biblioteca de ejercicios" rompía la app
     // para el cliente (state.exercisesLib quedaba undefined).
     BolaAPI.exercisesLib.list(state.gym.id),
+    // Programas de entrenamiento (catálogo global, solo lectura para el cliente).
+    BolaAPI.programTemplates.list(),
+    BolaAPI.programTemplates.listItems(),
   ]);
   const plan = plans.find(p => p.id === client.planId) || null;
   const trainer = client.trainerUserId ? trainersForGym.find(t => t.id === client.trainerUserId) : null;
@@ -1365,7 +1400,7 @@ export async function enterClientHome() {
   Object.assign(state, {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
-    plans, trainersForGym, reviews, equipment, exercisesLib, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
+    plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, checkinHistory, trainerInterest,
     aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
@@ -1387,11 +1422,14 @@ export async function enterTrainerDash(profile, gym, myTrainer) {
     plan: (plans.find(p => p.id === c.planId) || { name: '—' }).name,
   }));
 
-  // Etapa 2 — biblioteca de ejercicios (para "Crear rutina"), las sesiones
-  // de las clases que este entrenador dicta (Panel/Calendario), una
-  // conversación por cliente asignado (Mensajes) y su propio rating (Perfil).
-  const [exercisesLib, allClasses, allSessions, trainerReviewsList] = await Promise.all([
+  // Etapa 2 — biblioteca de ejercicios y programas de entrenamiento (para
+  // "Crear rutina"), las sesiones de las clases que este entrenador dicta
+  // (Panel/Calendario), una conversación por cliente asignado (Mensajes) y
+  // su propio rating (Perfil).
+  const [exercisesLib, programTemplates, programTemplateItems, allClasses, allSessions, trainerReviewsList] = await Promise.all([
     BolaAPI.exercisesLib.list(gym.id),
+    BolaAPI.programTemplates.list(),
+    BolaAPI.programTemplates.listItems(),
     BolaAPI.classes.listForGym(gym.id),
     BolaAPI.classes.listSessions(gym.id, new Date().toISOString()),
     BolaAPI.trainerReviews.listForTrainer(myTrainer.id),
@@ -1406,7 +1444,7 @@ export async function enterTrainerDash(profile, gym, myTrainer) {
     screen: 'trainerDash', trainerTab: 'panel', myProfile: profile, gym, myTrainer, trainerClients,
     trainerProfileDraft: { specialty: myTrainer.specialty, price: String(myTrainer.price) },
     trainerSelectedClientId: null, trainerSelectedClientDetail: null, trainerClientQuery: '', busy: false,
-    exercisesLib, trainerClassSessions, trainerReviewsList, trainerConversations,
+    exercisesLib, programTemplates, programTemplateItems, trainerClassSessions, trainerReviewsList, trainerConversations,
     trainerActiveConversationId: null, trainerMessages: [], trainerMessageDraft: '',
   });
   if (window.CesAds) window.CesAds.hideBanner();

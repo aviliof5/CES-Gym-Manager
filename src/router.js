@@ -32,6 +32,7 @@ import {
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 import { viewExerciseLibrary } from './screens/library.js';
+import { viewProgramTemplates } from './screens/programs.js';
 import { viewPlatformDash } from './screens/platform.js';
 
 const root = document.getElementById('app');
@@ -69,6 +70,7 @@ const SCREENS = {
   workout: viewWorkout,
   clientChat: viewClientChat,
   exerciseLibrary: viewExerciseLibrary,
+  programTemplates: viewProgramTemplates,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,

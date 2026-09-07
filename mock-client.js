@@ -35,6 +35,8 @@
     // Etapas 2-4 del rediseño (ver supabase/migrations/20260905000300) —
     // mismas tablas, mismas reglas, del lado del mock.
     exercises: [],            // {id, gym_id|null, name, muscle_group, equipment_name, media_key, description}
+    programTemplates: [],      // {id, name, level, goal, days_per_week, duration_label} — catálogo global (Programas del xlsx)
+    programTemplateItems: [],  // {id, program_id, day_label, day_position, position, exercise_id, exercise_name, sets, reps, rest_seconds}
     classes: [],              // {id, gym_id, name, description, trainer_user_id, duration_minutes, capacity}
     classSessions: [],        // {id, class_id, gym_id, starts_at}
     classBookings: [],        // {id, session_id, client_user_id, gym_id, status}
@@ -231,6 +233,132 @@
       ["Estiramiento de dorsal", "Movilidad", "Banco", "Principiante", "Movilidad", "Movilidad", "Ejecuta el movimiento con control, rango cómodo y técnica estable.", 3, "8-12", 90],
     ].forEach(([name, muscle_group, equipment_name, level, goal, kind, description, suggested_sets, suggested_reps, suggested_rest_seconds]) =>
       db.exercises.push({ id: uid('ex'), gym_id: null, name, muscle_group, equipment_name, media_key: null, description, level, goal, kind, suggested_sets, suggested_reps, suggested_rest_seconds }));
+
+    // ---- Programas y rutinas de plantilla (global, gym_id null — 10
+    // programas + 97 asignaciones de Fight_Club_Gym_Base_Datos_Entrenamiento.xlsx,
+    // ver supabase/migrations/20260908000300_program_templates.sql) ----
+    const programIdBySheet = {};
+    [
+      ["P01", "Inicio 3 días", "Principiante", "Hipertrofia general", 3, "45-60 min"],
+      ["P02", "Full Body 3 días", "Principiante", "Fuerza general", 3, "45-60 min"],
+      ["P03", "Full Body Intermedio", "Intermedio", "Hipertrofia", 3, "60 min"],
+      ["P04", "Upper / Lower 4 días", "Intermedio", "Hipertrofia", 4, "60-75 min"],
+      ["P05", "Push Pull Legs", "Intermedio", "Hipertrofia", 6, "60-75 min"],
+      ["P06", "Fuerza 5x5", "Intermedio", "Fuerza", 3, "60 min"],
+      ["P07", "Pérdida de grasa + fuerza", "Principiante", "Pérdida de grasa", 4, "45-60 min"],
+      ["P08", "Boxeo + acondicionamiento", "Principiante", "Boxeo/Condición", 3, "45-60 min"],
+      ["P09", "Boxeo + fuerza", "Intermedio", "Boxeo/Fuerza", 4, "60-75 min"],
+      ["P10", "Core y acondicionamiento", "Principiante", "Core/Resistencia", 3, "30-45 min"],
+    ].forEach(([sheetId, name, level, goal, days_per_week, duration_label]) => {
+      const id = uid('prog');
+      programIdBySheet[sheetId] = id;
+      db.programTemplates.push({ id, name, level, goal, days_per_week, duration_label });
+    });
+    [
+      ["P01", "Día 1", 1, 1, "Sentadilla goblet", "Sentadilla goblet", 3, "10-12", 90],
+      ["P01", "Día 1", 1, 2, "Press de banca con mancuernas", "Press de banca con mancuernas", 3, "8-12", 90],
+      ["P01", "Día 1", 1, 3, "Jalón al pecho", "Jalón al pecho", 3, "10-12", 90],
+      ["P01", "Día 1", 1, 4, "Peso muerto rumano", "Peso muerto rumano", 2, "10-12", 90],
+      ["P01", "Día 1", 1, 5, "Plancha", "Plancha", 3, "30-45 s", 60],
+      ["P01", "Día 2", 2, 1, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 90],
+      ["P01", "Día 2", 2, 2, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 90],
+      ["P01", "Día 2", 2, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "10-12", 90],
+      ["P01", "Día 2", 2, 4, "Hip thrust con barra", "Hip thrust con barra", 3, "10-12", 90],
+      ["P01", "Día 2", 2, 5, "Crunch", "Crunch", 3, "12-15", 60],
+      ["P01", "Día 3", 3, 1, "Zancada atrás", "Zancada atrás", 3, "8-10/lado", 90],
+      ["P01", "Día 3", 3, 2, null, "Press de máquina", 3, "10-12", 90],
+      ["P01", "Día 3", 3, 3, "Dominadas asistidas", "Dominadas asistidas", 3, "8-12", 90],
+      ["P01", "Día 3", 3, 4, "Curl femoral sentado", "Curl femoral sentado", 3, "10-15", 75],
+      ["P01", "Día 3", 3, 5, "Plancha lateral", "Plancha lateral", 3, "30 s/lado", 60],
+      ["P02", "Día 1", 1, 1, "Sentadilla goblet", "Sentadilla goblet", 3, "8-12", 120],
+      ["P02", "Día 1", 1, 2, "Press de banca con mancuernas", "Press de banca con mancuernas", 3, "8-12", 120],
+      ["P02", "Día 1", 1, 3, "Remo con mancuerna", "Remo con mancuerna", 3, "8-12", 120],
+      ["P02", "Día 1", 1, 4, "Hip thrust con barra", "Hip thrust con barra", 3, "10-12", 90],
+      ["P02", "Día 1", 1, 5, "Plancha", "Plancha", 3, "30-45 s", 60],
+      ["P02", "Día 2", 2, 1, "Prensa de piernas", "Prensa de piernas", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 2, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 3, "Jalón al pecho", "Jalón al pecho", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 4, "Peso muerto rumano", "Peso muerto rumano", 3, "8-12", 120],
+      ["P02", "Día 2", 2, 5, "Crunch", "Crunch", 3, "12-15", 60],
+      ["P02", "Día 3", 3, 1, "Zancadas caminando", "Zancadas caminando", 3, "8-10/lado", 90],
+      ["P02", "Día 3", 3, 2, "Press en máquina", "Press en máquina", 3, "8-12", 90],
+      ["P02", "Día 3", 3, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "8-12", 90],
+      ["P02", "Día 3", 3, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P02", "Día 3", 3, 5, "Plancha lateral", "Plancha lateral", 3, "30-45 s/lado", 60],
+      ["P03", "Día 1", 1, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P03", "Día 1", 1, 2, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P03", "Día 1", 1, 3, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P03", "Día 1", 1, 4, "Elevaciones laterales", "Elevaciones laterales", 3, "12-15", 60],
+      ["P03", "Día 1", 1, 5, "Curl de bíceps con barra", "Curl de bíceps con barra", 3, "10-12", 75],
+      ["P03", "Día 2", 2, 1, "Peso muerto rumano", "Peso muerto rumano", 4, "6-10", 150],
+      ["P03", "Día 2", 2, 2, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 4, "8-12", 120],
+      ["P03", "Día 2", 2, 3, "Jalón al pecho", "Jalón al pecho", 4, "8-12", 120],
+      ["P03", "Día 2", 2, 4, "Hip thrust con barra", "Hip thrust con barra", 3, "8-12", 120],
+      ["P03", "Día 2", 2, 5, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P03", "Día 3", 3, 1, "Prensa de piernas", "Prensa de piernas", 4, "8-12", 120],
+      ["P03", "Día 3", 3, 2, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 4, "8-12", 120],
+      ["P03", "Día 3", 3, 3, "Remo en máquina", "Remo en máquina", 4, "8-12", 120],
+      ["P03", "Día 3", 3, 4, "Curl femoral sentado", "Curl femoral sentado", 3, "10-15", 75],
+      ["P03", "Día 3", 3, 5, "Crunch en polea", "Crunch en polea", 3, "10-15", 60],
+      ["P04", "Día 1 Upper", 1, 1, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P04", "Día 1 Upper", 1, 2, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P04", "Día 1 Upper", 1, 3, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P04", "Día 1 Upper", 1, 4, "Jalón al pecho", "Jalón al pecho", 3, "8-12", 120],
+      ["P04", "Día 1 Upper", 1, 5, "Curl de bíceps con barra", "Curl de bíceps con barra", 3, "10-12", 75],
+      ["P04", "Día 1 Upper", 1, 6, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P04", "Día 2 Lower", 2, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P04", "Día 2 Lower", 2, 2, "Peso muerto rumano", "Peso muerto rumano", 4, "8-10", 150],
+      ["P04", "Día 2 Lower", 2, 3, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 120],
+      ["P04", "Día 2 Lower", 2, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P04", "Día 2 Lower", 2, 5, "Elevación de talones de pie", "Elevación de talones de pie", 4, "10-15", 60],
+      ["P04", "Día 3 Upper", 3, 1, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 4, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 2, "Remo sentado en polea", "Remo sentado en polea", 4, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 3, "Press de hombros en máquina", "Press de hombros en máquina", 3, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 4, "Dominadas asistidas", "Dominadas asistidas", 3, "8-12", 120],
+      ["P04", "Día 3 Upper", 3, 5, "Curl martillo", "Curl martillo", 3, "10-12", 75],
+      ["P04", "Día 3 Upper", 3, 6, "Press francés", "Press francés", 3, "10-12", 75],
+      ["P04", "Día 4 Lower", 4, 1, "Sentadilla hack", "Sentadilla hack", 4, "8-12", 120],
+      ["P04", "Día 4 Lower", 4, 2, "Hip thrust con barra", "Hip thrust con barra", 4, "8-12", 120],
+      ["P04", "Día 4 Lower", 4, 3, "Zancada atrás", "Zancada atrás", 3, "10/lado", 90],
+      ["P04", "Día 4 Lower", 4, 4, "Curl femoral sentado", "Curl femoral sentado", 3, "10-15", 75],
+      ["P04", "Día 4 Lower", 4, 5, "Elevación de talones sentado", "Elevación de talones sentado", 4, "12-15", 60],
+      ["P05", "Push", 1, 1, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P05", "Push", 1, 2, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 3, "8-12", 120],
+      ["P05", "Push", 1, 3, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P05", "Push", 1, 4, "Elevaciones laterales", "Elevaciones laterales", 4, "12-15", 60],
+      ["P05", "Push", 1, 5, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P05", "Pull", 2, 1, "Dominadas", "Dominadas", 4, "6-10", 150],
+      ["P05", "Pull", 2, 2, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P05", "Pull", 2, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "8-12", 120],
+      ["P05", "Pull", 2, 4, "Face pull", "Face pull", 3, "12-15", 60],
+      ["P05", "Pull", 2, 5, "Curl martillo", "Curl martillo", 3, "10-12", 75],
+      ["P05", "Legs", 3, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P05", "Legs", 3, 2, "Peso muerto rumano", "Peso muerto rumano", 4, "8-10", 150],
+      ["P05", "Legs", 3, 3, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 120],
+      ["P05", "Legs", 3, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P05", "Legs", 3, 5, "Elevación de talones de pie", "Elevación de talones de pie", 4, "10-15", 60],
+      ["P05", "Push 2", 4, 1, "Press de banca con barra", "Press de banca con barra", 4, "6-10", 150],
+      ["P05", "Push 2", 4, 2, "Press inclinado con mancuernas", "Press inclinado con mancuernas", 3, "8-12", 120],
+      ["P05", "Push 2", 4, 3, "Press de hombros con mancuernas", "Press de hombros con mancuernas", 3, "8-12", 120],
+      ["P05", "Push 2", 4, 4, "Elevaciones laterales", "Elevaciones laterales", 4, "12-15", 60],
+      ["P05", "Push 2", 4, 5, "Extensión de tríceps en polea", "Extensión de tríceps en polea", 3, "10-15", 75],
+      ["P05", "Pull 2", 5, 1, "Dominadas", "Dominadas", 4, "6-10", 150],
+      ["P05", "Pull 2", 5, 2, "Remo con barra", "Remo con barra", 4, "6-10", 150],
+      ["P05", "Pull 2", 5, 3, "Remo sentado en polea", "Remo sentado en polea", 3, "8-12", 120],
+      ["P05", "Pull 2", 5, 4, "Face pull", "Face pull", 3, "12-15", 60],
+      ["P05", "Pull 2", 5, 5, "Curl martillo", "Curl martillo", 3, "10-12", 75],
+      ["P05", "Legs 2", 6, 1, "Sentadilla con barra", "Sentadilla con barra", 4, "6-10", 150],
+      ["P05", "Legs 2", 6, 2, "Peso muerto rumano", "Peso muerto rumano", 4, "8-10", 150],
+      ["P05", "Legs 2", 6, 3, "Prensa de piernas", "Prensa de piernas", 3, "10-12", 120],
+      ["P05", "Legs 2", 6, 4, "Curl femoral tumbado", "Curl femoral tumbado", 3, "10-15", 75],
+      ["P05", "Legs 2", 6, 5, "Elevación de talones de pie", "Elevación de talones de pie", 4, "10-15", 60],
+    ].forEach(([sheetId, day_label, day_position, position, exerciseLookupName, exercise_name, sets, reps, rest_seconds]) => {
+      const ex = exerciseLookupName && db.exercises.find(e => e.gym_id === null && e.name === exerciseLookupName);
+      db.programTemplateItems.push({
+        id: uid('pti'), program_id: programIdBySheet[sheetId], day_label, day_position, position,
+        exercise_id: ex ? ex.id : null, exercise_name, sets, reps, rest_seconds,
+      });
+    });
 
     // ---- Logros (catálogo global) ----
     [
@@ -635,6 +763,7 @@
       id: e.id, text: e.text, exerciseId: e.exercise_id || null,
       sets: e.sets != null ? e.sets : null, reps: e.reps != null ? e.reps : null,
       weightKg: e.weight_kg != null ? e.weight_kg : null, restSeconds: e.rest_seconds != null ? e.rest_seconds : 60,
+      dayLabel: e.day_label || null,
     }));
   }
 
@@ -671,6 +800,40 @@
       });
     },
     async removeExercise(exerciseId) { await wait(); db.routineExercises = db.routineExercises.filter(e => e.id !== exerciseId); },
+    // Aplica una plantilla de programa entera a la rutina del cliente —
+    // reemplaza los ejercicios existentes de "De tu entrenador" (igual que
+    // generateAi reemplaza los de la rutina con IA), pero conservando
+    // day_label para que la app pueda mostrar el programa día por día.
+    // `items` ya viene aplanado y ordenado (ver applyProgramTemplate en
+    // src/actions.js): [{dayLabel, exerciseId, exerciseName, sets, reps, restSeconds}]
+    async applyProgramTemplate(clientUserId, trainerUserId, items) {
+      await wait();
+      const routineId = ensureRoutine(clientUserId, 'trainer', null, trainerUserId);
+      db.routineExercises = db.routineExercises.filter(e => e.routine_id !== routineId);
+      items.forEach((it, i) => db.routineExercises.push({
+        id: uid('rex'), routine_id: routineId, position: i, exercise_id: it.exerciseId || null,
+        text: it.exerciseName, sets: it.sets ?? null, reps: it.reps ?? null, weight_kg: null,
+        rest_seconds: it.restSeconds ?? 60, day_label: it.dayLabel || null,
+      }));
+    },
+  };
+
+  /* ---------------- programas de entrenamiento (plantillas) ---------------- */
+
+  const programTemplates = {
+    async list() {
+      await wait();
+      return db.programTemplates.map(p => ({
+        id: p.id, name: p.name, level: p.level, goal: p.goal, daysPerWeek: p.days_per_week, durationLabel: p.duration_label,
+      }));
+    },
+    async listItems() {
+      await wait();
+      return db.programTemplateItems.map(it => ({
+        id: it.id, programId: it.program_id, dayLabel: it.day_label, dayPosition: it.day_position, position: it.position,
+        exerciseId: it.exercise_id, exerciseName: it.exercise_name, sets: it.sets, reps: it.reps, restSeconds: it.rest_seconds,
+      }));
+    },
   };
 
   /* ---------------- biblioteca de ejercicios ---------------- */
@@ -1021,7 +1184,7 @@
 
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
-    exercisesLib, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
+    exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi,
   };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

@@ -173,6 +173,14 @@ export const state = {
   libraryDraft: { name: '', muscleGroup: '', equipmentName: '', description: '' },
   exercisesLib: [], // se recarga siempre al entrar a un panel (ver enter*Home/Dash en actions.js) — el default vacío es solo para no romper antes de esa carga.
 
+  // Programas de entrenamiento (catálogo global, ver
+  // supabase/migrations/20260908000300_program_templates.sql). Mismo patrón
+  // que la biblioteca de ejercicios de arriba: cliente y entrenador solo
+  // consultan; el entrenador además puede "usar" un programa para armar de
+  // una la rutina de un cliente (programApplyContext lo habilita).
+  programTemplates: [], programTemplateItems: [],
+  programReturn: null, programExpandedId: null, programApplyContext: null,
+
   trainerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '', specialty: '', price: '' },
   pendingTrainerName: '',
 
