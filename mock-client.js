@@ -64,6 +64,35 @@
     if (set) set.forEach(fn => { try { fn(); } catch (_) { /* un listener roto no debe tumbar al resto */ } });
   }
 
+  // Espejo del realtimeApi genérico del lado real (ver supabase-client.js,
+  // "Realtime genérico") — todo lo que no sea payments.subscribeToClient
+  // (notificaciones, estado del socio, clases/reservas, check-ins, chat)
+  // pasa por acá. La "key" es simplemente `${tabla}:${filtro}` — como el
+  // mock no tiene una tabla real que filtrar, alcanza con que el call site
+  // que emite arme la MISMA key que el que se suscribió (mismo criterio en
+  // ambos, ver rtKey()).
+  const rtListeners = new Map();
+  function rtKey(table, filter) { return `${table}:${filter}`; }
+  function rtEmit(table, filter) {
+    const set = rtListeners.get(rtKey(table, filter));
+    if (set) set.forEach(fn => { try { fn(); } catch (_) { /* ídem */ } });
+  }
+  function rtSubscribe(table, filter, onChange) {
+    const key = rtKey(table, filter);
+    if (!rtListeners.has(key)) rtListeners.set(key, new Set());
+    rtListeners.get(key).add(onChange);
+    return () => {
+      const set = rtListeners.get(key);
+      if (set) set.delete(onChange);
+    };
+  }
+  // classes/class_sessions/class_bookings casi siempre cambian juntas (una
+  // reserva nueva, un evento nuevo) — más simple avisar las tres claves del
+  // gimnasio de una que llevar la cuenta exacta de cuál tabla tocó cada mutación.
+  function emitGymCalendarChange(gymId) {
+    ['classes', 'class_sessions', 'class_bookings'].forEach(t => rtEmit(t, `gym_id=eq.${gymId}`));
+  }
+
   // Igual que normalizeEmail() en supabase-client.js — el mock recibe lo
   // mismo que mandaría la app real (ver emailField() en app.js).
   function normalizeEmail(raw) {
@@ -1718,6 +1747,8 @@
       c.membership_status = 'suspendido';
       c.suspended_at = new Date().toISOString();
       c.suspended_reason = (reason || '').trim() || null;
+      rtEmit('client_profiles', `user_id=eq.${userId}`);
+      rtEmit('client_profiles', `gym_id=eq.${me.gym_id}`);
     },
     async unsuspend(userId) {
       await wait();
@@ -1729,6 +1760,8 @@
       c.membership_status = 'pendiente';
       c.suspended_at = null;
       c.suspended_reason = null;
+      rtEmit('client_profiles', `user_id=eq.${userId}`);
+      rtEmit('client_profiles', `gym_id=eq.${me.gym_id}`);
     },
   };
 
@@ -1922,6 +1955,7 @@
       if (row) row.status = 'reservado';
       else { row = { id: uid('bkg'), session_id: sessionId, client_user_id: s.id, gym_id: session.gym_id, status: 'reservado' }; db.classBookings.push(row); }
       await achievementsApi.evaluate(s.id);
+      emitGymCalendarChange(session.gym_id);
       return row.id;
     },
     async cancelBooking(bookingId) {
@@ -1930,6 +1964,7 @@
       const row = db.classBookings.find(b => b.id === bookingId && b.client_user_id === s.id);
       if (!row) throw new Error('Esa reserva no existe o no es tuya.');
       row.status = 'cancelado';
+      emitGymCalendarChange(row.gym_id);
     },
 
     // Dueño/admin crea un evento del calendario — clase + sesión de una sola
@@ -1942,14 +1977,17 @@
       db.classes.push(cls);
       const session = { id: uid('cs'), class_id: cls.id, gym_id: gymId, starts_at: startsAtIso };
       db.classSessions.push(session);
+      emitGymCalendarChange(gymId);
       return session.id;
     },
     async removeSession(sessionId) {
       await wait();
       const s = requireAuth();
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio borran eventos.');
+      const session = db.classSessions.find(cs => cs.id === sessionId);
       db.classSessions = db.classSessions.filter(cs => cs.id !== sessionId);
       db.classBookings = db.classBookings.filter(b => b.session_id !== sessionId); // on delete cascade, del lado del mock
+      if (session) emitGymCalendarChange(session.gym_id);
     },
     async listBookingsForGym(gymId) {
       await wait();
@@ -1981,10 +2019,13 @@
       if (!isStaff(s)) throw new Error('Solo el administrador o el dueño del gimnasio puede enviar notificaciones.');
       const me = profileOf(s.id);
       const clients = db.clientProfiles.filter(c => c.gym_id === me.gym_id);
-      clients.forEach(c => db.notifications.push({
-        id: uid('ntf'), gym_id: me.gym_id, client_user_id: c.user_id, title, body: body || null,
-        type: type || 'event_created', related_id: relatedId || null, created_at: new Date().toISOString(), read_at: null,
-      }));
+      clients.forEach(c => {
+        db.notifications.push({
+          id: uid('ntf'), gym_id: me.gym_id, client_user_id: c.user_id, title, body: body || null,
+          type: type || 'event_created', related_id: relatedId || null, created_at: new Date().toISOString(), read_at: null,
+        });
+        rtEmit('notifications', `client_user_id=eq.${c.user_id}`);
+      });
       return clients.length;
     },
     // Dirección contraria: cliente -> staff. Las crea SOLO payments.confirm()
@@ -2214,6 +2255,7 @@
       const s = requireAuth();
       const row = { id: uid('msg'), conversation_id: conversationId, sender_user_id: s.id, body, created_at: new Date().toISOString(), read_at: null };
       db.messages.push(row);
+      rtEmit('messages', `conversation_id=eq.${conversationId}`);
       return row.id;
     },
     async listConversationsForTrainer(trainerUserId) {
@@ -2243,6 +2285,7 @@
       const id = uid('pay');
       db.payments.push({ id, client_user_id: clientUserId, gym_id: c.gym_id, amount: plan.price + (trainer ? trainer.price : 0), status: 'pending', created_by: s.id, confirmed_by: null, confirmed_at: null });
       emitPaymentChange(clientUserId);
+      rtEmit('payments', `gym_id=eq.${c.gym_id}`); // Socios/Pagos de cualquier otro staff mirando en vivo
       return id;
     },
     // Confirma el staff (botón manual) o el propio cliente de ese cobro
@@ -2281,12 +2324,16 @@
           ...db.profiles.filter(p => p.gym_id === pay.gym_id && p.role === 'owner').map(p => p.id),
           ...db.gymAdmins.filter(a => a.gym_id === pay.gym_id && a.status === 'approved').map(a => a.user_id),
         ];
-        staffIds.forEach(recipientId => db.staffNotifications.push({
-          id: uid('sntf'), gym_id: pay.gym_id, recipient_user_id: recipientId, title, body,
-          type: 'payment_confirmed', related_id: pay.id, created_at: new Date().toISOString(), read_at: null,
-        }));
+        staffIds.forEach(recipientId => {
+          db.staffNotifications.push({
+            id: uid('sntf'), gym_id: pay.gym_id, recipient_user_id: recipientId, title, body,
+            type: 'payment_confirmed', related_id: pay.id, created_at: new Date().toISOString(), read_at: null,
+          });
+          rtEmit('staff_notifications', `recipient_user_id=eq.${recipientId}`);
+        });
       }
       emitPaymentChange(pay.client_user_id);
+      rtEmit('payments', `gym_id=eq.${pay.gym_id}`);
     },
     async cancel(paymentId) {
       await wait();
@@ -2296,6 +2343,7 @@
       if (!pay || pay.status !== 'pending') throw new Error('Este cobro ya fue procesado.');
       pay.status = 'cancelled';
       emitPaymentChange(pay.client_user_id);
+      rtEmit('payments', `gym_id=eq.${pay.gym_id}`);
     },
     async getPendingForClient(clientUserId) {
       await wait();
@@ -2347,6 +2395,7 @@
       const row = { id: uid('chk'), gym_id: c.gym_id, client_user_id: clientUserId, checked_in_by: s.id, created_at: new Date().toISOString() };
       db.checkinEvents.push(row);
       await achievementsApi.evaluate(clientUserId);
+      rtEmit('checkin_events', `gym_id=eq.${c.gym_id}`);
       return { ...row };
     },
     async listForClient(clientUserId, limit) {
@@ -2408,9 +2457,14 @@
     },
   };
 
+  const realtimeApi = {
+    subscribe(table, filter, onChange) { return rtSubscribe(table, filter, onChange); },
+  };
+
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
     exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
+    realtime: realtimeApi,
   };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

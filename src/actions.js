@@ -23,25 +23,111 @@ function clearRestTimer() {
   if (restTimerId) { clearInterval(restTimerId); restTimerId = null; }
 }
 
-// Canal de Realtime (o su equivalente en el mock) al propio pago — mismo
-// patrón que restTimerId: un recurso vivo, no estado serializable. Se abre
-// al entrar a clientHome (ver enterClientHome) y se cierra en signOut, para
-// nunca dejar dos suscripciones corriendo si el cliente vuelve a entrar.
-let unsubscribeMyPayments = null;
-function stopWatchingMyPayments() {
-  if (unsubscribeMyPayments) { unsubscribeMyPayments(); unsubscribeMyPayments = null; }
+// Canales de Realtime (o su equivalente en el mock) abiertos para la
+// sesión actual — mismo patrón que restTimerId: recursos vivos, no estado
+// serializable. `sessionRealtimeUnsubs` son los que duran todo el panel
+// (Inicio del cliente, panel de dueño/admin) — se abren al entrar y se
+// cierran en signOut o al volver a entrar (nunca dos corriendo a la vez).
+// `chatUnsub` es aparte porque un chat se abre y se cierra sueltas veces
+// dentro de la misma sesión, sin tocar los de arriba.
+let sessionRealtimeUnsubs = [];
+function stopSessionRealtime() {
+  sessionRealtimeUnsubs.forEach(fn => { try { fn(); } catch (_) { /* un canal roto no debe tumbar al resto */ } });
+  sessionRealtimeUnsubs = [];
+}
+function watchRealtime(table, filter, onChange) {
+  sessionRealtimeUnsubs.push(BolaAPI.realtime.subscribe(table, filter, onChange));
 }
 
-// Re-lee el propio cobro pendiente y el propio estado (membership_status/
-// expires_at) — lo dispara tanto "¿Ya te confirmaron? Actualizar" (a mano)
-// como el canal de Realtime de abajo (solo). Antes esto vivía únicamente
-// adentro de ACTIONS.refreshPendingPayment; separado acá para que el
-// callback de Realtime lo pueda llamar igual sin duplicar el código.
+let chatUnsub = null;
+function stopWatchingChat() {
+  if (chatUnsub) { chatUnsub(); chatUnsub = null; }
+}
+function watchChat(conversationId, onChange) {
+  stopWatchingChat();
+  chatUnsub = BolaAPI.realtime.subscribe('messages', `conversation_id=eq.${conversationId}`, onChange);
+}
+
+// ---- refetch handlers: uno por feed, para que el botón manual que ya
+// existía (si lo hay) y el canal de Realtime llamen exactamente al mismo
+// código — nunca dos versiones de "cómo se refresca esto" por separado. ----
+
+// Pago propio (cobro pendiente + membership_status/expires_at) — lo
+// dispara tanto "¿Ya te confirmaron? Actualizar" (a mano) como los canales
+// de `payments` y `client_profiles` del propio cliente (pagos y
+// suspensión son dos motivos distintos por los que esto puede cambiar).
 async function refreshMyPaymentState() {
   if (!state.myClient) return; // ya cerró sesión o cambió de pantalla
   const pendingPayment = await BolaAPI.payments.getPendingForClient(state.myClient.id);
   const [client] = await attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]);
   setState({ pendingPayment, myClient: client });
+}
+
+// Notificaciones propias del cliente (dueño/admin creó un evento).
+async function refreshMyNotifications() {
+  if (!state.myClient) return;
+  const notifications = await BolaAPI.notifications.listForClient(state.myClient.id);
+  setState({ notifications });
+}
+
+// Calendario del cliente (clase/sesión nueva, o alguien más reservó o
+// canceló) — tab Reservas y "Próxima clase" en Inicio.
+async function refreshMyClasses() {
+  if (!state.myClient || !state.gym) return;
+  const [classesForGym, classSessions, myBookings] = await Promise.all([
+    BolaAPI.classes.listForGym(state.gym.id),
+    BolaAPI.classes.listSessions(state.gym.id, new Date().toISOString()),
+    BolaAPI.classes.listMyBookings(state.myClient.id),
+  ]);
+  setState({ classesForGym, classSessions, myBookings });
+}
+
+// Notificaciones propias del staff (un cliente confirmó su pago por QR).
+async function refreshStaffNotifications() {
+  if (!state.gym) return;
+  const staffNotifications = await BolaAPI.notifications.listForStaff();
+  setState({ staffNotifications });
+}
+
+// Lista de socios del gimnasio (Socios/Pagos) — otro admin suspendió,
+// reactivó o cobró/confirmó un pago mientras vos estabas mirando.
+async function refreshOwnerClients() {
+  if (!state.gym) return;
+  const clientsForGym = await attachFaceUrls(await BolaAPI.clients.listForGym(state.gym.id));
+  setState({ clientsForGym });
+}
+
+// Check-ins de hoy (Panel/Asistencia) — alguien entró mientras mirabas.
+async function refreshOwnerCheckins() {
+  if (!state.gym) return;
+  const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
+  setState({ todayCheckins });
+}
+
+// Calendario del dueño/admin — un cliente reservó/canceló, o se creó/
+// borró un evento desde otra sesión (otro admin, u otro dispositivo tuyo).
+async function refreshOwnerClasses() {
+  if (!state.gym) return;
+  const [classesForGym, classSessions, classBookingsForGym] = await Promise.all([
+    BolaAPI.classes.listForGym(state.gym.id),
+    BolaAPI.classes.listSessions(state.gym.id, new Date().toISOString()),
+    BolaAPI.classes.listBookingsForGym(state.gym.id),
+  ]);
+  setState({ classesForGym, classSessions, classBookingsForGym });
+}
+
+// Chat — cliente <-> entrenador. Dos slots de estado distintos según quién
+// mira (messages/conversationId del cliente, trainerMessages/
+// trainerActiveConversationId del entrenador), mismo canal por debajo.
+async function refreshClientChatMessages() {
+  if (!state.conversationId) return;
+  const messages = await BolaAPI.messages.list(state.conversationId);
+  setState({ messages });
+}
+async function refreshTrainerChatMessages() {
+  if (!state.trainerActiveConversationId) return;
+  const trainerMessages = await BolaAPI.messages.list(state.trainerActiveConversationId);
+  setState({ trainerMessages });
 }
 
 // ex.reps es texto ("8", "20 min", "circuito" — ver routine_exercises.reps)
@@ -131,7 +217,8 @@ export const ACTIONS = {
   togglePasswordVisibility: () => setState({ showPassword: !state.showPassword }),
 
   signOut: async () => {
-    stopWatchingMyPayments();
+    stopSessionRealtime();
+    stopWatchingChat();
     await BolaAPI.auth.signOut();
     // Ver OWNER_INVITE_KEY/GYM_INVITE_KEY en router.js — no dejar una
     // invitación pegada al navegador para la próxima cuenta que se loguee ahí.
@@ -809,8 +896,11 @@ export const ACTIONS = {
     const conversationId = await BolaAPI.messages.getOrCreateConversation(state.myClientTrainer.id);
     const messages = await BolaAPI.messages.list(conversationId);
     setState({ screen: 'clientChat', conversationId, messages });
+    // Le llega el mensaje del entrenador mientras tiene el chat abierto, sin
+    // recargar ni volver a entrar.
+    watchChat(conversationId, refreshClientChatMessages);
   },
-  closeTrainerChat: () => setState({ screen: 'clientHome' }),
+  closeTrainerChat: () => { stopWatchingChat(); setState({ screen: 'clientHome' }); },
   sendMessage: async () => {
     const text = state.messageDraft.trim();
     if (!text || !state.conversationId) return;
@@ -931,8 +1021,9 @@ export const ACTIONS = {
     if (!conv) return;
     const trainerMessages = await BolaAPI.messages.list(conv.conversationId);
     setState({ trainerActiveConversationId: conv.conversationId, trainerMessages, trainerMessageDraft: '' });
+    watchChat(conv.conversationId, refreshTrainerChatMessages);
   },
-  closeTrainerConversation: () => setState({ trainerActiveConversationId: null, trainerMessages: [] }),
+  closeTrainerConversation: () => { stopWatchingChat(); setState({ trainerActiveConversationId: null, trainerMessages: [] }); },
   sendTrainerMessage: async () => {
     const text = state.trainerMessageDraft.trim();
     if (!text || !state.trainerActiveConversationId) return;
@@ -1516,6 +1607,18 @@ export async function enterOwnerDash() {
     busy: false,
   });
   if (window.CesAds) window.CesAds.hideBanner();
+  // Igual que enterClientHome: se entera solo de todo lo que puede
+  // cambiar sin que él lo haga acá — un socio le confirma un pago por QR,
+  // otro admin suspende/reactiva o cobra a alguien, entra un check-in, o
+  // se reserva/cancela/crea algo del calendario.
+  stopSessionRealtime();
+  watchRealtime('staff_notifications', `recipient_user_id=eq.${state.myProfile.id}`, refreshStaffNotifications);
+  watchRealtime('client_profiles', `gym_id=eq.${gymId}`, refreshOwnerClients);
+  watchRealtime('payments', `gym_id=eq.${gymId}`, refreshOwnerClients);
+  watchRealtime('checkin_events', `gym_id=eq.${gymId}`, refreshOwnerCheckins);
+  watchRealtime('classes', `gym_id=eq.${gymId}`, refreshOwnerClasses);
+  watchRealtime('class_sessions', `gym_id=eq.${gymId}`, refreshOwnerClasses);
+  watchRealtime('class_bookings', `gym_id=eq.${gymId}`, refreshOwnerClasses);
   render();
 }
 
@@ -1581,12 +1684,28 @@ export async function enterClientHome() {
     pendingPayment, busy: false,
   });
   if (window.CesAds) window.CesAds.showBanner();
-  // Se entera solo, sin recargar la página, cuando el staff confirma el
-  // cobro desde su panel (o cuando lo confirma el propio cliente desde
-  // otro dispositivo) — ver BolaAPI.payments.subscribeToClient(). Se cierra
-  // la anterior primero por si entra dos veces seguidas a Inicio.
-  stopWatchingMyPayments();
-  unsubscribeMyPayments = BolaAPI.payments.subscribeToClient(client.id, refreshMyPaymentState);
+  // Se entera solo, sin recargar la página, de todo lo que le puede cambiar
+  // mientras está adentro sin que él haga nada: le confirman el pago (o lo
+  // suspenden/reactivan), le llega una notificación de un evento nuevo, o
+  // se crea/reserva/cancela algo del calendario. stopSessionRealtime()
+  // primero por si entra dos veces seguidas a Inicio.
+  stopSessionRealtime();
+  watchRealtime('payments', `client_user_id=eq.${client.id}`, refreshMyPaymentState);
+  watchRealtime('client_profiles', `user_id=eq.${client.id}`, refreshMyPaymentState);
+  watchRealtime('notifications', `client_user_id=eq.${client.id}`, refreshMyNotifications);
+  watchRealtime('classes', `gym_id=eq.${state.gym.id}`, refreshMyClasses);
+  watchRealtime('class_sessions', `gym_id=eq.${state.gym.id}`, refreshMyClasses);
+  // class_bookings NO tiene política de lectura por gimnasio para un
+  // cliente (solo "self reads own bookings") — filtra por su propia
+  // reserva, no por gym_id como las otras dos (ver 20260905000300, RLS de
+  // class_bookings). Nota para el mock: bookClass/cancelBooking ya
+  // refrescan myBookings solos apenas el propio cliente reserva/cancela
+  // (no necesitan este canal); si una sesión se borra del todo, eso
+  // dispara el canal de `class_sessions` de arriba, que igual re-lee
+  // myBookings — así que este canal específico casi nunca hace falta en
+  // la práctica, pero se deja por las dudas (ej. si algún día el staff
+  // cancela una reserva puntual sin borrar la sesión entera).
+  watchRealtime('class_bookings', `client_user_id=eq.${client.id}`, refreshMyClasses);
   render();
 }
 
