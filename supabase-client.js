@@ -101,6 +101,32 @@
       if (error) throw error;
     },
 
+    // "Olvidé mi contraseña" — mismo criterio de código por correo que
+    // arriba (plantilla "Reset Password" en Supabase → Authentication →
+    // Emails, con {{ .Token }} en vez de {{ .ConfirmationURL }}). Nunca
+    // lanza error si el correo no existe — resetPasswordForEmail() de
+    // Supabase ya no revela esa información (mismo comportamiento con
+    // cuenta real o inventada), así nadie puede usar esta pantalla para
+    // averiguar qué correos están registrados en el gimnasio.
+    async requestPasswordReset(email) {
+      const { error } = await client.auth.resetPasswordForEmail(normalizeEmail(email));
+      if (error) throw error;
+    },
+    // type:'recovery' en vez de 'signup' — mismo verifyOtp() de arriba,
+    // otro evento. También confirma Y loguea en un solo paso: con el
+    // código correcto ya queda autenticada, lista para updateUser() de
+    // abajo sin pedirle la contraseña vieja (no la tenemos ni hace falta).
+    async verifyPasswordResetCode({ email, token }) {
+      return unwrap(await client.auth.verifyOtp({ email: normalizeEmail(email), token, type: 'recovery' }));
+    },
+    // Solo tiene sentido llamarla con la sesión que dejó verifyPasswordResetCode()
+    // recién autenticada — actualiza la contraseña de ESA cuenta, la del
+    // usuario logueado, nunca por id ajeno.
+    async updatePassword(newPassword) {
+      const { error } = await client.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+
     async signOut() {
       const { error } = await client.auth.signOut();
       if (error) throw error;

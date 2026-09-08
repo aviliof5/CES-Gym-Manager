@@ -55,6 +55,9 @@ export function viewLogin() {
       ${emailField('loginEmail', 'usuario', state.loginEmail)}
       ${passwordField('loginPassword', 'Contraseña', state.loginPassword)}
     </div>
+    <div style="text-align:right;margin-top:10px">
+      <span ${act('goToForgotPassword')} style="font-size:12px;color:var(--info);cursor:pointer;text-decoration:underline">¿Olvidaste tu contraseña?</span>
+    </div>
     ${state.loginError ? `<div style="font-size:12px;color:var(--danger);margin-top:10px">${esc(state.loginError)}</div>` : ''}`;
 
   return authScreen({
@@ -95,6 +98,74 @@ export function viewConfirmCode() {
     title: 'Ingresá el código', subtitle: 'Confirmá tu cuenta con el código que te mandamos por correo',
     backAction: 'goto:login', inner,
     footer: `<div class="form-foot"><button class="btn btn--action" ${act('verifyConfirmCode')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Verificando…' : 'Confirmar código'}</button></div>`,
+  });
+}
+
+// "Olvidé mi contraseña" — paso 1: pedir el correo. Mismo signIn único de
+// siempre (no separa por rol) — el pedido va con normalizeEmail() del lado
+// del cliente real, así que alcanza con lo que la persona tipeó en
+// "usuario". No revela si el correo existe o no (mismo criterio que
+// Supabase: siempre sigue al paso del código, exista la cuenta o no) — así
+// nadie puede usar esta pantalla para averiguar qué correos están
+// registrados.
+export function viewForgotPassword() {
+  const invalid = state.busy || !state.forgotEmail.trim();
+  const inner = `<div class="stack">
+      ${emailField('forgotEmail', 'usuario', state.forgotEmail)}
+    </div>`;
+
+  return authScreen({
+    label: 'Recuperar contraseña', icon: 'mail', accent: 'var(--action)', accentBg: 'var(--action-dim)',
+    title: '¿Olvidaste tu contraseña?', subtitle: 'Escribí el correo de tu cuenta — te mandamos un código para elegir una nueva',
+    backAction: 'goto:login', inner,
+    footer: `<div class="form-foot"><button class="btn btn--action" ${act('requestPasswordReset')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Enviando…' : 'Enviar código'}</button></div>`,
+  });
+}
+
+// Paso 2: código de 6 dígitos (plantilla "Reset Password" en Supabase,
+// mismo {{ .Token }} que "Confirm signup" — ver viewConfirmCode arriba,
+// mismo criterio de no exigirle un largo fijo al campo). verifyOtp(type:
+// 'recovery') ya deja la sesión logueada con el código correcto, así que
+// ACTIONS.verifyForgotCode manda directo al paso 3 sin pedir nada más.
+export function viewForgotPasswordCode() {
+  const invalid = state.busy || !state.forgotCode.trim();
+  const inner = `<div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:13px;color:var(--text-soft);line-height:1.6">Te mandamos un código para recuperar tu cuenta a<br/><strong style="color:var(--text)">${esc(state.forgotEmail)}</strong></div>
+    </div>
+    <input class="field" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="20"
+      placeholder="Código" value="${esc(state.forgotCode)}" data-f="forgotCode" data-numeric="true"
+      style="text-align:center;font-size:22px;letter-spacing:0.15em;font-family:var(--font-display)"/>
+    ${state.forgotCodeResent ? `<div style="font-size:12px;color:var(--ok);margin-top:12px;text-align:center">Código reenviado — revisá tu correo</div>` : ''}
+    <div style="text-align:center;margin-top:18px">
+      <span ${act('resendForgotCode')} style="font-size:12px;color:var(--info);cursor:pointer;text-decoration:underline">¿No te llegó? Reenviar código</span>
+    </div>`;
+
+  return authScreen({
+    label: 'Recuperar contraseña', icon: 'mail', accent: 'var(--action)', accentBg: 'var(--action-dim)',
+    title: 'Ingresá el código', subtitle: 'Con este código vas a poder elegir una contraseña nueva',
+    backAction: 'goto:forgotPassword', inner,
+    footer: `<div class="form-foot"><button class="btn btn--action" ${act('verifyForgotCode')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Verificando…' : 'Verificar código'}</button></div>`,
+  });
+}
+
+// Paso 3: ya está autenticada (el código del paso 2 la logueó) — solo
+// actualiza la contraseña de esa sesión. Mismo mínimo "media" que el
+// registro (passwordStrength >= 2) y ambos campos tienen que coincidir.
+export function viewForgotPasswordReset() {
+  const strength = passwordStrength(state.forgotNewPassword);
+  const mismatch = state.forgotNewPassword2 && state.forgotNewPassword !== state.forgotNewPassword2;
+  const invalid = state.busy || strength < 2 || state.forgotNewPassword !== state.forgotNewPassword2;
+  const inner = `<div class="stack">
+      ${passwordField('forgotNewPassword', 'Contraseña nueva', state.forgotNewPassword, { strength: true })}
+      ${passwordField('forgotNewPassword2', 'Repetí la contraseña nueva', state.forgotNewPassword2)}
+    </div>
+    ${mismatch ? `<div style="font-size:12px;color:var(--danger);margin-top:10px">Las contraseñas no coinciden</div>` : ''}`;
+
+  return authScreen({
+    label: 'Recuperar contraseña', icon: 'idcard', accent: 'var(--action)', accentBg: 'var(--action-dim)',
+    title: 'Elegí tu contraseña nueva', subtitle: 'Vas a entrar directo con esta, sin tener que loguearte de nuevo',
+    backAction: 'goto:login', inner,
+    footer: `<div class="form-foot"><button class="btn btn--action" ${act('saveNewPassword')} ${invalid ? 'disabled' : ''}>${state.busy ? 'Guardando…' : 'Guardar contraseña'}</button></div>`,
   });
 }
 

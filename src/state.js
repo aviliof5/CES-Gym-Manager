@@ -74,6 +74,16 @@ export const state = {
   // routeAfterLogin/resumeOwnerSession/resumeAdminSession/resumeClientSession).
   confirmEmail: '', confirmCode: '', confirmRole: null, confirmCodeResent: false,
 
+  // "Olvidé mi contraseña" (ver screens/auth.js viewForgotPassword/
+  // viewForgotPasswordCode/viewForgotPasswordReset + ACTIONS.*) — mismo
+  // patrón de código por correo que confirmCode arriba (plantilla "Reset
+  // Password" en Supabase -> Authentication -> Emails, con {{ .Token }}
+  // en vez del link de siempre), en 3 pasos: pedir el correo, poner el
+  // código, elegir contraseña nueva. verifyOtp(type:'recovery') ya deja
+  // logueado con el código correcto — el paso 3 solo cambia la contraseña
+  // de esa sesión ya autenticada, no hace falta guardar nada más.
+  forgotEmail: '', forgotCode: '', forgotCodeResent: false, forgotNewPassword: '', forgotNewPassword2: '',
+
   // Dueño: crea el gimnasio — antes lo hacía "admin", ver docs/MIGRATION_PLAN.md Fase 4.
   ownerReg: { name: '', email: '', phone: '', phonePrefix: '+53', password: '' },
   gymReg: { name: '', address: '', hours: '' },
