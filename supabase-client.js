@@ -893,8 +893,29 @@
     },
   };
 
+  /* ---------------- Realtime genérico ---------------- */
+  // payments.subscribeToClient() (arriba) fue el primero y se deja tal
+  // cual — este es el mecanismo general para todo lo demás (notificaciones,
+  // estado del socio, clases/reservas, check-ins, chat): mismo patrón
+  // .channel().on('postgres_changes', ...), pero parametrizado por
+  // tabla+filtro en vez de hardcodeado a `payments`. Sigue respetando la
+  // RLS de cada tabla — este helper no abre nada que esa tabla ya no
+  // dejara leer al rol de quien está autenticado. Requiere que la tabla
+  // esté agregada a la publicación `supabase_realtime` (ver
+  // 20260913000100_realtime_everything.sql).
+  const realtimeApi = {
+    subscribe(table, filter, onChange) {
+      const channel = client
+        .channel(`rt-${table}-${filter}-${Math.random().toString(36).slice(2)}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table, filter }, onChange)
+        .subscribe();
+      return () => { client.removeChannel(channel); };
+    },
+  };
+
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
     exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
+    realtime: realtimeApi,
   };
 })();
