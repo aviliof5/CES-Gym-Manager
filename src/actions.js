@@ -293,6 +293,64 @@ export const ACTIONS = {
     setState({ busy: false, confirmCodeResent: true });
   },
 
+  // "Olvidé mi contraseña" — mismo patrón de 3 pasos que confirmCode
+  // arriba, ver viewForgotPassword/viewForgotPasswordCode/
+  // viewForgotPasswordReset en screens/auth.js.
+  goToForgotPassword: () => setState({
+    screen: 'forgotPassword', error: '',
+    forgotEmail: state.loginEmail, forgotCode: '', forgotCodeResent: false, forgotNewPassword: '', forgotNewPassword2: '',
+  }),
+  requestPasswordReset: async () => {
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.auth.requestPasswordReset(state.forgotEmail);
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    setState({ busy: false, screen: 'forgotPasswordCode', forgotCode: '', forgotCodeResent: false });
+  },
+  resendForgotCode: async () => {
+    setState({ busy: true, error: '', forgotCodeResent: false });
+    try {
+      await BolaAPI.auth.requestPasswordReset(state.forgotEmail);
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    setState({ busy: false, forgotCodeResent: true });
+  },
+  // verifyOtp(type:'recovery') ya deja logueada la sesión con el código
+  // correcto (igual que verifyConfirmCode con type:'signup') — acá solo
+  // se manda al paso 3 a elegir la contraseña nueva, todavía no se toca.
+  verifyForgotCode: async () => {
+    setState({ busy: true, error: '' });
+    try {
+      const result = await BolaAPI.auth.verifyPasswordResetCode({ email: state.forgotEmail, token: state.forgotCode.trim() });
+      if (!result || !result.session) throw new Error('No pudimos verificar el código. Probá de nuevo.');
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    setState({ busy: false, screen: 'forgotPasswordReset', forgotCode: '' });
+  },
+  saveNewPassword: async () => {
+    if (state.forgotNewPassword !== state.forgotNewPassword2) {
+      setState({ error: 'Las contraseñas no coinciden.' });
+      return;
+    }
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.auth.updatePassword(state.forgotNewPassword);
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+      return;
+    }
+    const profile = await BolaAPI.auth.getMyProfile();
+    setState({ forgotEmail: '', forgotNewPassword: '', forgotNewPassword2: '' });
+    await routeAfterLogin(profile);
+  },
+
   // Fase 16: el alta de administrador ya es solo por link de invitación de
   // un gimnasio (viewAdminReg solo se llega desde viewInviteWelcome con el
   // rol ya resuelto) — nunca cae al selector público de gimnasios.

@@ -21,6 +21,7 @@ import { getQueueSize } from './offline.js';
 
 import {
   viewBoot, viewLanding, viewLogin, viewConfirmCode, viewInviteWelcome, viewTrainerReg, viewGymPicker,
+  viewForgotPassword, viewForgotPasswordCode, viewForgotPasswordReset,
 } from './screens/auth.js';
 import {
   viewOwnerReg1, viewOwnerReg2, viewOwnerReg3, viewOwnerReg4, viewOwnerDash, viewScanCheckin, viewOwnerCalendario, viewStaffNotifications,
@@ -52,6 +53,9 @@ const SCREENS = {
   landing: viewLanding,
   login: viewLogin,
   confirmCode: viewConfirmCode,
+  forgotPassword: viewForgotPassword,
+  forgotPasswordCode: viewForgotPasswordCode,
+  forgotPasswordReset: viewForgotPasswordReset,
   inviteWelcome: viewInviteWelcome,
   adminReg: viewAdminReg,
   trainerReg: viewTrainerReg,

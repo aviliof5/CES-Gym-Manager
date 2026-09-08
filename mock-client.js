@@ -1496,6 +1496,34 @@
       await wait();
       throw new Error('El mock no simula confirmación de correo — probá este flujo directo contra Supabase.');
     },
+    // "Olvidé mi contraseña" — a diferencia de verifyEmailCode/
+    // resendConfirmCode de arriba, esto SÍ se puede simular acá (no
+    // depende de un correo real llegando): el "código" del mock es
+    // siempre 000000, fijo, documentado acá mismo — sirve para probar las
+    // 3 pantallas nuevas en el harness sin necesitar Supabase real. Nunca
+    // lanza si el correo no existe (mismo criterio que el real: no revela
+    // qué correos están registrados).
+    async requestPasswordReset(email) {
+      await wait();
+      email = normalizeEmail(email);
+      const p = db.profiles.find(x => x.email === email);
+      if (p) p._resetCode = '000000';
+    },
+    async verifyPasswordResetCode({ email, token }) {
+      await wait();
+      email = normalizeEmail(email);
+      const p = db.profiles.find(x => x.email === email);
+      if (!p || !p._resetCode || p._resetCode !== token.trim()) throw new Error('Código inválido o vencido.');
+      session = { id: p.id, role: p.role };
+      return { user: { id: p.id }, session };
+    },
+    async updatePassword(newPassword) {
+      await wait();
+      const s = requireAuth();
+      const p = db.profiles.find(x => x.id === s.id);
+      p.password = newPassword;
+      p._resetCode = null;
+    },
     async signOut() { await wait(); session = null; },
     // No-op: el deep link de confirmación solo existe en la app nativa
     // empaquetada, nunca en el navegador donde corre este mock.
