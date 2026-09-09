@@ -386,10 +386,20 @@
 
   const clients = {
     async listForGym(gymId) {
+      // Nadie pasa 'al_dia' -> 'vencido' solo (no hay cron acá) — se
+      // sincroniza recién al leer, cada vez que el staff abre Socios/Pagos
+      // (ver 20260914000000_daily_plan_same_day_expiry.sql). Si falla por
+      // red, loadWithFallback ya cae a la copia guardada del lado de
+      // actions.js — no rompe la pantalla por esto.
+      await client.rpc('sync_gym_memberships_status');
       const rows = unwrap(await client.from('client_profiles').select(CLIENT_SELECT).eq('gym_id', gymId));
       return rows.map(shapeClient);
     },
     async getSelf(userId) {
+      // Ídem, pero la propia — se dispara cada vez que el cliente entra a
+      // la app o se refresca su estado (ver refreshMyPaymentState en
+      // actions.js).
+      await client.rpc('sync_my_membership_status');
       const row = unwrap(await client.from('client_profiles').select(CLIENT_SELECT).eq('user_id', userId).single());
       return shapeClient(row);
     },
