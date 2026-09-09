@@ -13,8 +13,14 @@ const wwwDir = path.join(root, 'www');
 
 const FILES = ['index.html', 'styles.css', 'config.js', 'supabase-client.js', 'ads.js', 'qrcode-generator.min.js', 'jsQR.min.js'];
 // app.js fue reemplazado por módulos ES bajo src/ (ver docs/MIGRATION_PLAN.md,
-// Fase 3) — se copia el directorio completo, no un archivo suelto.
-const DIRS = ['src'];
+// Fase 3) — se copia el directorio completo, no un archivo suelto. assets/
+// faltaba acá (bug preexistente: dejaba sin logo.png/íconos/medallas de
+// logros a la app nativa, que sí los pide en tiempo de ejecución — ver
+// src/data.js brandMark() y assets/logros/ en helpers.js achievementBadge())
+// — se agrega, salvo "Iconos Logros" (los JPEG crudos de Google Flow sin
+// procesar, ~20MB, solo insumo de scripts/process-achievement-badges.js).
+const DIRS = ['src', 'assets'];
+const SKIP_DIR_NAMES = new Set(['Iconos Logros']);
 
 fs.rmSync(wwwDir, { recursive: true, force: true });
 fs.mkdirSync(wwwDir, { recursive: true });
@@ -34,7 +40,10 @@ for (const file of FILES) {
 for (const dir of DIRS) {
   const src = path.join(root, dir);
   if (!fs.existsSync(src)) throw new Error(`Falta el directorio ${dir}/, necesario para armar www/.`);
-  fs.cpSync(src, path.join(wwwDir, dir), { recursive: true });
+  fs.cpSync(src, path.join(wwwDir, dir), {
+    recursive: true,
+    filter: srcPath => !SKIP_DIR_NAMES.has(path.basename(srcPath)),
+  });
 }
 
 console.log(`www/ armado con ${FILES.length} archivos y ${DIRS.length} directorio(s) (${DIRS.join(', ')}).`);
