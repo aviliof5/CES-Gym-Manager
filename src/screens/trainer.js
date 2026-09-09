@@ -147,7 +147,11 @@ export function viewTrainerClientes() {
 
       ${sectionTitle('Crear rutina', 'zap')}
       <div class="hint" style="margin-bottom:10px">Estos ejercicios se muestran al cliente si elige "De tu entrenador"</div>
-      <div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:6px">${iconSpan('dumbbell', 14)} Ver biblioteca completa</div>
+      <div ${act('openExerciseLibrary')} class="card" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:12px 14px;margin-bottom:8px;border-color:var(--brand)">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--brand-dim);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0">${iconSpan('dumbbell', 18)}</div>
+        <div style="flex:1;font-size:var(--fs-sm);font-weight:800">Ver biblioteca completa</div>
+        ${iconSpan('chevronRight', 16)}
+      </div>
       <div ${act('openProgramTemplates', 'trainer')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:10px">${iconSpan('dumbbell', 14)} Usar un programa (reemplaza la rutina actual)</div>
       <div class="card" style="margin-bottom:16px">
         <select class="field" data-f="trainerRoutineDraft.exerciseId" style="margin-bottom:10px">

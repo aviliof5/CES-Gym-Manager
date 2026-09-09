@@ -118,6 +118,8 @@ export const ICON_PATHS = {
   // Bloqueo de la app para el cliente que no pagó (ver viewClientHome,
   // "como se lleva el control para que no entren sin pagar").
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  // "Errores comunes" en la biblioteca de ejercicios (ver screens/library.js).
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de
