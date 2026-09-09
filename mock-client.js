@@ -93,6 +93,21 @@
     ['classes', 'class_sessions', 'class_bookings'].forEach(t => rtEmit(t, `gym_id=eq.${gymId}`));
   }
 
+  // Espejo de sync_my_membership_status()/sync_gym_memberships_status()
+  // del lado real (20260914000000_daily_plan_same_day_expiry.sql) — nada
+  // pasa 'al_dia' -> 'vencido' solo con el paso del tiempo (no hay cron acá
+  // tampoco), así que se sincroniza recién al leer: cada vez que alguien
+  // pide su propia ficha o el staff pide la lista del gimnasio. Nunca toca
+  // 'pendiente' ni 'suspendido' — esos no son por fecha.
+  function syncExpiredStatus(clientProfile) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (clientProfile && clientProfile.membership_status === 'al_dia'
+      && clientProfile.membership_expires_at && clientProfile.membership_expires_at < today) {
+      clientProfile.membership_status = 'vencido';
+    }
+    return clientProfile;
+  }
+
   // Igual que normalizeEmail() en supabase-client.js — el mock recibe lo
   // mismo que mandaría la app real (ver emailField() en app.js).
   function normalizeEmail(raw) {
@@ -1756,8 +1771,14 @@
   }
 
   const clients = {
-    async listForGym(gymId) { await wait(); return db.clientProfiles.filter(c => c.gym_id === gymId).map(shapeClient); },
-    async getSelf(userId) { await wait(); return shapeClient(db.clientProfiles.find(c => c.user_id === userId)); },
+    async listForGym(gymId) {
+      await wait();
+      return db.clientProfiles.filter(c => c.gym_id === gymId).map(syncExpiredStatus).map(shapeClient);
+    },
+    async getSelf(userId) {
+      await wait();
+      return shapeClient(syncExpiredStatus(db.clientProfiles.find(c => c.user_id === userId)));
+    },
     async updatePhysical(userId, { weight, height, age, level, goal }) {
       await wait();
       Object.assign(db.clientProfiles.find(c => c.user_id === userId), { weight, height, age, level, goal });
@@ -2332,10 +2353,14 @@
       pay.status = 'confirmed'; pay.confirmed_by = s.id; pay.confirmed_at = new Date().toISOString();
       const c = db.clientProfiles.find(x => x.user_id === pay.client_user_id);
       const plan = db.plans.find(p => p.id === c.plan_id);
-      const days = plan && plan.duration === 'diario' ? 1 : plan && plan.duration === 'anual' ? 365 : 30;
+      const today = new Date().toISOString().slice(0, 10);
+      // 'diario' vence el mismo día — nada de sumarle un día (antes daba
+      // 24hs+ de regalo, ver 20260914000000_daily_plan_same_day_expiry.sql).
+      const expiresIso = plan && plan.duration === 'diario'
+        ? today
+        : new Date(Date.now() + (plan && plan.duration === 'anual' ? 365 : 30) * 86400000).toISOString().slice(0, 10);
       c.membership_status = 'al_dia';
       c.last_payment_at = new Date().toISOString();
-      const expiresIso = new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
       c.membership_expires_at = expiresIso;
 
       // Aviso al staff SOLO si confirmó el propio cliente (escaneo) — si fue
