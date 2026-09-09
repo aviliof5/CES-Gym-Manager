@@ -90,6 +90,7 @@ input,textarea,select,button{font-family:inherit}
 /* ---------- Android device frame ---------- */
 .stage{
   min-height:100vh;
+  min-height:100dvh; /* ver nota en @media(max-width:520px) .device — dvh sigue el viewport visible real */
   display:flex;
   align-items:center;
   justify-content:center;
@@ -100,6 +101,7 @@ input,textarea,select,button{font-family:inherit}
   width:412px;
   height:892px;
   max-height:calc(100vh - 96px);
+  max-height:calc(100dvh - 96px);
   border-radius:44px;
   padding:10px;
   background:#17171B;
@@ -129,7 +131,21 @@ input,textarea,select,button{font-family:inherit}
 }
 @media (max-width:520px){
   .stage{padding:0}
-  .device{width:100vw;height:100vh;max-height:none;border-radius:0;padding:0;box-shadow:none}
+  /* Por qué se escondía la barra de abajo (Inicio/Rutina/etc.) y había que
+     deslizar para que apareciera: 100vh en el celular mide el viewport MÁS
+     GRANDE posible (con la barra del navegador ya escondida), no lo que se
+     ve en el momento — al cargar la página, con la barra del navegador
+     todavía visible, el alto real disponible es menor a ese 100vh, así que
+     el tabbar (al final de .dash-shell, ver más abajo) quedaba empujado
+     fuera de la pantalla hasta que el usuario scrolleaba (lo que recién ahí
+     esconde la barra del navegador y "libera" el resto). 100dvh se
+     recalcula solo con el viewport visible real en cada momento, así el
+     alto de .device siempre es el correcto y el tabbar queda siempre
+     visible sin depender de que el usuario haga nada. Se declara vh primero
+     como respaldo para navegadores viejos sin soporte de dvh (Safari <15.4,
+     Chrome <108) — si no soportan dvh, ignoran esa línea y se quedan con la
+     de vh de siempre; si lo soportan, la de dvh pisa a la anterior. */
+  .device{width:100vw;height:100vh;height:100dvh;max-height:none;border-radius:0;padding:0;box-shadow:none}
   .screen{border-radius:0}
   .device-notch{display:none}
 }
