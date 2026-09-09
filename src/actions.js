@@ -923,6 +923,58 @@ export const ACTIONS = {
     }
   },
 
+  /* ---- Editar perfil (Perfil del cliente) — antes foto/peso/altura/edad/
+     nivel/objetivo/plan quedaban fijos para siempre, seteados una sola vez
+     en el registro. ---- */
+  openEditProfile: () => {
+    const client = state.myClient;
+    setState({
+      screen: 'clientEditProfile',
+      editProfileDraft: {
+        weight: client.physical.weight != null ? String(client.physical.weight) : '',
+        height: client.physical.height != null ? String(client.physical.height) : '',
+        age: client.physical.age != null ? String(client.physical.age) : '',
+        level: client.physical.level || 'principiante', goal: client.physical.goal || 'perder_peso',
+        photoFile: null, photoPreviewUrl: '',
+      },
+      editProfileSelectedPlanId: client.planId,
+    });
+  },
+  closeEditProfile: () => setState({ screen: 'clientHome', clientTab: 'perfil' }),
+  setEditLevel: v => setState({ editProfileDraft: { ...state.editProfileDraft, level: v } }),
+  setEditGoal: v => setState({ editProfileDraft: { ...state.editProfileDraft, goal: v } }),
+  selectEditPlan: v => setState({ editProfileSelectedPlanId: v }),
+  saveEditProfile: async () => {
+    setState({ busy: true, error: '' });
+    const d = state.editProfileDraft;
+    try {
+      if (d.photoFile) {
+        const path = BolaAPI.photos.facePath(state.gym.id, state.myProfile.id);
+        await BolaAPI.photos.upload(path, d.photoFile);
+        await BolaAPI.clients.setFacePhotoKey(state.myProfile.id, path);
+      }
+      await BolaAPI.clients.updatePhysical(state.myProfile.id, {
+        weight: d.weight ? Number(d.weight) : null, height: d.height ? Number(d.height) : null, age: d.age ? Number(d.age) : null,
+        level: d.level, goal: d.goal,
+      });
+      // El plan solo se toca si de verdad cambió — createCashCharge()
+      // vuelve a leer el plan actual del cliente cada vez que el staff
+      // genera un cobro nuevo, así que esto ya alcanza para que el
+      // próximo cobro salga con el precio/duración del plan elegido acá.
+      if (state.editProfileSelectedPlanId && state.editProfileSelectedPlanId !== state.myClient.planId) {
+        await BolaAPI.clients.choosePlan(state.myProfile.id, state.editProfileSelectedPlanId);
+      }
+      const [client] = await attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]);
+      const myClientPlan = state.plans.find(p => p.id === client.planId) || null;
+      setState({
+        busy: false, myClient: client, myClientPlan, screen: 'clientHome', clientTab: 'perfil',
+        editProfileDraft: { ...d, photoFile: null, photoPreviewUrl: '' },
+      });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
+
   /* ---- Etapa 2: medidas corporales (Progreso) ---- */
   saveMeasurement: async () => {
     const d = state.measurementDraft;
@@ -1863,6 +1915,15 @@ filePicker.addEventListener('change', async () => {
     // almacenamiento — se sube de verdad en clientSignUp().
     const previewUrl = URL.createObjectURL(file);
     setState({ clientReg: { ...state.clientReg, photoFile: file, photoPreviewUrl: previewUrl } });
+    return;
+  }
+
+  if (target === 'editface') {
+    // Ídem, pero desde "Editar perfil" (ver ACTIONS.saveEditProfile) — ya
+    // hay sesión, pero se sube recién al guardar, no apenas se elige (así
+    // "Cancelar"/volver atrás no deja una foto a medio subir).
+    const previewUrl = URL.createObjectURL(file);
+    setState({ editProfileDraft: { ...state.editProfileDraft, photoFile: file, photoPreviewUrl: previewUrl } });
     return;
   }
 

@@ -606,6 +606,25 @@ export function viewWorkout() {
   </div>`;
 }
 
+// Reutilizada acá y en viewClientEditProfile (Perfil, "editar... peso,
+// medidas") — mismo measurementDraft/saveMeasurement de siempre, un solo
+// lugar con el markup del formulario para no repetirlo dos veces.
+function measurementForm() {
+  const d = state.measurementDraft;
+  return `<div class="card" style="margin-bottom:16px">
+    <div class="eyebrow" style="margin-bottom:10px">Registrar medidas de hoy</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      ${textField('measurementDraft.weight_kg', 'Peso (kg)', d.weight_kg)}
+      ${textField('measurementDraft.body_fat_pct', '% grasa', d.body_fat_pct)}
+      ${textField('measurementDraft.waist_cm', 'Cintura (cm)', d.waist_cm)}
+      ${textField('measurementDraft.chest_cm', 'Pecho (cm)', d.chest_cm)}
+      ${textField('measurementDraft.arm_cm', 'Brazo (cm)', d.arm_cm)}
+      ${textField('measurementDraft.thigh_cm', 'Muslo (cm)', d.thigh_cm)}
+    </div>
+    <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveMeasurement')}>Guardar medidas de hoy</button>
+  </div>`;
+}
+
 export function viewClientProgreso() {
   const photoCards = state.progressList.map(p => `
     <div>
@@ -616,7 +635,6 @@ export function viewClientProgreso() {
     </div>`).join('');
 
   const last = state.bodyMeasurements[state.bodyMeasurements.length - 1];
-  const d = state.measurementDraft;
   const trainer = state.myClientTrainer;
 
   const prRows = state.personalRecords.length
@@ -634,18 +652,7 @@ export function viewClientProgreso() {
       <div class="stat"><div class="stat__label">Peso</div><div class="stat__value">${last && last.weight_kg != null ? last.weight_kg : '—'}<span style="font-size:14px;color:var(--muted)">kg</span></div></div>
       <div class="stat stat--brand"><div class="stat__label">% Grasa</div><div class="stat__value">${last && last.body_fat_pct != null ? last.body_fat_pct : '—'}<span style="font-size:14px;color:var(--muted)">%</span></div></div>
     </div>
-    <div class="card" style="margin-bottom:16px">
-      <div class="eyebrow" style="margin-bottom:10px">Registrar medidas de hoy</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        ${textField('measurementDraft.weight_kg', 'Peso (kg)', d.weight_kg)}
-        ${textField('measurementDraft.body_fat_pct', '% grasa', d.body_fat_pct)}
-        ${textField('measurementDraft.waist_cm', 'Cintura (cm)', d.waist_cm)}
-        ${textField('measurementDraft.chest_cm', 'Pecho (cm)', d.chest_cm)}
-        ${textField('measurementDraft.arm_cm', 'Brazo (cm)', d.arm_cm)}
-        ${textField('measurementDraft.thigh_cm', 'Muslo (cm)', d.thigh_cm)}
-      </div>
-      <button class="btn btn--action" style="width:100%;padding:12px;font-size:13px" ${act('saveMeasurement')}>Guardar medidas de hoy</button>
-    </div>
+    ${measurementForm()}
     ${sectionTitle('Récords personales', 'crown', 'margin-bottom:8px')}
     ${prRows}
     ${sectionTitle('Fotos de progreso', 'camera', 'margin:20px 0 8px')}
@@ -876,6 +883,63 @@ export function viewClientScanPayment() {
 // calificación al propio entrenador asignado (trainer_reviews, distinto de
 // `reviews` que son del gimnasio) y las reseñas del gimnasio (antes su
 // propia tab "Reseñas", ahora una sección acá).
+export function viewClientEditProfile() {
+  const d = state.editProfileDraft;
+  const client = state.myClient;
+  const photo = d.photoPreviewUrl
+    ? `<img src="${esc(d.photoPreviewUrl)}" alt="Foto de rostro"/>`
+    : (client.faceUrl ? `<img src="${esc(client.faceUrl)}" alt="Foto de rostro"/>` : initials(client.name));
+  const levels = LEVELS.map(lv =>
+    `<div ${act('setEditLevel', lv.id)} class="chip chip--action${d.level === lv.id ? ' is-active' : ''}">${lv.label}</div>`).join('');
+  const goals = GOALS.map(g =>
+    `<div ${act('setEditGoal', g.id)} class="chip chip--action${d.goal === g.id ? ' is-active' : ''}">${g.label}</div>`).join('');
+  const planCards = state.plans.map(p => {
+    const sel = state.editProfileSelectedPlanId === p.id;
+    return `<div ${act('selectEditPlan', p.id)} class="row" style="cursor:pointer;margin-bottom:0;${sel ? 'border-color:var(--action);background:var(--action-dim)' : ''}">
+      <div class="row__body">
+        <div class="row__title">${esc(p.name)}</div>
+        <div class="row__meta">${esc(DURATION_LABELS[p.duration] || p.duration)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-family:var(--font-display);font-size:16px;color:var(--action)">${money(p.price)}</div>
+        ${sel ? `<div style="width:20px;height:20px;border-radius:50%;background:var(--action);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:900">✓</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="col">
+    <div class="step-head" style="justify-content:space-between">
+      <div class="back" ${act('closeEditProfile')}>&lsaquo;</div>
+      <div class="step-label">Editar perfil</div>
+      <div style="width:32px"></div>
+    </div>
+    <div class="form-body">
+      ${errorBanner()}
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
+        <div class="slot slot--circle" style="width:110px;height:110px" ${act('pickPhoto', 'editface')}>${photo}</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center">Tocá para cambiar tu foto de rostro</div>
+      </div>
+      ${sectionTitle('Datos físicos', 'bars', 'margin-bottom:10px')}
+      <div style="display:flex;gap:10px;margin-bottom:14px">
+        ${textField('editProfileDraft.weight', 'Peso (kg)', d.weight, { style: 'flex:1' })}
+        ${textField('editProfileDraft.height', 'Altura (cm)', d.height, { style: 'flex:1' })}
+      </div>
+      ${textField('editProfileDraft.age', 'Edad', d.age, { style: 'margin-bottom:18px' })}
+      <div class="eyebrow" style="margin-bottom:8px">Nivel de experiencia</div>
+      <div style="display:flex;gap:8px;margin-bottom:18px">${levels}</div>
+      <div class="eyebrow" style="margin-bottom:8px">Meta principal</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px">${goals}</div>
+      ${sectionTitle('Medidas', 'ruler', 'margin-bottom:10px')}
+      ${measurementForm()}
+      ${sectionTitle('Tu plan', 'crown', 'margin-bottom:12px')}
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px">${planCards}</div>
+    </div>
+    <div class="form-foot">
+      <button class="btn btn--action" ${act('saveEditProfile')} ${state.busy ? 'disabled' : ''}>${state.busy ? 'Guardando…' : 'Guardar cambios'}</button>
+    </div>
+  </div>`;
+}
+
 export function viewClientPerfil() {
   const client = state.myClient;
   const trainer = state.myClientTrainer;
@@ -886,6 +950,9 @@ export function viewClientPerfil() {
     `<span ${act('setTrainerRatingStars', n)} style="cursor:pointer;font-size:22px;color:${n <= draft.rating ? 'var(--action)' : 'var(--muted-dim)'}">★</span>`).join('');
   const reviewStars = [1, 2, 3, 4, 5].map(n =>
     `<div ${act('setStarRating', n)} style="font-size:20px;cursor:pointer;color:${n <= state.newCommentRating ? 'var(--action)' : 'var(--muted-dim)'}">★</div>`).join('');
+  const achievementsEarned = state.myAchievements.filter(a => a.earned_at).length;
+  const earnedIds = new Set(state.myAchievements.filter(a => a.earned_at).map(a => a.achievement_id));
+  const earnedMedals = state.achievementsCatalog.filter(a => earnedIds.has(a.id)).slice(0, 5);
 
   return `<div class="pane">
     ${errorBanner()}
@@ -895,7 +962,10 @@ export function viewClientPerfil() {
         <div class="row__title">${esc(client.name)}</div>
         <div class="row__meta">${esc(client.email)} · ${esc(client.phone)}</div>
       </div>
-      <span class="${meta.cls}">${meta.label}</span>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <span class="${meta.cls}">${meta.label}</span>
+        <div ${act('openEditProfile')} style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--info);cursor:pointer;font-weight:700;white-space:nowrap">${iconSpan('settings', 13)} Editar perfil</div>
+      </div>
     </div>
     <div class="stat-grid" style="margin:12px 0 16px">
       <div class="stat">
@@ -909,6 +979,14 @@ export function viewClientPerfil() {
         <div class="stat__hint">${esc((GOALS.find(g => g.id === client.physical.goal) || {}).label || '—')}</div>
       </div>
     </div>
+    ${sectionTitle('Tu rutina', 'dumbbell', 'margin-bottom:8px')}
+    <div style="margin-bottom:16px">${todayWorkoutCard()}</div>
+    ${sectionTitle('Logros', 'crown', 'margin-bottom:8px')}
+    <div class="stat rise" ${act('selectClientTab', 'logros')} style="cursor:pointer;margin-bottom:${earnedMedals.length ? '10px' : '16px'}">
+      <div class="stat__label">Medallas conseguidas</div>
+      <div class="stat__value">${achievementsEarned}<span style="font-size:16px;color:var(--muted)">/${state.achievementsCatalog.length}</span></div>
+    </div>
+    ${earnedMedals.length ? `<div style="display:flex;gap:10px;margin-bottom:16px">${earnedMedals.map(a => achievementBadge(a.icon, a.tier, true, 44)).join('')}</div>` : ''}
     ${trainer ? `
       ${sectionTitle('Tu entrenador', 'idcard', 'margin-bottom:8px')}
       <div class="row">
