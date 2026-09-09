@@ -146,6 +146,18 @@ export const state = {
   myClient: null,
   myClientPlan: null,
   myClientTrainer: null,
+
+  // "Editar perfil" (Perfil del cliente, ver ACTIONS.openEditProfile) —
+  // antes la foto/peso/altura/edad/nivel/objetivo quedaban fijos para
+  // siempre, seteados una sola vez en el registro. Mismos campos que
+  // clientPhysicalReg, en un draft aparte para no pisar ese (por si algún
+  // día coexisten en la misma sesión). editProfileSelectedPlanId es el
+  // plan elegido en la pantalla, no necesariamente el que ya tiene —
+  // arranca en el actual (myClient.planId) al abrir la pantalla. Las
+  // medidas del día siguen usando measurementDraft de siempre (ver
+  // measurementForm() en screens/client.js, reutilizada acá y en Progreso).
+  editProfileDraft: { weight: '', height: '', age: '', level: 'principiante', goal: 'perder_peso', photoFile: null, photoPreviewUrl: '' },
+  editProfileSelectedPlanId: null,
   checkinHistory: [],   // últimos check-ins propios — [{id, created_at}], mostrado en Inicio junto a "Mi QR"
   progressList: [],
   routineSource: 'ia',

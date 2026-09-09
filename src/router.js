@@ -30,6 +30,7 @@ import { viewAdminReg, viewAdminPending } from './screens/admin.js';
 import {
   viewClientReg1, viewClientReg2, viewClientReg3, viewClientReg4,
   viewClientHome, viewClientPhotoRequired, viewWorkout, viewClientChat, viewClientScanPayment, viewClientNotifications,
+  viewClientEditProfile,
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 import { viewExerciseLibrary } from './screens/library.js';
@@ -78,6 +79,7 @@ const SCREENS = {
   ownerCalendar: viewOwnerCalendario,
   notifications: viewClientNotifications,
   staffNotifications: viewStaffNotifications,
+  clientEditProfile: viewClientEditProfile,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,
