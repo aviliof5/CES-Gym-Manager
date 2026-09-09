@@ -1,15 +1,23 @@
 /* Bolá — "Biblioteca de ejercicios" (pantalla #23 del plan, transversal a
    los 3 roles: cliente y entrenador solo la consultan, dueño/admin además
    puede agregar ejercicios propios del gimnasio — ver exercises/
-   exercisesLib en supabase/migrations/20260905000300_etapa2_features_schema.sql
-   y su contenido real en 20260908000200_exercise_library_real_content.sql).
-   Las fotos quedan con espacio reservado (.thumb--pending): el dueño las
-   mandará más adelante, nunca se inventa una imagen. */
+   exercisesLib en supabase/migrations/20260905000300_etapa2_features_schema.sql,
+   su contenido real en 20260908000200_exercise_library_real_content.sql y
+   la técnica (para qué sirve, qué músculo trabaja, buenas prácticas,
+   errores comunes) en 20260915000000_exercise_technique_content.sql.
+
+   Nunca se inventa una foto real de cada ejercicio — no tenemos, y
+   pretender que sí sería mentirle a quien la mira. En su lugar, cada
+   ejercicio del catálogo global trae 2 ilustraciones esquemáticas
+   (posición inicial/final) generadas por código a partir de su patrón de
+   movimiento (ver src/diagrams.js) — un ejercicio propio que carga el
+   gimnasio, sin patrón asignado, se queda con el ícono de siempre. */
 'use strict';
 
 import { state } from '../state.js';
 import { iconSpan } from '../data.js';
 import { esc, act, errorBanner, textField, sectionTitle } from '../helpers.js';
+import { exercisePoseSvg, DIAGRAM_STAGE_LABELS } from '../diagrams.js';
 
 const LEVEL_ORDER = ['Principiante', 'Intermedio', 'Avanzado'];
 const LEVEL_STYLE = {
@@ -29,6 +37,30 @@ function formatRestShort(seconds) {
   return `${seconds} s`;
 }
 
+// Las 2 ilustraciones esquemáticas (inicio/fin) de un ejercicio, una al
+// lado de la otra — ver el comentario grande arriba del archivo sobre por
+// qué son diagramas y no fotos. Si el ejercicio no tiene diagramPattern
+// (uno propio del gimnasio, cargado sin ese dato) no se dibuja nada, en
+// vez de mostrar un patrón que no le corresponde.
+function techniqueDiagrams(pattern) {
+  if (!pattern) return '';
+  const stage = (key) => `<div style="flex:1;background:var(--surface-2);border-radius:var(--r-md);padding:10px;text-align:center">
+    ${exercisePoseSvg(pattern, key, 88, 'var(--brand)')}
+    <div style="font-size:10.5px;color:var(--muted);margin-top:2px">${esc(DIAGRAM_STAGE_LABELS[key])}</div>
+  </div>`;
+  return `<div style="display:flex;gap:10px;margin-bottom:14px">${stage('a')}${stage('b')}</div>
+    <div class="hint" style="margin:-8px 0 14px;text-align:center">Ilustración esquemática de la técnica — no es una foto real</div>`;
+}
+
+function bulletList(items, color) {
+  if (!items || !items.length) return '';
+  return `<div style="display:flex;flex-direction:column;gap:6px">
+    ${items.map(t => `<div style="display:flex;gap:8px;align-items:flex-start;font-size:var(--fs-sm);line-height:1.4">
+      <span style="color:${color};flex-shrink:0;margin-top:1px">●</span><span>${esc(t)}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
 export function viewExerciseLibrary() {
   const isStaff = !!(state.myProfile && (state.myProfile.role === 'owner' || state.myProfile.role === 'admin'));
   const lib = state.exercisesLib || [];
@@ -43,7 +75,7 @@ export function viewExerciseLibrary() {
         <div style="width:32px"></div>
       </div>
       <div class="form-body">
-        <div class="thumb thumb--pending" style="width:100%;height:160px;margin-bottom:14px">${iconSpan('dumbbell', 30)}</div>
+        ${expanded.diagramPattern ? techniqueDiagrams(expanded.diagramPattern) : `<div class="thumb thumb--pending" style="width:100%;height:160px;margin-bottom:14px">${iconSpan('dumbbell', 30)}</div>`}
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
           ${levelBadge(expanded.level)}
           <span class="badge" style="background:rgba(255,255,255,0.08);color:var(--muted)">${esc(expanded.muscleGroup)}</span>
@@ -57,6 +89,10 @@ export function viewExerciseLibrary() {
           ${rest ? `<div class="stat"><div class="stat__label">Descanso</div><div class="stat__value" style="font-size:18px">${esc(rest)}</div></div>` : ''}
         </div>` : ''}
         ${expanded.goal ? `<div class="hint" style="margin-bottom:16px">Objetivo: ${esc(expanded.goal)}</div>` : ''}
+        ${expanded.purpose ? `${sectionTitle('Para qué sirve', 'zap', 'margin-bottom:6px')}<div style="font-size:var(--fs-sm);line-height:1.5;margin-bottom:16px">${esc(expanded.purpose)}</div>` : ''}
+        ${expanded.muscleWorked ? `${sectionTitle('Qué músculo trabaja', 'run', 'margin-bottom:6px')}<div style="font-size:var(--fs-sm);line-height:1.5;margin-bottom:16px">${esc(expanded.muscleWorked)}</div>` : ''}
+        ${expanded.bestPractices && expanded.bestPractices.length ? `${sectionTitle('Buenas prácticas', 'check', 'margin-bottom:8px')}<div style="margin-bottom:16px">${bulletList(expanded.bestPractices, 'var(--ok)')}</div>` : ''}
+        ${expanded.commonMistakes && expanded.commonMistakes.length ? `${sectionTitle('Errores comunes', 'x', 'margin-bottom:8px')}<div style="margin-bottom:16px">${bulletList(expanded.commonMistakes, 'var(--danger)')}</div>` : ''}
         <div class="alert alert--warn"><div class="alert__text">Detené el ejercicio ante dolor agudo. Adaptá carga, rango y variante al nivel de cada persona.</div></div>
       </div>
     </div>`;
@@ -74,7 +110,7 @@ export function viewExerciseLibrary() {
     (!query || e.name.toLowerCase().includes(query)));
 
   const cards = filtered.map(e => `<div ${act('openLibraryDetail', e.id)} style="cursor:pointer">
-    <div class="thumb thumb--pending" style="width:100%;height:90px">${iconSpan('dumbbell', 22)}</div>
+    <div class="thumb thumb--pending" style="width:100%;height:90px;display:flex;align-items:center;justify-content:center">${e.diagramPattern ? exercisePoseSvg(e.diagramPattern, 'a', 56, 'var(--brand)') : iconSpan('dumbbell', 22)}</div>
     <div style="font-size:var(--fs-sm);font-weight:700;margin-top:6px">${esc(e.name)}</div>
     <div style="font-size:var(--fs-xs);color:var(--muted)">${esc(e.muscleGroup)}${e.equipmentName ? ' · ' + esc(e.equipmentName) : ''}</div>
     ${e.level ? `<div style="margin-top:4px">${levelBadge(e.level)}</div>` : ''}

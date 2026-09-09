@@ -381,7 +381,17 @@ export function exerciseRow(ex) {
   </div>`;
 }
 
-const libraryLink = () => `<div ${act('openExerciseLibrary')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:8px">${iconSpan('dumbbell', 14)} Ver biblioteca de ejercicios</div>`;
+// Antes era un link de texto chiquito, fácil de pasar por alto — ahora es
+// una tarjeta grande con ícono y flecha, mismo tratamiento que un CTA de
+// verdad (pedido explícito: "más visible").
+const libraryLink = () => `<div ${act('openExerciseLibrary')} class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer;padding:14px 16px;margin-bottom:10px;border-color:var(--brand)">
+  <div style="width:42px;height:42px;border-radius:11px;background:var(--brand-dim);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0">${iconSpan('dumbbell', 20)}</div>
+  <div style="flex:1;min-width:0">
+    <div style="font-size:var(--fs-sm);font-weight:800">Biblioteca de ejercicios</div>
+    <div style="font-size:var(--fs-xs);color:var(--muted)">Técnica, músculo trabajado y errores comunes</div>
+  </div>
+  ${iconSpan('chevronRight', 18)}
+</div>`;
 const programsLink = () => `<div ${act('openProgramTemplates')} style="font-size:var(--fs-sm);color:var(--brand);cursor:pointer;font-weight:600;margin-bottom:12px">${iconSpan('dumbbell', 14)} Ver programas de entrenamiento</div>`;
 
 // Si el entrenador armó la rutina aplicando un programa (ver
