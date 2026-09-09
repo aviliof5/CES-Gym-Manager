@@ -1656,11 +1656,14 @@ export async function enterOwnerDash() {
     loadWithFallback(`trainerInterest:${gymId}`, () => BolaAPI.trainers.listInterestForGym(gymId)),
     loadWithFallback(`gymInvites:${gymId}`, () => BolaAPI.gyms.getInvites(gymId)),
   ]);
-  const trainersForGym = trainersRes.data, plans = plansRes.data, equipment = equipmentRes.data,
+  const trainersForGym = trainersRes.data, plans = plansRes.data,
     reviews = reviewsRes.data, gymAdminsForGym = adminsRes.data, todayCheckins = checkinsRes.data, trainerInterest = interestRes.data, gymInvites = invitesRes.data;
   // Foto de rostro de cada socio (ver attachFaceUrls) — Socios la muestra
   // en vez del círculo de iniciales cuando existe.
   const clientsForGym = await attachFaceUrls(clientsRes.data);
+  // Foto de cada máquina (ver attachEquipmentPhotos) — Configuración la
+  // muestra junto al nombre.
+  const equipment = await attachEquipmentPhotos(equipmentRes.data);
   const coreStale = [clientsRes, trainersRes, plansRes, equipmentRes, reviewsRes, adminsRes, checkinsRes, interestRes, invitesRes].some(r => r.stale);
 
   // Etapa 2 — rating real por entrenador aprobado (Entrenadores/Reportes),
@@ -1737,7 +1740,7 @@ export async function enterClientHome() {
   // Su propia foto de rostro (ver attachFaceUrls) — Perfil la muestra en
   // vez del círculo de iniciales cuando existe.
   const [client] = await attachFaceUrls([clientRaw]);
-  const [plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems] = await Promise.all([
+  const [plans, trainersForGym, reviews, equipmentRaw, exercisesLib, programTemplates, programTemplateItems] = await Promise.all([
     BolaAPI.plans.list(state.gym.id),
     BolaAPI.trainers.listForGym(state.gym.id),
     BolaAPI.reviews.listForGym(state.gym.id),
@@ -1750,6 +1753,9 @@ export async function enterClientHome() {
     BolaAPI.programTemplates.list(),
     BolaAPI.programTemplates.listItems(),
   ]);
+  // Foto de cada máquina (ver attachEquipmentPhotos) — "Máquinas disponibles
+  // en tu gym" (Inicio) las muestra con foto en vez de solo el nombre.
+  const equipment = await attachEquipmentPhotos(equipmentRaw);
   const plan = plans.find(p => p.id === client.planId) || null;
   const trainer = client.trainerUserId ? trainersForGym.find(t => t.id === client.trainerUserId) : null;
   const progressRaw = await BolaAPI.progress.listForClient(client.id);
@@ -1893,6 +1899,26 @@ export async function attachFaceUrls(clients) {
   }));
 }
 
+// Igual idea que attachFaceUrls, pero para la foto de cada máquina/equipo
+// (equipment.photo_key, ver 20260916000000_equipment_photos.sql) — se sube
+// una sola vez desde Configuración y prácticamente nunca cambia, así que
+// también conviene cachear la signed URL (dueño/admin recargan Panel/Socios
+// seguido, y ahora el cliente la ve en Inicio en cada entrada al home).
+const equipmentUrlCache = new Map(); // photoKey -> signedUrl
+export async function attachEquipmentPhotos(equipmentList) {
+  return Promise.all(equipmentList.map(async e => {
+    if (!e.photoKey) return e;
+    if (equipmentUrlCache.has(e.photoKey)) return { ...e, photoUrl: equipmentUrlCache.get(e.photoKey) };
+    try {
+      const photoUrl = await BolaAPI.photos.signedUrl(e.photoKey);
+      equipmentUrlCache.set(e.photoKey, photoUrl);
+      return { ...e, photoUrl };
+    } catch (err) {
+      return e;
+    }
+  }));
+}
+
 /* ============================ photo picking ============================ */
 
 const filePicker = document.getElementById('filePicker');
@@ -1924,6 +1950,27 @@ filePicker.addEventListener('change', async () => {
     // "Cancelar"/volver atrás no deja una foto a medio subir).
     const previewUrl = URL.createObjectURL(file);
     setState({ editProfileDraft: { ...state.editProfileDraft, photoFile: file, photoPreviewUrl: previewUrl } });
+    return;
+  }
+
+  if (target.startsWith('equipment:')) {
+    // Foto de una máquina ya creada (ver equipmentEditor() en screens/owner.js
+    // — a diferencia de la foto de rostro, acá no hay borrador: se sube
+    // apenas se elige, mismo criterio que las fotos de progreso.
+    const equipmentId = target.split(':')[1];
+    try {
+      setState({ busy: true });
+      const path = BolaAPI.photos.equipmentPath(state.gym.id, equipmentId);
+      await BolaAPI.photos.upload(path, file);
+      await BolaAPI.equipment.setPhotoKey(equipmentId, path);
+      const photoUrl = await BolaAPI.photos.signedUrl(path);
+      setState({
+        busy: false,
+        equipment: state.equipment.map(e => e.id === equipmentId ? { ...e, photoKey: path, photoUrl } : e),
+      });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
     return;
   }
 
