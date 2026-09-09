@@ -242,13 +242,22 @@
 
   const equipment = {
     async list(gymId) {
-      return unwrap(await client.from('equipment').select('id, name').eq('gym_id', gymId).order('created_at'));
+      const rows = unwrap(await client.from('equipment').select('id, name, photo_key').eq('gym_id', gymId).order('created_at'));
+      return rows.map(r => ({ id: r.id, name: r.name, photoKey: r.photo_key }));
     },
     async add(gymId, name) {
-      return unwrap(await client.from('equipment').insert({ gym_id: gymId, name }).select('id, name').single());
+      const r = unwrap(await client.from('equipment').insert({ gym_id: gymId, name }).select('id, name, photo_key').single());
+      return { id: r.id, name: r.name, photoKey: r.photo_key };
     },
     async remove(id) {
       const { error } = await client.from('equipment').delete().eq('id', id);
+      if (error) throw error;
+    },
+    // Foto de la máquina (ver 20260916000000_equipment_photos.sql) — se
+    // sube recién cuando el staff toca el ícono de cámara de una máquina
+    // que ya existe (no al crearla), así que va aparte de add().
+    async setPhotoKey(id, key) {
+      const { error } = await client.from('equipment').update({ photo_key: key }).eq('id', id);
       if (error) throw error;
     },
   };
@@ -437,6 +446,10 @@
   const photos = {
     facePath: (gymId, clientUserId) => `${gymId}/${clientUserId}/face.jpg`,
     progressPath: (gymId, clientUserId, dateStr) => `${gymId}/${clientUserId}/progress/${dateStr}.jpg`,
+    // Segundo segmento literal "equipment" (no un user id) — ver
+    // 20260916000000_equipment_photos.sql, las políticas de Storage nuevas
+    // comparan justo ese segmento contra 'equipment'.
+    equipmentPath: (gymId, equipmentId) => `${gymId}/equipment/${equipmentId}.jpg`,
 
     async upload(path, file) {
       const { error } = await client.storage.from(PHOTO_BUCKET).upload(path, file, { upsert: true });

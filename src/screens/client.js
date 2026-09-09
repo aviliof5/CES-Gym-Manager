@@ -326,10 +326,29 @@ export function viewClientInicio() {
     </div>
     ${qrCard()}
     ${sectionTitle('Máquinas disponibles en tu gym', 'dumbbell')}
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      ${state.equipment.map(e => `<div class="pill">${esc(e.name)}</div>`).join('')}
-    </div>
+    ${equipmentGrid(state.equipment)}
   </div>`;
+}
+
+// Máquinas del gym (pedido: "que le salgan las máquinas con foto luego a
+// los clientes") — las que el staff les puso foto (equipmentEditor() en
+// screens/owner.js) se muestran como tarjeta con foto real; las que
+// todavía no tienen foto siguen como el pill de solo texto de siempre, no
+// se inventa una imagen de relleno (mismo criterio del proyecto que las
+// fotos de progreso/ejercicios: sin foto real, no hay foto).
+function equipmentGrid(equipment) {
+  const withPhoto = equipment.filter(e => e.photoUrl);
+  const withoutPhoto = equipment.filter(e => !e.photoUrl);
+  const cards = withPhoto.map(e => `
+    <div>
+      <div class="thumb" style="width:100%;height:90px">
+        <img src="${esc(e.photoUrl)}" alt="${esc(e.name)}"/>
+      </div>
+      <div style="font-size:var(--fs-xs);color:var(--text-soft);margin-top:6px;text-align:center">${esc(e.name)}</div>
+    </div>`).join('');
+  return `
+    ${withPhoto.length ? `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:${withoutPhoto.length ? '12px' : '0'}">${cards}</div>` : ''}
+    ${withoutPhoto.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px">${withoutPhoto.map(e => `<div class="pill">${esc(e.name)}</div>`).join('')}</div>` : ''}`;
 }
 
 // "¿Quieres ser entrenador de Fight Club?" (sección 11 del pedido original)

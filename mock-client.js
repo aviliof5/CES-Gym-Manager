@@ -1743,9 +1743,10 @@
   /* ---------------- equipo ---------------- */
 
   const equipment = {
-    async list(gymId) { await wait(); return db.equipment.filter(e => e.gym_id === gymId).map(e => ({ id: e.id, name: e.name })); },
-    async add(gymId, name) { await wait(); const row = { id: uid('eq'), gym_id: gymId, name }; db.equipment.push(row); return { id: row.id, name: row.name }; },
+    async list(gymId) { await wait(); return db.equipment.filter(e => e.gym_id === gymId).map(e => ({ id: e.id, name: e.name, photoKey: e.photo_key || null })); },
+    async add(gymId, name) { await wait(); const row = { id: uid('eq'), gym_id: gymId, name, photo_key: null }; db.equipment.push(row); return { id: row.id, name: row.name, photoKey: null }; },
     async remove(id) { await wait(); db.equipment = db.equipment.filter(e => e.id !== id); },
+    async setPhotoKey(id, key) { await wait(); const row = db.equipment.find(e => e.id === id); if (row) row.photo_key = key; },
   };
 
   /* ---------------- planes ---------------- */
@@ -1920,6 +1921,7 @@
   const photos = {
     facePath: (gymId, clientUserId) => `${gymId}/${clientUserId}/face.jpg`,
     progressPath: (gymId, clientUserId, dateStr) => `${gymId}/${clientUserId}/progress/${dateStr}.jpg`,
+    equipmentPath: (gymId, equipmentId) => `${gymId}/equipment/${equipmentId}.jpg`,
     async upload(path, file) { await wait(); db.storage.set(path, file); return path; },
     async signedUrl(path) { await wait(10); const f = db.storage.get(path); return f ? URL.createObjectURL(f) : null; },
   };

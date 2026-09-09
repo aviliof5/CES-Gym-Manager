@@ -67,10 +67,21 @@ export function viewOwnerReg2() {
 // cargaba una vez durante el registro y no había forma de agregar/sacar
 // una máquina después. opts.title/opts.subtitle dejan a cada pantalla
 // poner su propio encabezado sin duplicar la lista/input/sugeridas.
+// El círculo de foto de cada máquina (pedido: "opción de poner una foto de
+// la máquina") — toca para elegir/cambiar, sube apenas se elige (ver la
+// rama 'equipment:' en el listener de filePicker, actions.js). Sin foto
+// todavía: un ícono de cámara como placeholder, mismo criterio que "Sube tu
+// foto" en las fotos de progreso (viewClientProgreso).
+function equipmentPhotoSlot(e) {
+  const photo = e.photoUrl ? `<img src="${esc(e.photoUrl)}" alt="" style="width:100%;height:100%;object-fit:cover;display:block"/>` : iconSpan('camera', 13);
+  return `<div ${act('pickPhoto', 'equipment:' + e.id)} style="width:26px;height:26px;border-radius:50%;overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;color:var(--muted)">${photo}</div>`;
+}
+
 function equipmentEditor(opts) {
   const o = opts || {};
   const chips = state.equipment.map(e => `
-    <div class="pill" style="display:flex;align-items:center;gap:8px;padding:8px 8px 8px 14px">
+    <div class="pill" style="display:flex;align-items:center;gap:8px;padding:5px 8px 5px 5px">
+      ${equipmentPhotoSlot(e)}
       <span>${esc(e.name)}</span>
       <span ${act('removeEquipment', e.id)} style="width:18px;height:18px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--muted)">&times;</span>
     </div>`).join('');
