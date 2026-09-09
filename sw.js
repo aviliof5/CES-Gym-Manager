@@ -8,6 +8,10 @@
 // script de supabase-js del CDN: esos siempre van directo a la red, para
 // no arriesgar servir datos o tokens de sesión viejos desde el cache.
 
+// Si agregás o sacás un archivo acá, hacé lo mismo con CHECK_FILES en
+// index.html (chequeo de auto-actualización — compara estos mismos
+// archivos contra una copia fresca de la red para saber si hay que
+// recargar sola una pestaña que quedó abierta mucho tiempo).
 const CACHE_NAME = 'fight-club-gym-shell-v6';
 const SHELL_FILES = [
   './',

@@ -44,8 +44,65 @@
 // y funcione offline. No se registra dentro de la app empaquetada con
 // Capacitor (ya es una app nativa, no necesita esto) ni en el
 // test-harness (evita cachear una versión vieja mientras se prueba app.js).
-if ('serviceWorker' in navigator && !(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+const isNative = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+if ('serviceWorker' in navigator && !isNative) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+
+// Auto-actualización (pedido: "que la app se actualice sola cada vez que
+// haya una actualización" — el caso real es la PWA que queda abierta días
+// en el celular/tablet de recepción sin que nadie la cierre del todo, así
+// que nunca vuelve a pasar por un `load` fresco que ya traería lo último
+// por la red sola — ver sw.js, estrategia "network-first").
+//
+// En vez de depender de acordarse de bumpear un número de versión a mano
+// en cada deploy (se rompe la primera vez que alguien lo olvida), se
+// compara el contenido REAL de los archivos del shell contra una copia
+// fresca de la red (sin cache) cada tanto: si algo cambió — cualquier
+// archivo, cualquier deploy — recarga sola. Misma lista que SHELL_FILES en
+// sw.js (mantenerlas iguales si se agrega/saca un archivo de una de las
+// dos); no hace falta tocar esto por cada feature nueva.
+if (!isNative) {
+  (function () {
+    const CHECK_FILES = [
+      'index.html', 'styles.css', 'config.js', 'supabase-client.js', 'ads.js',
+      'src/router.js', 'src/state.js', 'src/actions.js', 'src/data.js', 'src/helpers.js',
+      'src/screens/auth.js', 'src/screens/owner.js', 'src/screens/admin.js',
+      'src/screens/client.js', 'src/screens/trainer.js',
+    ];
+    let baseline = null;
+    let checking = false;
+
+    async function fetchShellText() {
+      const parts = await Promise.all(CHECK_FILES.map(f =>
+        fetch(f, { cache: 'no-store' }).then(r => r.text()).catch(() => null)));
+      return parts.some(p => p === null) ? null : parts.join('\n'); // sin señal a medio camino: no comparar contra un fetch parcial
+    }
+
+    async function checkForUpdate() {
+      if (checking) return;
+      checking = true;
+      try {
+        const fresh = await fetchShellText();
+        if (fresh == null) return;
+        if (baseline == null) { baseline = fresh; return; } // primera pasada: fija la base, nada que comparar todavía
+        if (fresh !== baseline) location.reload();
+      } finally {
+        checking = false;
+      }
+    }
+
+    window.addEventListener('load', () => {
+      checkForUpdate();
+      // El momento real en que esto importa: volver a la app después de un
+      // rato afuera (cambiar de app, prender la pantalla de nuevo) — ahí
+      // conviene chequear, no solo confiar en el intervalo.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') checkForUpdate();
+      });
+      setInterval(checkForUpdate, 15 * 60 * 1000);
+    });
+  })();
 }
 </script>
 </body>
