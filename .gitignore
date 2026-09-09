@@ -4,6 +4,12 @@ Thumbs.db
 .DS_Store
 git push -u origin main
 
+# JPEGs crudos de Google Flow para las medallas de logros (24MB, fondo
+# blanco sin procesar) — solo insumo de scripts/process-achievement-badges.js;
+# lo que la app realmente usa son los PNG ya recortados en assets/logros/,
+# que sí se versionan.
+assets/Iconos Logros/
+
 # Capacitor / Android
 node_modules/
 www/

@@ -39,21 +39,40 @@ export function avatar(name, url, extraClass, extraStyle) {
 
 // Medalla de un logro (ver src/screens/logros.js) — un círculo con
 // degradé + el ícono de su categoría en el centro, coloreado según el
-// "tier" (1-2 bronce, 3-4 plata, 5-6 oro, 7-8 platino, 9+ diamante). Es una
-// imagen generada, no una foto: con 1003 logros no hay 1003 fotos reales
-// que mostrar, así que cada uno tiene su propia medalla distinta según
-// categoría+nivel en vez de un ícono plano repetido o una imagen inventada.
+// "tier" (1-2 bronce, 3-4 plata, 5-6 oro, 7-8 platino, 9+ diamante). Con
+// 1003 logros no hay 1003 fotos reales que mostrar, así que cada uno tiene
+// su propia medalla según categoría+nivel en vez de una imagen inventada.
+//
+// Para las 5 categorías × 5 tiers (25 combinaciones) hay arte real: se
+// generó con el prompt de docs/achievement_badge_prompt.md en Google Flow,
+// se procesó con scripts/process-achievement-badges.js (recorte circular +
+// fondo transparente) y vive en assets/logros/<categoria>_<tier>.png — ver
+// ACHIEVEMENT_BADGE_IMAGES. Genera 18/25; las que faltan (todo "platino" y
+// "clases" oro/diamante) caen al SVG generado como antes, para no dejar un
+// logro sin medalla mientras no estén las imágenes que faltan.
 const TIER_BANDS = [
-  { max: 2, from: '#8a5a3c', to: '#d9a066' },   // bronce
-  { max: 4, from: '#9098a3', to: '#e2e6ec' },   // plata
-  { max: 6, from: '#c9932c', to: '#ffd968' },   // oro
-  { max: 8, from: '#4fa8ae', to: '#bdf4f0' },   // platino
-  { max: Infinity, from: '#6a5ce8', to: '#c9baff' }, // diamante
+  { name: 'bronce', max: 2, from: '#8a5a3c', to: '#d9a066' },
+  { name: 'plata', max: 4, from: '#9098a3', to: '#e2e6ec' },
+  { name: 'oro', max: 6, from: '#c9932c', to: '#ffd968' },
+  { name: 'platino', max: 8, from: '#4fa8ae', to: '#bdf4f0' },
+  { name: 'diamante', max: Infinity, from: '#6a5ce8', to: '#c9baff' },
 ];
+const ACHIEVEMENT_BADGE_IMAGES = new Set([
+  'constancia_bronce', 'constancia_plata', 'constancia_oro', 'constancia_diamante',
+  'fuerza_bronce', 'fuerza_plata', 'fuerza_oro', 'fuerza_diamante',
+  'cardio_bronce', 'cardio_plata', 'cardio_oro', 'cardio_diamante',
+  'medidas_bronce', 'medidas_plata', 'medidas_oro', 'medidas_diamante',
+  'clases_bronce', 'clases_plata',
+]);
 let badgeSeq = 0;
-export function achievementBadge(iconKey, tier, earned, size) {
+export function achievementBadge(iconKey, category, tier, earned, size) {
   const s = size || 56;
   const band = TIER_BANDS.find(b => (tier || 1) <= b.max);
+  const imgKey = `${category}_${band.name}`;
+  if (ACHIEVEMENT_BADGE_IMAGES.has(imgKey)) {
+    return `<img src="assets/logros/${imgKey}.png" width="${s}" height="${s}" alt=""
+      style="display:block;border-radius:50%;${earned ? '' : 'filter:grayscale(1);opacity:0.55'}"/>`;
+  }
   const [from, to] = earned ? [band.from, band.to] : ['#3a3a40', '#55555c'];
   const gid = `badge${++badgeSeq}`;
   const paths = ICON_PATHS[iconKey] || ICON_PATHS.crown;

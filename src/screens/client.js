@@ -680,7 +680,7 @@ function medalCard(a, mine) {
   const earned = !!mine.earned_at;
   const pct = Math.max(0, Math.min(100, Math.round((mine.progress / a.target) * 100)));
   return `<div class="medal rise${earned ? ' is-earned' : ''}">
-    <div class="medal__disc" style="background:none;padding:0">${achievementBadge(a.icon, a.tier, earned, 52)}</div>
+    <div class="medal__disc" style="background:none;padding:0">${achievementBadge(a.icon, a.category, a.tier, earned, 52)}</div>
     <div class="medal__name">${esc(a.name)}</div>
     <div class="medal__hint">${earned ? 'Conseguido' : `${mine.progress}/${a.target}`}</div>
     ${!earned ? `<div class="progress" style="margin-top:6px"><div class="progress__fill" style="width:${pct}%"></div></div>` : ''}
@@ -986,7 +986,7 @@ export function viewClientPerfil() {
       <div class="stat__label">Medallas conseguidas</div>
       <div class="stat__value">${achievementsEarned}<span style="font-size:16px;color:var(--muted)">/${state.achievementsCatalog.length}</span></div>
     </div>
-    ${earnedMedals.length ? `<div style="display:flex;gap:10px;margin-bottom:16px">${earnedMedals.map(a => achievementBadge(a.icon, a.tier, true, 44)).join('')}</div>` : ''}
+    ${earnedMedals.length ? `<div style="display:flex;gap:10px;margin-bottom:16px">${earnedMedals.map(a => achievementBadge(a.icon, a.category, a.tier, true, 44)).join('')}</div>` : ''}
     ${trainer ? `
       ${sectionTitle('Tu entrenador', 'idcard', 'margin-bottom:8px')}
       <div class="row">
