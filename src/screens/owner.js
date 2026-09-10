@@ -8,7 +8,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark } from '../data.js';
+import { EQUIPMENT_SUGGESTIONS, DURATION_LABELS, MESES, DAY_LABELS, iconSpan, brandMark, EQUIPMENT_CONCEPTS, inferEquipmentConcepts } from '../data.js';
 import {
   esc, act, stepHead, stepBars, errorBanner, textField, sectionTitle,
   tabsMarkup, devCredit, initials, statusMeta, enrichClient, commentCards, money,
@@ -77,14 +77,53 @@ function equipmentPhotoSlot(e) {
   return `<div ${act('pickPhoto', 'equipment:' + e.id)} style="width:26px;height:26px;border-radius:50%;overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;color:var(--muted)">${photo}</div>`;
 }
 
+// Etiqueta legible de una lista de conceptos de equipamiento (Fase 5).
+function conceptLabels(tokens) {
+  if (!tokens || !tokens.length) return null;
+  return tokens.map(t => (EQUIPMENT_CONCEPTS.find(c => c.id === t) || {}).label || t).join(' · ');
+}
+
+// El panel inline para editar los conceptos de UNA máquina — se abre al
+// tocar "Editar" (state.equipmentEditingConceptsId). Los conceptos dicen
+// qué ejercicios habilita esa máquina para el motor de rutinas (Fase 6).
+function conceptsPanel(e) {
+  const draft = state.equipmentConceptsDraft;
+  return `<div style="background:var(--surface-dim);border-radius:var(--r-md);padding:12px;margin-top:8px">
+    <div class="eyebrow" style="margin-bottom:6px">¿Qué permite hacer esta máquina?</div>
+    <div class="hint" style="margin-bottom:10px">El motor usa esto para elegir solo ejercicios que se puedan hacer en el gimnasio.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
+      ${EQUIPMENT_CONCEPTS.map(c => `<div ${act('toggleEquipmentConcept', c.id)} class="chip chip--action${draft.includes(c.id) ? ' is-active' : ''}" style="font-size:11.5px;padding:6px 10px">${esc(c.label)}</div>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn--ghost" style="flex:1;padding:9px;font-size:12.5px" ${act('closeEquipmentConcepts')}>Cancelar</button>
+      <button class="btn btn--action" style="flex:2;padding:9px;font-size:12.5px" ${act('saveEquipmentConcepts', e.id)}>Guardar</button>
+    </div>
+  </div>`;
+}
+
+function equipmentCard(e) {
+  const editing = state.equipmentEditingConceptsId === e.id;
+  const labels = conceptLabels(e.concepts) || conceptLabels(inferEquipmentConcepts(e.name));
+  const inactive = e.isActive === false;
+  return `<div class="card" style="padding:10px 12px;margin-bottom:8px;${inactive ? 'opacity:0.6' : ''}">
+    <div style="display:flex;align-items:center;gap:10px">
+      ${equipmentPhotoSlot(e)}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700">${esc(e.name)}</div>
+        <div style="font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${labels ? esc(labels) : '<span style="color:var(--warn)">sin conceptos — tocá Editar</span>'}</div>
+      </div>
+      <div ${act('toggleEquipmentActive', e.id)} title="${inactive ? 'Inactiva' : 'Activa'}" style="width:38px;height:22px;border-radius:12px;flex-shrink:0;cursor:pointer;background:${inactive ? 'var(--surface-2)' : 'var(--ok)'};position:relative;transition:background .15s">
+        <div style="position:absolute;top:2px;left:${inactive ? '2px' : '18px'};width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s"></div>
+      </div>
+      <span ${act('removeEquipment', e.id)} style="width:20px;height:20px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--muted);flex-shrink:0">&times;</span>
+    </div>
+    ${editing ? conceptsPanel(e) : `<div ${act('openEquipmentConcepts', e.id)} style="font-size:11.5px;color:var(--info);font-weight:700;cursor:pointer;margin-top:6px;padding-left:36px">Editar lo que permite</div>`}
+  </div>`;
+}
+
 function equipmentEditor(opts) {
   const o = opts || {};
-  const chips = state.equipment.map(e => `
-    <div class="pill" style="display:flex;align-items:center;gap:8px;padding:5px 8px 5px 5px">
-      ${equipmentPhotoSlot(e)}
-      <span>${esc(e.name)}</span>
-      <span ${act('removeEquipment', e.id)} style="width:18px;height:18px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--muted)">&times;</span>
-    </div>`).join('');
+  const cards = state.equipment.map(equipmentCard).join('');
 
   const have = new Set(state.equipment.map(e => e.name));
   const suggestions = EQUIPMENT_SUGGESTIONS.filter(s => !have.has(s)).map(s =>
@@ -96,7 +135,8 @@ function equipmentEditor(opts) {
       ${textField('newEquipment', 'Ej. Máquina de poleas', state.newEquipment, { sm: true, style: 'flex:1' })}
       <button ${act('addEquipmentFromInput')} class="btn btn--brand" style="flex:0 0 auto;width:auto;padding:0 18px;font-size:20px">+</button>
     </div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:${state.equipment.length && suggestions ? '16px' : '0'}">${chips}</div>
+    ${state.equipment.length ? `<div class="hint" style="margin-bottom:10px">El interruptor pone la máquina activa/inactiva — una inactiva no se usa para generar rutinas.</div>` : ''}
+    <div style="margin-bottom:${state.equipment.length && suggestions ? '16px' : '0'}">${cards}</div>
     ${suggestions ? `<div class="eyebrow" style="margin-bottom:8px">Sugeridas</div><div style="display:flex;flex-wrap:wrap;gap:8px">${suggestions}</div>` : ''}`;
 }
 

@@ -107,6 +107,70 @@ export const EVAL_SEX = [
 
 export const EVAL_TOTAL_STEPS = 8;
 
+/* ---------- Training Engine — conceptos de equipamiento (Fase 5) ----------
+   Cada máquina/equipo del gimnasio (public.equipment.concepts) ofrece uno o
+   más de estos "conceptos". Cada ejercicio pide un set de conceptos
+   (public.exercises.required_equipment). El motor: un ejercicio es posible
+   si TODOS sus conceptos están cubiertos por la unión de conceptos de las
+   máquinas ACTIVAS del gimnasio. 'peso_corporal' se da siempre por sentado
+   y no aparece en este catálogo. */
+export const EQUIPMENT_CONCEPTS = [
+  { id: 'barra', label: 'Barra olímpica' },
+  { id: 'barra_ez', label: 'Barra EZ / Z' },
+  { id: 'mancuernas', label: 'Mancuernas' },
+  { id: 'banco', label: 'Banco (plano / inclinable)' },
+  { id: 'banco_predicador', label: 'Banco predicador' },
+  { id: 'polea', label: 'Poleas / cables' },
+  { id: 'prensa', label: 'Prensa de piernas' },
+  { id: 'maquina', label: 'Máquinas de piezas (press, remo, extensiones…)' },
+  { id: 'maquina_hack', label: 'Máquina hack' },
+  { id: 'maquina_asistida', label: 'Máquina asistida (dominadas / fondos)' },
+  { id: 'barra_fija', label: 'Barra fija / paralelas / dominadas' },
+  { id: 'cinta', label: 'Cinta de correr' },
+  { id: 'bicicleta', label: 'Bicicleta fija' },
+  { id: 'remo_ergometro', label: 'Remo ergómetro' },
+  { id: 'cuerda_saltar', label: 'Cuerda de saltar' },
+  { id: 'battle_ropes', label: 'Sogas de batalla' },
+  { id: 'kettlebell', label: 'Kettlebells' },
+  { id: 'cajon', label: 'Cajón pliométrico' },
+  { id: 'balon_medicinal', label: 'Balón medicinal' },
+  { id: 'saco_boxeo', label: 'Saco de boxeo' },
+  { id: 'guantes', label: 'Guantes de boxeo' },
+];
+
+// Infiere los conceptos de una máquina a partir de su nombre — para
+// pre-marcar el editor y para las máquinas que ya existen. El admin siempre
+// puede corregir. Devuelve [] si no reconoce nada (el admin lo completa).
+export function inferEquipmentConcepts(name) {
+  const s = (name || '').toLowerCase();
+  const c = new Set();
+  if (/caminadora|cinta|trotadora/.test(s)) c.add('cinta');
+  if (/bicicleta|spinning/.test(s)) c.add('bicicleta');
+  if (/el[ií]ptic/.test(s)) { /* sin concepto — ningún ejercicio la pide */ }
+  if (/rack|jaula|sentadilla|smith/.test(s)) { c.add('barra'); c.add('barra_fija'); }
+  if (/banco de press|banco press|press de banca|press banca/.test(s)) { c.add('banco'); c.add('barra'); }
+  else if (/\bbanco\b/.test(s)) c.add('banco');
+  if (/mancuerna/.test(s)) c.add('mancuernas');
+  if (/polea|cable|cruce/.test(s)) c.add('polea');
+  if (/prensa/.test(s)) c.add('prensa');
+  if (/hack/.test(s)) c.add('maquina_hack');
+  if (/asistid/.test(s)) { c.add('maquina_asistida'); c.add('barra_fija'); }
+  if (/predicador|scott/.test(s)) c.add('banco_predicador');
+  if (/dominad|paralel|fondos|barra fija|dip/.test(s)) c.add('barra_fija');
+  if (/kettlebell|pesa rusa/.test(s)) c.add('kettlebell');
+  if (/saco|boxeo|bolsa/.test(s)) { c.add('saco_boxeo'); c.add('guantes'); }
+  if (/caj[oó]n|plyo|box\b/.test(s)) c.add('cajon');
+  if (/soga|battle/.test(s)) c.add('battle_ropes');
+  if (/bal[oó]n medicinal|medicine ball/.test(s)) c.add('balon_medicinal');
+  if (/barra ez|barra z/.test(s)) c.add('barra_ez');
+  else if (/\bbarra\b/.test(s) && !c.has('barra')) c.add('barra');
+  if (/remo/.test(s) && !c.has('polea') && !c.has('maquina')) c.add('remo_ergometro');
+  // "máquina de X" genérico -> concepto 'maquina' (extensiones, curl femoral,
+  // press de pecho/hombro en máquina, remo en máquina...).
+  if (/m[aá]quina/.test(s) && !c.has('maquina_hack') && !c.has('maquina_asistida')) c.add('maquina');
+  return [...c];
+}
+
 // Deriva el enum experience_level (3 valores, client_profiles.level) a partir
 // de "cuánto hace que entrena" + "qué tan cómodo se siente". El motor real
 // (Fases 6-8) puede afinar esto con el rendimiento registrado.

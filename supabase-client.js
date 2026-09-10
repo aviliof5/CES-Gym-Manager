@@ -242,12 +242,15 @@
 
   const equipment = {
     async list(gymId) {
-      const rows = unwrap(await client.from('equipment').select('id, name, photo_key').eq('gym_id', gymId).order('created_at'));
-      return rows.map(r => ({ id: r.id, name: r.name, photoKey: r.photo_key }));
+      const rows = unwrap(await client.from('equipment').select('id, name, photo_key, is_active, concepts').eq('gym_id', gymId).order('created_at'));
+      return rows.map(r => ({ id: r.id, name: r.name, photoKey: r.photo_key, isActive: r.is_active !== false, concepts: r.concepts || [] }));
     },
-    async add(gymId, name) {
-      const r = unwrap(await client.from('equipment').insert({ gym_id: gymId, name }).select('id, name, photo_key').single());
-      return { id: r.id, name: r.name, photoKey: r.photo_key };
+    // `concepts` (Fase 5) lo infiere el call site desde el nombre
+    // (inferEquipmentConcepts en src/data.js) — supabase-client.js es script
+    // clásico, no puede importarlo.
+    async add(gymId, name, concepts) {
+      const r = unwrap(await client.from('equipment').insert({ gym_id: gymId, name, concepts: (concepts && concepts.length) ? concepts : null }).select('id, name, photo_key, is_active, concepts').single());
+      return { id: r.id, name: r.name, photoKey: r.photo_key, isActive: r.is_active !== false, concepts: r.concepts || [] };
     },
     async remove(id) {
       const { error } = await client.from('equipment').delete().eq('id', id);
@@ -258,6 +261,15 @@
     // que ya existe (no al crearla), así que va aparte de add().
     async setPhotoKey(id, key) {
       const { error } = await client.from('equipment').update({ photo_key: key }).eq('id', id);
+      if (error) throw error;
+    },
+    // Fase 5 — activo/inactivo y conceptos de equipamiento.
+    async setActive(id, active) {
+      const { error } = await client.from('equipment').update({ is_active: !!active }).eq('id', id);
+      if (error) throw error;
+    },
+    async setConcepts(id, concepts) {
+      const { error } = await client.from('equipment').update({ concepts: (concepts && concepts.length) ? concepts : null }).eq('id', id);
       if (error) throw error;
     },
   };
