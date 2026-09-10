@@ -943,6 +943,81 @@
     },
   };
 
+  /* ---------------- Fight Club Training Engine: perfil de evaluación ---------------- */
+  // Ver supabase/migrations/20260917000000_training_engine_profile.sql y
+  // docs/FIGHT_CLUB_TRAINING_ENGINE_AUDIT.md. Sin RPC: escritura self-only
+  // (RLS directo), igual que measurements/messages. El entrenador SOLO lee
+  // (nunca escribe) el perfil de sus clientes asignados.
+  function shapeTrainingProfile(p) {
+    if (!p) return null;
+    return {
+      userId: p.user_id, gymId: p.gym_id, sex: p.sex,
+      primaryGoal: p.primary_goal, secondaryGoal: p.secondary_goal,
+      trainingTimeBucket: p.training_time_bucket, machineComfort: p.machine_comfort,
+      daysPerWeek: p.days_per_week, sessionMinutes: p.session_minutes,
+      preferredStyle: p.preferred_style, priorityMuscles: p.priority_muscles || [],
+      somatotype: p.somatotype, evaluatedAt: p.evaluated_at, updatedAt: p.updated_at,
+    };
+  }
+
+  const trainingProfileApi = {
+    async get(clientUserId) {
+      const rows = unwrap(await client.from('training_profiles')
+        .select('user_id, gym_id, sex, primary_goal, secondary_goal, training_time_bucket, machine_comfort, days_per_week, session_minutes, preferred_style, priority_muscles, somatotype, evaluated_at, updated_at')
+        .eq('user_id', clientUserId));
+      return shapeTrainingProfile(rows[0]);
+    },
+    // El cliente completa el formulario de evaluación y esto hace upsert de
+    // su fila (1:1). `p` viene en camelCase desde la UI.
+    async save(clientUserId, gymId, p) {
+      const row = {
+        user_id: clientUserId, gym_id: gymId, sex: p.sex || null,
+        primary_goal: p.primaryGoal, secondary_goal: p.secondaryGoal || null,
+        training_time_bucket: p.trainingTimeBucket || null, machine_comfort: p.machineComfort || null,
+        days_per_week: p.daysPerWeek ?? null, session_minutes: p.sessionMinutes ?? null,
+        preferred_style: p.preferredStyle || null, priority_muscles: p.priorityMuscles || [],
+        somatotype: p.somatotype || null, updated_at: new Date().toISOString(),
+      };
+      const { error } = await client.from('training_profiles').upsert(row, { onConflict: 'user_id' });
+      if (error) throw error;
+    },
+    async listExcludedExercises(clientUserId) {
+      const rows = unwrap(await client.from('client_exercise_preferences')
+        .select('id, exercise_id, exercise_name, preference').eq('client_user_id', clientUserId));
+      return rows.map(r => ({ id: r.id, exerciseId: r.exercise_id, exerciseName: r.exercise_name, preference: r.preference }));
+    },
+    async setExcludedExercises(clientUserId, items) {
+      // Reemplaza el set entero (el formulario manda la lista completa cada vez).
+      const { error: delErr } = await client.from('client_exercise_preferences').delete().eq('client_user_id', clientUserId);
+      if (delErr) throw delErr;
+      if (items.length) {
+        const rows = items.map(it => ({
+          client_user_id: clientUserId, exercise_id: it.exerciseId || null,
+          exercise_name: it.exerciseName, preference: it.preference || 'excluido',
+        }));
+        const { error } = await client.from('client_exercise_preferences').insert(rows);
+        if (error) throw error;
+      }
+    },
+    async listLimitations(clientUserId) {
+      const rows = unwrap(await client.from('client_limitations')
+        .select('id, joint, painful_movement, note').eq('client_user_id', clientUserId));
+      return rows.map(r => ({ id: r.id, joint: r.joint, painfulMovement: r.painful_movement, note: r.note }));
+    },
+    async setLimitations(clientUserId, items) {
+      const { error: delErr } = await client.from('client_limitations').delete().eq('client_user_id', clientUserId);
+      if (delErr) throw delErr;
+      if (items.length) {
+        const rows = items.map(it => ({
+          client_user_id: clientUserId, joint: it.joint,
+          painful_movement: !!it.painfulMovement, note: it.note || null,
+        }));
+        const { error } = await client.from('client_limitations').insert(rows);
+        if (error) throw error;
+      }
+    },
+  };
+
   /* ---------------- Realtime genérico ---------------- */
   // payments.subscribeToClient() (arriba) fue el primero y se deja tal
   // cual — este es el mecanismo general para todo lo demás (notificaciones,
@@ -966,6 +1041,7 @@
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
     exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
+    trainingProfile: trainingProfileApi,
     realtime: realtimeApi,
   };
 })();
