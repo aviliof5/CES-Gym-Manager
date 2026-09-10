@@ -8,7 +8,7 @@
 import { state } from '../state.js';
 import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, WEEKDAY_NAMES, todayWeekday, iconSpan, brandMark } from '../data.js';
 import {
-  esc, act, chip, stepHead, stepBars, errorBanner, textField, emailField,
+  esc, act, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
   devCredit, initials, daysUntil, formatDate, commentCards, money, statusMeta, avatar, achievementBadge, exercisesForToday,
 } from '../helpers.js';
@@ -530,18 +530,17 @@ export function viewClientRutina() {
     </div>`;
   }
 
-  const goals = GOALS.map(g => `<div ${act('setAiGoal', g.id)} ${chip(state.aiGoal === g.id, 'action')}>${g.label}</div>`).join('');
   const goalLabel = (GOALS.find(g => g.id === state.aiGoal) || {}).label || '';
   const exercises = (state.aiRoutine && state.aiRoutine.exercises) || [];
+  const hasEval = !!state.myTrainingProfile;
 
   return `<div class="pane">
     ${errorBanner()}
     ${sectionTitle('Rutina con IA', 'zap', 'margin-bottom:4px')}
     ${libraryLink()}
-    <div class="hint">Elige tu meta y generamos una rutina según las máquinas de tu gym</div>
+    <div class="hint">Respondé una evaluación corta y armamos tu rutina con lo que tiene tu gimnasio.${hasEval ? ' Ya la hiciste — podés volver a generar o ajustarla.' : ''}</div>
     ${toggle}
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 16px">${goals}</div>
-    <button class="btn btn--brand" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('generateRoutine')}>${state.busy ? 'Generando…' : 'Generar rutina con IA'}</button>
+    <button class="btn btn--brand" style="padding:14px;font-size:14px;margin:14px 0 16px;width:100%" ${act('openEvaluation')}>${hasEval ? 'Generar / ajustar mi rutina' : 'Generar rutina con IA'}</button>
     ${exercises.length ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('startWorkout', 'ia')}>Comenzar entrenamiento</button>
     <div class="eyebrow" style="margin-bottom:8px">Rutina recomendada · ${esc(goalLabel)}</div>
     ${exercises.map(exerciseRow).join('')}

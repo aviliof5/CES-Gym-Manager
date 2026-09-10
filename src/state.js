@@ -163,6 +163,27 @@ export const state = {
   routineSource: 'ia',
   aiGoal: 'perder_peso',
   aiRoutine: null,          // {id, exercises:[{id,text}]}
+
+  // Fight Club Training Engine — formulario de evaluación (Fase 3). Se abre
+  // al tocar "Generar rutina con IA" (pantalla 'clientEvaluation', ver
+  // src/screens/evaluation.js). Guarda en training_profiles/
+  // client_exercise_preferences/client_limitations (migración 20260917000000).
+  // evalStep 1..EVAL_TOTAL_STEPS; evalReturnStep recuerda si se entró a
+  // "ajustar" desde el resumen. myTrainingProfile es lo que ya está guardado
+  // (o null) — lo carga enterClientHome().
+  myTrainingProfile: null,
+  evalStep: 1,
+  evalDraft: {
+    sex: '', primaryGoal: '', secondaryGoal: '',
+    trainingTimeBucket: '', machineComfort: '',
+    daysPerWeek: null, sessionMinutes: null,
+    preferredStyle: '', priorityMuscles: [], somatotype: '',
+    weight: '', height: '', age: '',
+    limitationJoints: [], hasPain: null,
+  },
+  evalExcluded: [],       // [{exerciseId, exerciseName}]
+  evalPainfulNote: '',    // descripción del movimiento que duele (paso de lesiones)
+  evalExerciseQuery: '',  // buscador del paso "ejercicios que no querés hacer"
   trainerRoutineForMe: null,
   // Rutina "Personalizada" — el propio cliente la arma, semanal (cada
   // ejercicio puede ir a un día de la semana, ver routineDraft más abajo).

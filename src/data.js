@@ -24,6 +24,117 @@ export const LEVELS = [
   { id: 'intermedio', label: 'Intermedio' },
   { id: 'avanzado', label: 'Avanzado' },
 ];
+
+/* ---------- Fight Club Training Engine — formulario de evaluación (Fase 3) ----------
+   Ver docs/FIGHT_CLUB_TRAINING_ENGINE_AUDIT.md y la migración
+   20260917000000_training_engine_profile.sql. Los `id` acá son EXACTAMENTE
+   los valores de texto que aceptan los CHECK de esa migración. `hint` es la
+   explicación que se muestra bajo cada pregunta (pedido §4). */
+export const EVAL_GOALS = [
+  { id: 'ganar_masa', label: 'Ganar masa muscular', hint: 'Priorizar el crecimiento del músculo (hipertrofia).' },
+  { id: 'perder_grasa', label: 'Perder grasa', hint: 'Bajar porcentaje de grasa manteniendo la mayor cantidad de músculo posible.' },
+  { id: 'recomposicion', label: 'Recomposición corporal', hint: 'Ganar músculo y perder grasa a la vez — progreso más lento en ambos, pero posible sobre todo si recién empezás.' },
+  { id: 'fuerza', label: 'Aumentar fuerza', hint: 'Levantar más peso en los ejercicios grandes. Menos repeticiones, más descanso.' },
+  { id: 'resistencia_muscular', label: 'Resistencia muscular', hint: 'Aguantar más repeticiones y series antes de fatigarte.' },
+  { id: 'condicion_fisica', label: 'Mejorar condición física', hint: 'Estar más en forma en general — un poco de todo, sin especializarte.' },
+  { id: 'potencia', label: 'Potencia / rendimiento', hint: 'Generar fuerza rápido (saltar, esprintar, golpear). Útil para deportes.' },
+  { id: 'iniciar', label: 'Comenzar a entrenar', hint: 'Nunca entrenaste o volvés después de mucho tiempo. Rutina simple para agarrar el hábito y la técnica.' },
+  { id: 'mantener', label: 'Mantener mi estado físico', hint: 'Ya estás donde querés — sostenerlo sin exigirte de más.' },
+];
+
+export const EVAL_TIME_BUCKETS = [
+  { id: 'nunca', label: 'Nunca entrené' },
+  { id: 'menos_3m', label: 'Menos de 3 meses' },
+  { id: '3_6m', label: '3 a 6 meses' },
+  { id: '6_12m', label: '6 a 12 meses' },
+  { id: '1_2a', label: '1 a 2 años' },
+  { id: 'mas_2a', label: 'Más de 2 años' },
+];
+
+export const EVAL_COMFORT = [
+  { id: 'principiante', label: 'Principiante', hint: 'Necesito que me expliquen cómo se usa cada máquina.' },
+  { id: 'intermedio', label: 'Intermedio', hint: 'Me manejo con casi todo, pero algunos ejercicios los hago con dudas.' },
+  { id: 'avanzado', label: 'Avanzado', hint: 'Domino la técnica de los ejercicios grandes con barra y mancuernas.' },
+];
+
+export const EVAL_DAYS = [2, 3, 4, 5, 6];
+export const EVAL_SESSION_MINUTES = [30, 45, 60, 75, 90];
+
+export const EVAL_STYLES = [
+  { id: 'maquinas', label: 'Máquinas', hint: 'Más fáciles de aprender y más seguras para entrenar solo.' },
+  { id: 'pesas_libres', label: 'Pesas libres', hint: 'Barra y mancuernas. Más transferencia a la vida real, exigen más técnica.' },
+  { id: 'ambos', label: 'Ambos', hint: 'Mezcla de máquinas y pesas libres — lo más habitual.' },
+  { id: 'peso_corporal', label: 'Peso corporal', hint: 'Sin equipo o casi. Bueno si entrenás en casa o viajás seguido.' },
+  { id: 'indiferente', label: 'Me es indiferente', hint: 'Elegí lo que sea mejor para mi objetivo.' },
+];
+
+// value = como lo espera el motor (grupo muscular en minúscula); label para mostrar.
+export const EVAL_PRIORITY_MUSCLES = [
+  { id: 'pecho', label: 'Pecho' },
+  { id: 'espalda', label: 'Espalda' },
+  { id: 'hombros', label: 'Hombros' },
+  { id: 'biceps', label: 'Bíceps' },
+  { id: 'triceps', label: 'Tríceps' },
+  { id: 'cuadriceps', label: 'Cuádriceps' },
+  { id: 'isquiotibiales', label: 'Isquiotibiales' },
+  { id: 'gluteos', label: 'Glúteos' },
+  { id: 'pantorrillas', label: 'Pantorrillas' },
+  { id: 'core', label: 'Abdomen / core' },
+];
+
+export const EVAL_JOINTS = [
+  { id: 'hombro', label: 'Hombro' },
+  { id: 'codo', label: 'Codo' },
+  { id: 'muñeca', label: 'Muñeca' },
+  { id: 'espalda', label: 'Espalda' },
+  { id: 'cadera', label: 'Cadera' },
+  { id: 'rodilla', label: 'Rodilla' },
+  { id: 'tobillo', label: 'Tobillo' },
+  { id: 'otra', label: 'Otra' },
+];
+
+export const EVAL_SOMATOTYPES = [
+  { id: 'ectomorfo', label: 'Ectomorfo', hint: 'Delgado por naturaleza, te cuesta ganar peso.' },
+  { id: 'mesomorfo', label: 'Mesomorfo', hint: 'Ganás músculo con relativa facilidad.' },
+  { id: 'endomorfo', label: 'Endomorfo', hint: 'Ganás peso con facilidad, te cuesta más definir.' },
+];
+
+export const EVAL_SEX = [
+  { id: 'femenino', label: 'Femenino' },
+  { id: 'masculino', label: 'Masculino' },
+  { id: 'prefiero_no_decir', label: 'Prefiero no decir' },
+];
+
+export const EVAL_TOTAL_STEPS = 8;
+
+// Deriva el enum experience_level (3 valores, client_profiles.level) a partir
+// de "cuánto hace que entrena" + "qué tan cómodo se siente". El motor real
+// (Fases 6-8) puede afinar esto con el rendimiento registrado.
+export function deriveLevel(timeBucket, comfort) {
+  if (!timeBucket || timeBucket === 'nunca' || timeBucket === 'menos_3m') return 'principiante';
+  if (timeBucket === 'mas_2a') return comfort === 'avanzado' ? 'avanzado' : 'intermedio';
+  if (timeBucket === '1_2a') return comfort === 'principiante' ? 'principiante' : 'intermedio';
+  // 3_6m / 6_12m
+  return comfort === 'avanzado' ? 'intermedio' : (comfort === 'principiante' ? 'principiante' : 'intermedio');
+}
+
+// Mapea el objetivo de 9 opciones (training_profiles.primary_goal) al enum
+// training_goal de 4 valores que usa el resto de la app (client_profiles.goal,
+// y buildRoutine() hasta que el motor real lo reemplace).
+export function mapGoalToEnum(primaryGoal) {
+  switch (primaryGoal) {
+    case 'perder_grasa': return 'perder_peso';
+    case 'ganar_masa':
+    case 'recomposicion':
+    case 'fuerza':
+    case 'potencia': return 'ganar_musculo';
+    case 'resistencia_muscular':
+    case 'condicion_fisica': return 'resistencia';
+    case 'iniciar':
+    case 'mantener':
+    default: return 'tonificar';
+  }
+}
 // Etapa 2 — cada entrada trae ya sets/reps/restSeconds estructurados (no solo
 // el texto libre de antes) para que el modo entrenamiento pueda mostrar y
 // registrar series reales. `reps` es texto (no número): admite "20 min" o

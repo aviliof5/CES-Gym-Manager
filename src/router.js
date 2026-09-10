@@ -36,6 +36,7 @@ import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 import { viewExerciseLibrary } from './screens/library.js';
 import { viewProgramTemplates } from './screens/programs.js';
 import { viewPlatformDash } from './screens/platform.js';
+import { viewClientEvaluation } from './screens/evaluation.js';
 
 const root = document.getElementById('app');
 
@@ -80,6 +81,7 @@ const SCREENS = {
   notifications: viewClientNotifications,
   staffNotifications: viewStaffNotifications,
   clientEditProfile: viewClientEditProfile,
+  clientEvaluation: viewClientEvaluation,
   trainerPending: viewTrainerPending,
   trainerDash: viewTrainerDash,
   gymPicker: viewGymPicker,

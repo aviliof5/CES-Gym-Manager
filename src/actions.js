@@ -10,7 +10,7 @@
 
 import { state, setState } from './state.js';
 import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, money, exercisesForToday } from './helpers.js';
-import { DURATION_LABELS, WEEKDAY_NAMES } from './data.js';
+import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
 
@@ -727,6 +727,138 @@ export const ACTIONS = {
     await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, entries);
     const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, state.aiGoal);
     setState({ busy: false, aiRoutine });
+  },
+
+  /* ---- Fight Club Training Engine: formulario de evaluación (Fase 3) ----
+     Ver src/screens/evaluation.js. El botón "Generar rutina con IA" ahora
+     abre este formulario; al terminar guarda el perfil (training_profiles +
+     client_exercise_preferences + client_limitations) y — hasta que el motor
+     real esté (Fases 6-8) — corre el generador de siempre (buildRoutine). */
+  openEvaluation: () => {
+    const p = state.myTrainingProfile;
+    const phys = (state.myClient && state.myClient.physical) || {};
+    setState({
+      screen: 'clientEvaluation',
+      evalStep: p ? EVAL_TOTAL_STEPS : 1,   // si ya la hizo, va directo al resumen
+      error: '',
+      evalDraft: {
+        sex: (p && p.sex) || '',
+        primaryGoal: (p && p.primaryGoal) || '',
+        secondaryGoal: (p && p.secondaryGoal) || '',
+        trainingTimeBucket: (p && p.trainingTimeBucket) || '',
+        machineComfort: (p && p.machineComfort) || '',
+        daysPerWeek: (p && p.daysPerWeek) || null,
+        sessionMinutes: (p && p.sessionMinutes) || null,
+        preferredStyle: (p && p.preferredStyle) || '',
+        priorityMuscles: (p && p.priorityMuscles) ? [...p.priorityMuscles] : [],
+        somatotype: (p && p.somatotype) || '',
+        weight: phys.weight != null ? String(phys.weight) : '',
+        height: phys.height != null ? String(phys.height) : '',
+        age: phys.age != null ? String(phys.age) : '',
+        limitationJoints: state.evalLimitationsLoaded ? [...state.evalLimitationsLoaded] : [],
+        hasPain: state.evalHasPainLoaded ?? null,
+      },
+      evalExcluded: state.evalExcludedLoaded ? [...state.evalExcludedLoaded] : [],
+      evalPainfulNote: state.evalPainfulNoteLoaded || '',
+      evalExerciseQuery: '',
+    });
+    // Carga en paralelo lo que ya haya guardado de excluidos/limitaciones
+    // (no bloquea abrir la pantalla — si tarda, aparecen en el próximo render).
+    Promise.all([
+      BolaAPI.trainingProfile.listExcludedExercises(state.myClient.id),
+      BolaAPI.trainingProfile.listLimitations(state.myClient.id),
+    ]).then(([excl, lims]) => {
+      const joints = [...new Set(lims.map(l => l.joint).filter(j => j && j !== 'ninguna'))];
+      const painRow = lims.find(l => l.painfulMovement);
+      setState({
+        evalExcludedLoaded: excl.map(x => ({ exerciseId: x.exerciseId, exerciseName: x.exerciseName })),
+        evalLimitationsLoaded: joints, evalHasPainLoaded: lims.length ? !!painRow : null,
+        evalPainfulNoteLoaded: (painRow && painRow.note) || '',
+        evalExcluded: excl.map(x => ({ exerciseId: x.exerciseId, exerciseName: x.exerciseName })),
+        evalDraft: { ...state.evalDraft, limitationJoints: joints, hasPain: lims.length ? !!painRow : state.evalDraft.hasPain },
+        evalPainfulNote: (painRow && painRow.note) || state.evalPainfulNote,
+      });
+    }).catch(() => {});
+  },
+  closeEvaluation: () => setState({ screen: 'clientHome', clientTab: 'rutina' }),
+  evalNext: () => setState({ evalStep: Math.min(EVAL_TOTAL_STEPS, state.evalStep + 1) }),
+  evalBack: () => setState({ evalStep: Math.max(1, state.evalStep - 1) }),
+  evalSet: v => {
+    const i = v.indexOf(':');
+    const field = i === -1 ? v : v.slice(0, i);
+    let val = i === -1 ? '' : v.slice(i + 1);
+    if (field === 'daysPerWeek' || field === 'sessionMinutes') val = val ? Number(val) : null;
+    if (field === 'hasPain') val = val === 'si';
+    setState({ evalDraft: { ...state.evalDraft, [field]: val } });
+  },
+  evalToggleMuscle: id => {
+    const cur = state.evalDraft.priorityMuscles;
+    const next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
+    setState({ evalDraft: { ...state.evalDraft, priorityMuscles: next } });
+  },
+  evalToggleJoint: id => {
+    const cur = state.evalDraft.limitationJoints;
+    const next = cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id];
+    setState({ evalDraft: { ...state.evalDraft, limitationJoints: next } });
+  },
+  evalToggleExcluded: exerciseId => {
+    const cur = state.evalExcluded;
+    if (cur.some(x => x.exerciseId === exerciseId)) {
+      setState({ evalExcluded: cur.filter(x => x.exerciseId !== exerciseId) });
+    } else {
+      const ex = (state.exercisesLib || []).find(e => e.id === exerciseId);
+      setState({ evalExcluded: [...cur, { exerciseId, exerciseName: ex ? ex.name : '' }] });
+    }
+  },
+  saveEvaluationAndGenerate: async () => {
+    setState({ busy: true, error: '' });
+    const d = state.evalDraft;
+    try {
+      await BolaAPI.trainingProfile.save(state.myClient.id, state.gym.id, {
+        sex: d.sex || null, primaryGoal: d.primaryGoal, secondaryGoal: d.secondaryGoal || null,
+        trainingTimeBucket: d.trainingTimeBucket || null, machineComfort: d.machineComfort || null,
+        daysPerWeek: d.daysPerWeek ?? null, sessionMinutes: d.sessionMinutes ?? null,
+        preferredStyle: d.preferredStyle || null, priorityMuscles: d.priorityMuscles || [],
+        somatotype: d.somatotype || null,
+      });
+      await BolaAPI.trainingProfile.setExcludedExercises(state.myClient.id,
+        state.evalExcluded.map(x => ({ exerciseId: x.exerciseId, exerciseName: x.exerciseName, preference: 'excluido' })));
+      // Una fila de limitación por articulación elegida. Si marcó dolor pero
+      // ninguna articulación, va una fila 'otra'. Sin nada = "ninguna" (0 filas).
+      const painfulNote = d.hasPain === true ? (state.evalPainfulNote.trim() || null) : null;
+      let limRows = d.limitationJoints.map(j => ({ joint: j, painfulMovement: d.hasPain === true, note: painfulNote }));
+      if (!limRows.length && d.hasPain === true) limRows = [{ joint: 'otra', painfulMovement: true, note: painfulNote }];
+      await BolaAPI.trainingProfile.setLimitations(state.myClient.id, limRows);
+
+      // Sincroniza el perfil "grueso" que usa el resto de la app: nivel
+      // derivado de experiencia+comodidad, objetivo mapeado al enum de 4, y
+      // peso/altura/edad si los cargó acá.
+      const level = deriveLevel(d.trainingTimeBucket, d.machineComfort);
+      const goal4 = mapGoalToEnum(d.primaryGoal);
+      await BolaAPI.clients.updatePhysical(state.myProfile.id, {
+        weight: d.weight ? Number(d.weight) : (state.myClient.physical.weight ?? null),
+        height: d.height ? Number(d.height) : (state.myClient.physical.height ?? null),
+        age: d.age ? Number(d.age) : (state.myClient.physical.age ?? null),
+        level, goal: goal4,
+      });
+
+      // Generación: por ahora el generador de siempre (buildRoutine) con el
+      // objetivo mapeado. El motor real lo reemplaza en las Fases 6-8.
+      const entries = buildRoutine(goal4, state.equipment.map(e => e.name));
+      await BolaAPI.routines.generateAi(state.myClient.id, goal4, entries);
+      const [aiRoutine, myTrainingProfile, [client]] = await Promise.all([
+        BolaAPI.routines.getAi(state.myClient.id, goal4),
+        BolaAPI.trainingProfile.get(state.myClient.id),
+        attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]),
+      ]);
+      const myClientPlan = state.plans.find(p => p.id === client.planId) || state.myClientPlan;
+      setState({
+        busy: false, screen: 'clientHome', clientTab: 'rutina', routineSource: 'ia',
+        aiGoal: goal4, aiRoutine, myTrainingProfile, myClient: client, myClientPlan,
+      });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
   },
 
   // "10 clientes interesados" (sección 11 del pedido original) — el
@@ -1765,6 +1897,10 @@ export async function enterClientHome() {
   const aiRoutine = await BolaAPI.routines.getAi(client.id, client.physical.goal || 'perder_peso');
   const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
   const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
+  // Fight Club Training Engine (Fase 3) — el perfil de evaluación ya guardado
+  // (o null). Lo lee viewClientRutina para saber si el botón abre el
+  // formulario completo o el resumen.
+  const myTrainingProfile = await BolaAPI.trainingProfile.get(client.id);
 
   // Etapa 2 — clases/reservas, logros, medidas/récords y (si tiene
   // entrenador asignado) su propia calificación existente sobre él.
@@ -1793,7 +1929,7 @@ export async function enterClientHome() {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
     plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, myPersonalRoutine, checkinHistory, trainerInterest,
-    aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia',
+    aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia', myTrainingProfile,
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
     conversationId: null, messages: [], messageDraft: '',
