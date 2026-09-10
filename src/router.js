@@ -179,6 +179,47 @@ function restoreFocus(snapshot) {
   }
 }
 
+/* El re-render también reemplaza todo el DOM, así que se pierde la posición
+   de scroll: si estás abajo en una lista (Socios, notificaciones, biblioteca,
+   reseñas…) y tocás un botón, la acción dispara un render() y la lista salta
+   arriba de todo. Se guarda el scrollTop de cada contenedor scrolleable
+   (.pane en los paneles con tabs, .col en los formularios) contra una clave
+   de "qué estás viendo": mientras esa clave no cambie (misma pantalla, misma
+   pestaña, mismo detalle abierto), se restaura donde estabas. Si navegás a
+   otro lado la clave cambia y arranca arriba, que es lo correcto — y como se
+   recuerda por clave, volver atrás a una lista también te devuelve donde
+   estabas. */
+function viewKey() {
+  return [
+    state.screen,
+    state.ownerTab, state.clientTab, state.trainerTab,
+    state.trainerSelectedClientId,
+    state.logrosCategoryFilter, state.logrosExerciseFilter,
+    state.attendanceSelectedDay,
+  ].join('|');
+}
+
+let lastViewKey = null;
+const scrollMemory = new Map(); // viewKey -> [scrollTop por cada .pane/.col, en orden]
+const SCROLL_MEMORY_MAX = 40;
+
+function captureScroll() {
+  if (lastViewKey == null) return;
+  const tops = [...root.querySelectorAll('.pane, .col')].map(el => el.scrollTop);
+  if (!tops.some(t => t > 0)) { scrollMemory.delete(lastViewKey); return; }
+  scrollMemory.delete(lastViewKey); // reinsertar al final -> el Map queda ordenado por uso
+  scrollMemory.set(lastViewKey, tops);
+  if (scrollMemory.size > SCROLL_MEMORY_MAX) scrollMemory.delete(scrollMemory.keys().next().value);
+}
+
+function restoreScroll() {
+  const tops = scrollMemory.get(viewKey());
+  if (!tops) return;
+  root.querySelectorAll('.pane, .col').forEach((el, i) => {
+    if (tops[i] > 0) el.scrollTop = tops[i];
+  });
+}
+
 // getUserMedia() rechaza con nombres de DOMException estándar — se traducen
 // acá en vez de en friendlyError() (que es sobre errores de red/servidor,
 // no de hardware/permisos).
@@ -198,8 +239,11 @@ function cameraErrorMessage(err) {
 
 export function render() {
   const snapshot = captureFocus();
+  captureScroll();
   root.innerHTML = (state.offline ? offlineBanner() : '') + pendingSyncBanner() + staleDataBanner() + (SCREENS[state.screen] || viewLanding)();
   restoreFocus(snapshot);
+  restoreScroll();
+  lastViewKey = viewKey();
   paintQrCodes(root);
 
   // La cámara de lectura de QR (ver src/qr.js) solo debe estar prendida
