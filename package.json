@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "npx serve -l 4173 .",
+    "test:engine": "node scripts/test-training-engine.mjs",
     "build:www": "node scripts/build-www.js",
     "cap:sync": "npm run build:www && npx cap sync android",
     "cap:sync:ios": "npm run build:www && npx cap sync ios",
