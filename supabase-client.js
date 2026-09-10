@@ -728,12 +728,15 @@
 
   const exercisesLib = {
     async list(gymId) {
-      const rows = unwrap(await client.from('exercises').select('id, gym_id, name, muscle_group, equipment_name, media_key, description, level, goal, kind, suggested_sets, suggested_reps, suggested_rest_seconds, muscle_worked, purpose, best_practices, common_mistakes, diagram_pattern')
+      const rows = unwrap(await client.from('exercises').select('id, gym_id, name, muscle_group, equipment_name, media_key, description, level, goal, kind, suggested_sets, suggested_reps, suggested_rest_seconds, muscle_worked, purpose, best_practices, common_mistakes, diagram_pattern, movement_pattern, secondary_muscles, contraindicated_joints, is_unilateral, is_active, required_equipment')
         .or(`gym_id.is.null,gym_id.eq.${gymId}`));
       return rows.map(e => ({
         id: e.id, gymId: e.gym_id, name: e.name, muscleGroup: e.muscle_group, equipmentName: e.equipment_name, mediaKey: e.media_key, description: e.description,
         level: e.level, goal: e.goal, kind: e.kind, suggestedSets: e.suggested_sets, suggestedReps: e.suggested_reps, suggestedRestSeconds: e.suggested_rest_seconds,
         muscleWorked: e.muscle_worked, purpose: e.purpose, bestPractices: e.best_practices || [], commonMistakes: e.common_mistakes || [], diagramPattern: e.diagram_pattern,
+        // Fight Club Training Engine (Fase 4) — metadatos que consume el motor.
+        movementPattern: e.movement_pattern, secondaryMuscles: e.secondary_muscles || [], contraindicatedJoints: e.contraindicated_joints || [],
+        isUnilateral: !!e.is_unilateral, isActive: e.is_active !== false, requiredEquipment: e.required_equipment || [],
       }));
     },
     async add(gymId, { name, muscleGroup, equipmentName, description }) {
