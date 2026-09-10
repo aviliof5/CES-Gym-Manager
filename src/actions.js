@@ -13,7 +13,7 @@ import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, mone
 import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum, inferEquipmentConcepts } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
-import { generateFullRoutine } from './training-engine/index.js';
+import { generateFullRoutine, buildPlanSpec, filterExercises } from './training-engine/index.js';
 
 // Conceptos de equipamiento que ofrece el gimnasio HOY: unión de
 // equipment.concepts sobre las máquinas ACTIVAS (más 'peso_corporal', que el
@@ -26,6 +26,37 @@ function activeGymConcepts() {
     for (const c of e.concepts || []) set.add(c);
   }
   return [...set];
+}
+
+// La "estructura" de la rutina del motor (split, calentamiento, RIR objetivo,
+// series/semana por grupo, y qué quedó afuera por falta de equipo) —
+// determinista, se puede reconstruir del perfil guardado sin volver a
+// generar la rutina. La usa enterClientHome() para que la tarjeta "Cómo está
+// armada" siga apareciendo tras recargar la app, no solo al recién generar.
+// `p` es un shapeTrainingProfile(). `library`/`gymConcepts` se pasan
+// explícitos porque enterClientHome() los tiene como locals antes de
+// volcarlos a state. `excludedIds`/`limitations` ya cargados.
+function computeEnginePlan(p, { library = [], gymConcepts = [], excludedIds = [], limitations = [] } = {}) {
+  if (!p || !p.primaryGoal) return null;
+  const engineProfile = {
+    level: deriveLevel(p.trainingTimeBucket, p.machineComfort),
+    primaryGoal: p.primaryGoal,
+    secondaryGoal: p.secondaryGoal || null,
+    daysPerWeek: p.daysPerWeek || 3,
+    sessionMinutes: p.sessionMinutes || 60,
+    preferredStyle: p.preferredStyle || 'indiferente',
+    priorityMuscles: p.priorityMuscles || [],
+  };
+  const filtered = filterExercises({
+    library, gymConcepts,
+    profile: engineProfile,
+    excludedIds, limitations,
+  });
+  const spec = buildPlanSpec(engineProfile, {
+    hasCardioMachine: filtered.hasCardioMachine,
+    hasMobility: filtered.hasMobility,
+  });
+  return { ...spec, rejected: filtered.rejected };
 }
 
 // Handle del setInterval del descanso entre series — módulo-scoped porque
@@ -760,23 +791,12 @@ export const ACTIONS = {
   exitScanPayment: () => setState({ screen: 'clientHome', clientTab: 'pago', scanError: '', scanStatus: null }),
   refreshPendingPayment: refreshMyPaymentState,
   setRoutineSource: v => setState({ routineSource: v }),
-  setAiGoal: async v => {
-    const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, v);
-    setState({ aiGoal: v, aiRoutine });
-  },
-  generateRoutine: async () => {
-    setState({ busy: true });
-    const entries = buildRoutine(state.aiGoal, state.equipment.map(e => e.name));
-    await BolaAPI.routines.generateAi(state.myClient.id, state.aiGoal, entries);
-    const aiRoutine = await BolaAPI.routines.getAi(state.myClient.id, state.aiGoal);
-    setState({ busy: false, aiRoutine });
-  },
 
   /* ---- Fight Club Training Engine: formulario de evaluación (Fase 3) ----
-     Ver src/screens/evaluation.js. El botón "Generar rutina con IA" ahora
-     abre este formulario; al terminar guarda el perfil (training_profiles +
-     client_exercise_preferences + client_limitations) y — hasta que el motor
-     real esté (Fases 6-8) — corre el generador de siempre (buildRoutine). */
+     Ver src/screens/evaluation.js. El botón "Generar rutina con IA" abre
+     este formulario; al terminar guarda el perfil (training_profiles +
+     client_exercise_preferences + client_limitations) y corre el motor
+     determinista (Fases 6-7, src/training-engine/) para armar la rutina. */
   openEvaluation: () => {
     const p = state.myTrainingProfile;
     const phys = (state.myClient && state.myClient.physical) || {};
@@ -1966,6 +1986,26 @@ export async function enterClientHome() {
   // (o null). Lo lee viewClientRutina para saber si el botón abre el
   // formulario completo o el resumen.
   const myTrainingProfile = await BolaAPI.trainingProfile.get(client.id);
+  // Fase 8 — reconstruye la tarjeta "Cómo está armada" del perfil guardado,
+  // para que siga apareciendo tras recargar la app (no solo al recién
+  // generar). Sin perfil, o si algo falla, queda null y la pestaña muestra
+  // la rutina como lista simple.
+  let enginePlan = null;
+  if (myTrainingProfile) {
+    try {
+      const [engExcluded, engLimitations] = await Promise.all([
+        BolaAPI.trainingProfile.listExcludedExercises(client.id),
+        BolaAPI.trainingProfile.listLimitations(client.id),
+      ]);
+      enginePlan = computeEnginePlan(myTrainingProfile, {
+        library: exercisesLib,
+        gymConcepts: (equipment || []).filter(e => e.isActive !== false)
+          .flatMap(e => e.concepts || []).concat('peso_corporal'),
+        excludedIds: engExcluded.map(x => x.exerciseId).filter(Boolean),
+        limitations: engLimitations,
+      });
+    } catch (_) { enginePlan = null; }
+  }
 
   // Etapa 2 — clases/reservas, logros, medidas/récords y (si tiene
   // entrenador asignado) su propia calificación existente sobre él.
@@ -1994,7 +2034,7 @@ export async function enterClientHome() {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
     plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, myPersonalRoutine, checkinHistory, trainerInterest,
-    aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia', myTrainingProfile,
+    aiGoal: client.physical.goal || 'perder_peso', aiRoutine, routineSource: 'ia', myTrainingProfile, enginePlan,
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
     conversationId: null, messages: [], messageDraft: '',

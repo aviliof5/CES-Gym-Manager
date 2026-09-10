@@ -6,7 +6,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, WEEKDAY_NAMES, todayWeekday, iconSpan, brandMark } from '../data.js';
+import { LEVELS, GOALS, DURATION_LABELS, MESES, DAY_LABELS, WEEKDAY_NAMES, todayWeekday, iconSpan, brandMark, EQUIPMENT_CONCEPTS } from '../data.js';
 import {
   esc, act, stepHead, stepBars, errorBanner, textField, emailField,
   phoneField, passwordField, passwordStrength, sectionTitle, tabsMarkup,
@@ -552,14 +552,30 @@ export function viewClientRutina() {
   </div>`;
 }
 
-// Motor de entrenamiento (Fase 7) — tarjeta con la "estructura" de la rutina
-// recién generada: split, calentamiento y RIR objetivo. Solo aparece
-// apenas se genera (state.enginePlan); tras recargar la app la rutina sigue
-// viéndose (aiRoutine), pero sin esta tarjeta.
+// Motor de entrenamiento (Fases 7-8) — tarjeta con la "estructura" de la
+// rutina: split, calentamiento, RIR objetivo, y (honestidad, pedido §36)
+// qué ejercicios quedaron afuera porque el gimnasio no tiene el equipo.
+// enterClientHome() la reconstruye del perfil guardado, así sigue después
+// de recargar la app (state.enginePlan). Null → la rutina se ve igual, como
+// lista por día, sin esta tarjeta.
 function enginePlanCard() {
   const p = state.enginePlan;
   if (!p) return '';
   const warm = (p.warmup || []).map(w => `<li>${esc(w)}</li>`).join('');
+
+  // ¿La rutina tiene ejercicios marcados con precaución? (aiRoutine.text
+  // los trae con "⚠" — ver generator.js). Si sí, mostramos el aviso.
+  const routineText = ((state.aiRoutine && state.aiRoutine.exercises) || []).map(e => e.text || '').join(' ');
+  const hasCaution = routineText.includes('⚠');
+
+  // "Qué no pudimos incluir" — solo los descartados por falta de equipo
+  // (los demás motivos —el cliente los excluyó, patrón de boxeo…— no son
+  // una carencia del gimnasio y no aportan nada mostrarlos).
+  const eqMissing = (p.rejected || []).filter(r => /falta equipo/.test(r.reason || ''));
+  const conceptLabel = t => (EQUIPMENT_CONCEPTS.find(c => c.id === t) || {}).label || t;
+  const missingConcepts = [...new Set(eqMissing.flatMap(r => (r.reason.split(':')[1] || '').split(',').map(s => s.trim()).filter(Boolean)))]
+    .map(conceptLabel);
+
   return `<div class="card" style="margin-bottom:16px;border-color:var(--brand)">
     <div class="eyebrow" style="color:var(--brand)">Cómo está armada</div>
     <div style="font-size:var(--fs-sm);font-weight:700;margin:2px 0 6px">${esc(p.splitName)} · ${p.days} días · ${p.exercisesPerSession} ejercicios por sesión</div>
@@ -568,6 +584,12 @@ function enginePlanCard() {
     </div>
     ${warm ? `<div class="eyebrow" style="margin-top:10px">Calentamiento (antes de cada sesión)</div>
       <ul style="margin:4px 0 0;padding-left:18px;font-size:var(--fs-xs);color:var(--muted);line-height:1.6">${warm}</ul>` : ''}
+    ${hasCaution ? `<div style="margin-top:10px;padding:8px 10px;background:var(--warn-dim);border-radius:8px;font-size:var(--fs-xs);color:var(--text);line-height:1.6">
+      <strong>⚠</strong> Marcamos así los ejercicios que cargan una articulación donde dijiste tener molestia. No es un diagnóstico: empezá con poco peso y rango corto; si duele (no la molestia normal del esfuerzo), cambialo por otro o consultá con un profesional de la salud.
+    </div>` : ''}
+    ${missingConcepts.length ? `<div style="font-size:var(--fs-xs);color:var(--muted);margin-top:10px;line-height:1.6">
+      Tu gimnasio no tiene <strong>${esc(missingConcepts.join(', '))}</strong>, así que quedaron afuera ${eqMissing.length} ${eqMissing.length === 1 ? 'ejercicio' : 'ejercicios'} que los necesitan. La rutina se armó solo con lo que hay.
+    </div>` : ''}
     ${p.safetyNote ? `<div style="font-size:var(--fs-xs);color:var(--muted);margin-top:10px;font-style:italic">${esc(p.safetyNote)}</div>` : ''}
   </div>`;
 }
