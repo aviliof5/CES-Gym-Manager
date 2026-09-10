@@ -620,13 +620,32 @@ export function viewWorkout() {
   const hasSets = Number(ex.sets) > 0;
 
   // Un campo de peso/reps por EJERCICIO (no por serie) — se precarga con el
-  // último valor conocido (ver ACTIONS.startWorkout/nextExercise/
-  // prevExercise) y se puede ajustar antes de marcar cada serie: así queda
-  // lo que de verdad se levantó, no solo un check (ver exercise_logs).
-  const inputsRow = `<div style="display:flex;gap:10px;margin-bottom:16px">
+  // último valor conocido o la sugerencia de progresión (ver
+  // ACTIONS.startWorkout/nextExercise/prevExercise) y se puede ajustar antes
+  // de marcar cada serie: así queda lo que de verdad se levantó (exercise_logs).
+  const inputsRow = `<div style="display:flex;gap:10px;margin-bottom:12px">
     ${textField('workout.weightInput', 'Peso (kg)', w.weightInput, { style: 'flex:1' })}
     ${textField('workout.repsInput', 'Reps hechas', w.repsInput, { style: 'flex:1' })}
   </div>`;
+
+  // RIR (reps en reserva) de la serie — Fase 9. Opcional; alimenta el
+  // análisis de progresión de la próxima vez (exercise_logs.rir).
+  const rirRow = `<div style="margin-bottom:16px">
+    <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:6px">¿Cuántas reps te quedaban? <span style="opacity:.75">(RIR — opcional)</span></div>
+    <div style="display:flex;gap:6px">
+      ${['0', '1', '2', '3', '4'].map(v => {
+        const on = String(w.rirInput) === v;
+        return `<div ${act('setWorkoutRir', v)} style="flex:1;text-align:center;padding:9px 0;border-radius:9px;cursor:pointer;font-size:13px;font-weight:700;border:1px solid ${on ? 'transparent' : 'var(--line-strong)'};background:${on ? 'var(--brand)' : 'transparent'};color:${on ? '#fff' : 'var(--muted)'}">${v === '4' ? '4+' : v}</div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  // Sugerencia de progresión para ESTE ejercicio (ver progression.js).
+  const prog = ex.prog;
+  const progColor = prog && prog.action === 'subir' ? 'var(--ok)' : prog && prog.action === 'bajar' ? 'var(--warn)' : 'var(--brand)';
+  const progRow = prog && prog.note ? `<div style="margin-bottom:16px;padding:9px 11px;border-radius:9px;background:var(--surface-2,rgba(127,127,127,.08));border-left:3px solid ${progColor};font-size:var(--fs-xs);color:var(--text);line-height:1.6">
+    ${prog.action === 'subir' ? '↑ ' : prog.action === 'bajar' ? '↓ ' : ''}${esc(prog.note)}
+  </div>` : '';
 
   const setsBlock = hasSets
     ? `<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
@@ -658,8 +677,10 @@ export function viewWorkout() {
     ${stepBars(w.index + 1, w.exercises.length, '')}
     <div class="form-body">
       <div class="title">${esc(ex.text)}</div>
+      ${progRow}
       ${restBlock}
       ${inputsRow}
+      ${rirRow}
       ${setsBlock}
     </div>
     <div class="form-foot" style="display:flex;gap:10px">

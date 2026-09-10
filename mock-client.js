@@ -46,7 +46,7 @@
     clientAchievements: [],   // {client_user_id, achievement_id, progress, earned_at}
     bodyMeasurements: [],     // {id, client_user_id, taken_at, weight_kg, body_fat_pct, waist_cm, chest_cm, arm_cm, thigh_cm}
     workoutSessions: [],      // {id, client_user_id, gym_id, source, started_at, finished_at}
-    exerciseLogs: [],         // {id, workout_session_id, client_user_id, exercise_name, set_number, reps, weight_kg}
+    exerciseLogs: [],         // {id, workout_session_id, client_user_id, exercise_name, set_number, reps, weight_kg, rir, created_at}
     trainerReviews: [],       // {id, trainer_user_id, client_user_id, rating, text}
     conversations: [],        // {id, gym_id, trainer_user_id, client_user_id}
     messages: [],             // {id, conversation_id, sender_user_id, body, created_at, read_at}
@@ -1676,8 +1676,11 @@
     // arranquen todos en cero en el mock.
     const s1 = uid('ws'); db.workoutSessions.push({ id: s1, client_user_id: 'client-1', gym_id: gymId, source: 'trainer', started_at: minus(6), finished_at: minus(6) });
     const s2 = uid('ws'); db.workoutSessions.push({ id: s2, client_user_id: 'client-1', gym_id: gymId, source: 'trainer', started_at: minus(3), finished_at: minus(3) });
-    db.exerciseLogs.push({ id: uid('exl'), workout_session_id: s2, client_user_id: 'client-1', exercise_name: 'Press de banca', set_number: 1, reps: 8, weight_kg: 45 });
-    db.exerciseLogs.push({ id: uid('exl'), workout_session_id: s2, client_user_id: 'client-1', exercise_name: 'Sentadilla con barra', set_number: 1, reps: 8, weight_kg: 65 });
+    const logTs = new Date(Date.now() - 3 * 86400000).toISOString();
+    db.exerciseLogs.push({ id: uid('exl'), workout_session_id: s2, client_user_id: 'client-1', exercise_name: 'Press de banca', set_number: 1, reps: 8, weight_kg: 45, rir: 2, created_at: logTs });
+    // Sentadilla con barra: 3 series a 65 kg × 12 reps con RIR 3 — sobró
+    // margen, el análisis de progresión (Fase 9) va a sugerir subir el peso.
+    [1, 2, 3].forEach(n => db.exerciseLogs.push({ id: uid('exl'), workout_session_id: s2, client_user_id: 'client-1', exercise_name: 'Sentadilla con barra', set_number: n, reps: 12, weight_kg: 65, rir: 3, created_at: logTs }));
     db.bodyMeasurements.push({ id: uid('bm'), client_user_id: 'client-1', taken_at: minus(3), weight_kg: 78.5, body_fat_pct: 15.2, waist_cm: 82, chest_cm: null, arm_cm: null, thigh_cm: null });
     db.bodyMeasurements.push({ id: uid('bm'), client_user_id: 'client-1', taken_at: minus(20), weight_kg: 80, body_fat_pct: 16.1, waist_cm: 84, chest_cm: null, arm_cm: null, thigh_cm: null });
 
@@ -2483,9 +2486,16 @@
       db.workoutSessions.push(row);
       return row.id;
     },
-    async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg) {
+    async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg, rir) {
       await wait();
-      db.exerciseLogs.push({ id: uid('exl'), workout_session_id: sessionId, client_user_id: clientUserId, exercise_name: exerciseName, set_number: setNumber, reps: reps ?? null, weight_kg: weightKg ?? null });
+      db.exerciseLogs.push({ id: uid('exl'), workout_session_id: sessionId, client_user_id: clientUserId, exercise_name: exerciseName, set_number: setNumber, reps: reps ?? null, weight_kg: weightKg ?? null, rir: rir ?? null, created_at: new Date().toISOString() });
+    },
+    async recentLogs(clientUserId, sinceIso) {
+      await wait();
+      return db.exerciseLogs
+        .filter(l => l.client_user_id === clientUserId && (!l.created_at || l.created_at >= sinceIso))
+        .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')))
+        .map(l => ({ exerciseName: l.exercise_name, setNumber: l.set_number, reps: l.reps, weightKg: l.weight_kg, rir: l.rir ?? null, createdAt: l.created_at, sessionId: l.workout_session_id }));
     },
     async finish(sessionId, clientUserId) {
       await wait();
