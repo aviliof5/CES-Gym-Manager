@@ -937,6 +937,8 @@ export const ACTIONS = {
   closeEvaluation: () => setState({ screen: 'clientHome', clientTab: 'rutina' }),
   evalNext: () => setState({ evalStep: Math.min(EVAL_TOTAL_STEPS, state.evalStep + 1) }),
   evalBack: () => setState({ evalStep: Math.max(1, state.evalStep - 1) }),
+  // Desde el resumen (paso 8): saltar a un paso concreto para ajustarlo.
+  evalGoStep: v => setState({ evalStep: Math.max(1, Math.min(EVAL_TOTAL_STEPS, Number(v) || 1)) }),
   evalSet: v => {
     const i = v.indexOf(':');
     const field = i === -1 ? v : v.slice(0, i);

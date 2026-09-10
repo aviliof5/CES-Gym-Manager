@@ -630,9 +630,11 @@ export function viewWorkout() {
   // último valor conocido o la sugerencia de progresión (ver
   // ACTIONS.startWorkout/nextExercise/prevExercise) y se puede ajustar antes
   // de marcar cada serie: así queda lo que de verdad se levantó (exercise_logs).
+  const wLabel = `<div style="font-size:11px;color:var(--muted);margin:0 0 4px 2px">Peso (kg)</div>`;
+  const rLabel = `<div style="font-size:11px;color:var(--muted);margin:0 0 4px 2px">Reps hechas</div>`;
   const inputsRow = `<div style="display:flex;gap:10px;margin-bottom:12px">
-    ${textField('workout.weightInput', 'Peso (kg)', w.weightInput, { style: 'flex:1' })}
-    ${textField('workout.repsInput', 'Reps hechas', w.repsInput, { style: 'flex:1' })}
+    <div style="flex:1">${wLabel}${textField('workout.weightInput', 'Peso (kg)', w.weightInput, {})}</div>
+    <div style="flex:1">${rLabel}${textField('workout.repsInput', 'Reps hechas', w.repsInput, {})}</div>
   </div>`;
 
   // RIR (reps en reserva) de la serie — Fase 9. Opcional; alimenta el
