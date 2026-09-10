@@ -2139,6 +2139,8 @@
       entries.forEach((ex, i) => db.routineExercises.push({
         id: uid('rex'), routine_id: routineId, position: i, exercise_id: ex.exerciseId || null,
         text: ex.text, sets: ex.sets ?? null, reps: ex.reps ?? null, weight_kg: ex.weightKg ?? null, rest_seconds: ex.restSeconds ?? 60,
+        // El motor (Fase 7) arma rutinas semanales — cada ejercicio con día.
+        day_label: ex.dayLabel || null, day_of_week: ex.dayOfWeek ?? null,
       }));
     },
     async addTrainerExercise(clientUserId, trainerUserId, entry) {

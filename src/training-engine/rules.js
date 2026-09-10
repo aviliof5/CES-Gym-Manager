@@ -76,8 +76,11 @@ const GOAL_PARAMS = {
 
 // ---- Ejercicios por sesión según el tiempo disponible (§18) ----
 // Minutos por ejercicio ≈ series × (trabajo + descanso). Se descuenta el
-// calentamiento. Con superseries entran ~30% más.
-function exercisesPerSession(sessionMinutes, params) {
+// calentamiento. Con superseries entran ~30% más. Además hay un tope por
+// nivel: un principiante que dispone de mucho tiempo NO debería hacer 9
+// ejercicios — mejor menos ejercicios bien hechos y más descanso.
+const MAX_EXERCISES_BY_LEVEL = { principiante: 6, intermedio: 8, avanzado: 9 };
+function exercisesPerSession(sessionMinutes, params, level, goal) {
   const warmup = 8;
   const usable = Math.max(15, (sessionMinutes || 60) - warmup);
   const setsAvg = (params.setsC + params.setsI) / 2;
@@ -85,7 +88,9 @@ function exercisesPerSession(sessionMinutes, params) {
   const perExercise = setsAvg * (40 + restAvg) / 60; // 40 s de trabajo por serie aprox
   let n = Math.floor(usable / perExercise);
   if (params.superset) n = Math.round(n * 1.3);
-  return Math.max(3, Math.min(9, n));
+  let cap = MAX_EXERCISES_BY_LEVEL[level] || 8;
+  if (goal === 'iniciar') cap = Math.min(cap, 5);
+  return Math.max(3, Math.min(cap, n));
 }
 
 // ---- Calentamiento ----
@@ -108,7 +113,7 @@ export function buildPlanSpec(profile, gym = {}) {
   const params = GOAL_PARAMS[goal] || GOAL_PARAMS.mantener;
 
   const split = splitFor(days, level);
-  const perSession = exercisesPerSession(profile.sessionMinutes, params);
+  const perSession = exercisesPerSession(profile.sessionMinutes, params, level, goal);
   const weeklyTargets = weeklySetTargets({ level, primaryGoal: goal, priorityMuscles: profile.priorityMuscles });
 
   return {
