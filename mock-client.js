@@ -50,6 +50,10 @@
     trainerReviews: [],       // {id, trainer_user_id, client_user_id, rating, text}
     conversations: [],        // {id, gym_id, trainer_user_id, client_user_id}
     messages: [],             // {id, conversation_id, sender_user_id, body, created_at, read_at}
+    // Fight Club Training Engine (ver supabase/migrations/20260917000000_training_engine_profile.sql)
+    trainingProfiles: [],           // {user_id, gym_id, sex, primary_goal, secondary_goal, training_time_bucket, machine_comfort, days_per_week, session_minutes, preferred_style, priority_muscles, somatotype, evaluated_at, updated_at}
+    clientExercisePreferences: [],  // {id, client_user_id, exercise_id, exercise_name, preference}
+    clientLimitations: [],          // {id, client_user_id, joint, painful_movement, note}
   };
 
   let session = null; // {id, role}
@@ -2362,6 +2366,68 @@
     },
   };
 
+  /* ---------------- Fight Club Training Engine: perfil de evaluación ---------------- */
+
+  function shapeTrainingProfile(p) {
+    if (!p) return null;
+    return {
+      userId: p.user_id, gymId: p.gym_id, sex: p.sex,
+      primaryGoal: p.primary_goal, secondaryGoal: p.secondary_goal,
+      trainingTimeBucket: p.training_time_bucket, machineComfort: p.machine_comfort,
+      daysPerWeek: p.days_per_week, sessionMinutes: p.session_minutes,
+      preferredStyle: p.preferred_style, priorityMuscles: p.priority_muscles || [],
+      somatotype: p.somatotype, evaluatedAt: p.evaluated_at, updatedAt: p.updated_at,
+    };
+  }
+
+  const trainingProfileApi = {
+    async get(clientUserId) {
+      await wait();
+      return shapeTrainingProfile(db.trainingProfiles.find(p => p.user_id === clientUserId));
+    },
+    async save(clientUserId, gymId, p) {
+      await wait();
+      let row = db.trainingProfiles.find(r => r.user_id === clientUserId);
+      const now = new Date().toISOString();
+      const data = {
+        user_id: clientUserId, gym_id: gymId, sex: p.sex || null,
+        primary_goal: p.primaryGoal, secondary_goal: p.secondaryGoal || null,
+        training_time_bucket: p.trainingTimeBucket || null, machine_comfort: p.machineComfort || null,
+        days_per_week: p.daysPerWeek ?? null, session_minutes: p.sessionMinutes ?? null,
+        preferred_style: p.preferredStyle || null, priority_muscles: p.priorityMuscles || [],
+        somatotype: p.somatotype || null, updated_at: now,
+      };
+      if (row) Object.assign(row, data);
+      else db.trainingProfiles.push({ ...data, evaluated_at: now });
+    },
+    async listExcludedExercises(clientUserId) {
+      await wait();
+      return db.clientExercisePreferences.filter(r => r.client_user_id === clientUserId)
+        .map(r => ({ id: r.id, exerciseId: r.exercise_id, exerciseName: r.exercise_name, preference: r.preference }));
+    },
+    async setExcludedExercises(clientUserId, items) {
+      await wait();
+      db.clientExercisePreferences = db.clientExercisePreferences.filter(r => r.client_user_id !== clientUserId);
+      items.forEach(it => db.clientExercisePreferences.push({
+        id: uid('cep'), client_user_id: clientUserId, exercise_id: it.exerciseId || null,
+        exercise_name: it.exerciseName, preference: it.preference || 'excluido',
+      }));
+    },
+    async listLimitations(clientUserId) {
+      await wait();
+      return db.clientLimitations.filter(r => r.client_user_id === clientUserId)
+        .map(r => ({ id: r.id, joint: r.joint, painfulMovement: r.painful_movement, note: r.note }));
+    },
+    async setLimitations(clientUserId, items) {
+      await wait();
+      db.clientLimitations = db.clientLimitations.filter(r => r.client_user_id !== clientUserId);
+      items.forEach(it => db.clientLimitations.push({
+        id: uid('cl'), client_user_id: clientUserId, joint: it.joint,
+        painful_movement: !!it.painfulMovement, note: it.note || null,
+      }));
+    },
+  };
+
   /* ---------------- rating de entrenador ---------------- */
 
   const trainerReviewsApi = {
@@ -2621,6 +2687,7 @@
   window.BolaAPI = {
     auth, gyms, equipment, plans, trainers, admins, clients, photos, progress, routines, payments, reviews, checkins, platform,
     exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
+    trainingProfile: trainingProfileApi,
     realtime: realtimeApi,
   };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
