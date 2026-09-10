@@ -533,6 +533,8 @@ export function viewClientRutina() {
   const goalLabel = (GOALS.find(g => g.id === state.aiGoal) || {}).label || '';
   const exercises = (state.aiRoutine && state.aiRoutine.exercises) || [];
   const hasEval = !!state.myTrainingProfile;
+  const isWeekly = exercises.some(e => e.dayOfWeek != null);
+  const todays = exercisesForToday(exercises);
 
   return `<div class="pane">
     ${errorBanner()}
@@ -541,11 +543,32 @@ export function viewClientRutina() {
     <div class="hint">Respondé una evaluación corta y armamos tu rutina con lo que tiene tu gimnasio.${hasEval ? ' Ya la hiciste — podés volver a generar o ajustarla.' : ''}</div>
     ${toggle}
     <button class="btn btn--brand" style="padding:14px;font-size:14px;margin:14px 0 16px;width:100%" ${act('openEvaluation')}>${hasEval ? 'Generar / ajustar mi rutina' : 'Generar rutina con IA'}</button>
-    ${exercises.length ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('startWorkout', 'ia')}>Comenzar entrenamiento</button>
+    ${exercises.length ? `<button class="btn btn--action" style="padding:14px;font-size:14px;margin-bottom:16px;width:100%" ${act('startWorkout', 'ia')} ${isWeekly && !todays.length ? 'disabled' : ''}>${isWeekly ? `Comenzar (${esc(WEEKDAY_NAMES[todayWeekday()])}${todays.length ? '' : ' · descanso'})` : 'Comenzar entrenamiento'}</button>
+    ${enginePlanCard()}
     <div class="eyebrow" style="margin-bottom:8px">Rutina recomendada · ${esc(goalLabel)}</div>
-    ${exercises.map(exerciseRow).join('')}
+    ${groupedExerciseRows(exercises)}
     <div style="font-size:var(--fs-xs);color:var(--muted);margin-top:10px">Basado en el equipo disponible de ${esc(state.gym.name)}</div>` : ''}
     ${trainerCandidatesSection()}
+  </div>`;
+}
+
+// Motor de entrenamiento (Fase 7) — tarjeta con la "estructura" de la rutina
+// recién generada: split, calentamiento y RIR objetivo. Solo aparece
+// apenas se genera (state.enginePlan); tras recargar la app la rutina sigue
+// viéndose (aiRoutine), pero sin esta tarjeta.
+function enginePlanCard() {
+  const p = state.enginePlan;
+  if (!p) return '';
+  const warm = (p.warmup || []).map(w => `<li>${esc(w)}</li>`).join('');
+  return `<div class="card" style="margin-bottom:16px;border-color:var(--brand)">
+    <div class="eyebrow" style="color:var(--brand)">Cómo está armada</div>
+    <div style="font-size:var(--fs-sm);font-weight:700;margin:2px 0 6px">${esc(p.splitName)} · ${p.days} días · ${p.exercisesPerSession} ejercicios por sesión</div>
+    <div style="font-size:var(--fs-xs);color:var(--muted);line-height:1.6">
+      Compuestos ${esc(p.repsCompound)} reps · aislados ${esc(p.repsIsolation)} reps · dejá <strong>RIR ${esc(p.rirTarget)}</strong> (repeticiones en reserva) en cada serie · descanso ${p.restCompound}s / ${p.restIsolation}s.
+    </div>
+    ${warm ? `<div class="eyebrow" style="margin-top:10px">Calentamiento (antes de cada sesión)</div>
+      <ul style="margin:4px 0 0;padding-left:18px;font-size:var(--fs-xs);color:var(--muted);line-height:1.6">${warm}</ul>` : ''}
+    ${p.safetyNote ? `<div style="font-size:var(--fs-xs);color:var(--muted);margin-top:10px;font-style:italic">${esc(p.safetyNote)}</div>` : ''}
   </div>`;
 }
 

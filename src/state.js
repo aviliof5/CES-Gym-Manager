@@ -169,6 +169,12 @@ export const state = {
   routineSource: 'ia',
   aiGoal: 'perder_peso',
   aiRoutine: null,          // {id, exercises:[{id,text}]}
+  // Motor de entrenamiento (Fase 7) — la "estructura" de la última rutina
+  // generada: split, calentamiento, RIR objetivo, series/semana por grupo,
+  // perDay [{label, dayOfWeek, focus, items}] y `rejected` (qué quedó afuera
+  // y por qué). La rutina en sí vive en aiRoutine; esto es para mostrarla
+  // bien (Fase 8). null si nunca se generó con el motor en esta sesión.
+  enginePlan: null,
 
   // Fight Club Training Engine — formulario de evaluación (Fase 3). Se abre
   // al tocar "Generar rutina con IA" (pantalla 'clientEvaluation', ver

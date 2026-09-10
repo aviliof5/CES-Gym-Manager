@@ -10,13 +10,15 @@
 
 export { filterExercises, JOINT_HIGH_STRESS_PATTERNS } from './exercise-filter.js';
 export { buildPlanSpec } from './rules.js';
+export { generateRoutine } from './generator.js';
+export { findSubstitute, listSubstitutes } from './substitution.js';
 export { contribution, weeklySetTargets, normMuscle, MUSCLE_GROUPS, MINOR_GROUPS, SEC_WEIGHT } from './muscles.js';
 
 import { filterExercises } from './exercise-filter.js';
 import { buildPlanSpec } from './rules.js';
+import { generateRoutine } from './generator.js';
 
-/* Conveniencia: filtro + reglas en un paso. La Fase 7 lo extiende
-   devolviendo también la rutina concreta.
+/* Conveniencia: filtro + reglas en un paso (sin armar la rutina concreta).
    input: { library, gymConcepts, profile, excludedIds, limitations } */
 export function planFromProfile(input) {
   const filtered = filterExercises(input);
@@ -25,4 +27,19 @@ export function planFromProfile(input) {
     hasMobility: filtered.hasMobility,
   });
   return { spec, filtered };
+}
+
+/* El pipeline completo: perfil → rutina lista para guardar.
+   Devuelve { entries, plan, filtered }:
+   - entries: filas para BolaAPI.routines.generateAi()
+   - plan:    estructura + perDay (para la UI: calentamiento, split, RIR)
+   - filtered: pools (para sustituciones y para explicar qué quedó afuera) */
+export function generateFullRoutine(input) {
+  const filtered = filterExercises(input);
+  const spec = buildPlanSpec(input.profile || {}, {
+    hasCardioMachine: filtered.hasCardioMachine,
+    hasMobility: filtered.hasMobility,
+  });
+  const { entries, plan } = generateRoutine({ spec, filtered, profile: input.profile || {} });
+  return { entries, plan, filtered };
 }

@@ -13,6 +13,20 @@ import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, mone
 import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum, inferEquipmentConcepts } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
+import { generateFullRoutine } from './training-engine/index.js';
+
+// Conceptos de equipamiento que ofrece el gimnasio HOY: unión de
+// equipment.concepts sobre las máquinas ACTIVAS (más 'peso_corporal', que el
+// motor da por sentado). Es lo que el filtro de ejercicios cruza con
+// exercises.required_equipment. Ver src/training-engine/exercise-filter.js.
+function activeGymConcepts() {
+  const set = new Set(['peso_corporal']);
+  for (const e of state.equipment || []) {
+    if (e.isActive === false) continue;
+    for (const c of e.concepts || []) set.add(c);
+  }
+  return [...set];
+}
 
 // Handle del setInterval del descanso entre series — módulo-scoped porque
 // no es parte del estado serializable, solo un recurso a limpiar (ver
@@ -871,10 +885,31 @@ export const ACTIONS = {
         level, goal: goal4,
       });
 
-      // Generación: por ahora el generador de siempre (buildRoutine) con el
-      // objetivo mapeado. El motor real lo reemplaza en las Fases 6-8.
-      const entries = buildRoutine(goal4, state.equipment.map(e => e.name));
-      await BolaAPI.routines.generateAi(state.myClient.id, goal4, entries);
+      // Generación: motor de entrenamiento determinista (Fases 6-7). Sin IA
+      // externa ni internet — reglas locales sobre la biblioteca real y el
+      // equipamiento activo del gimnasio (pedido §29). El objetivo que usa el
+      // motor es el de la evaluación (9 valores), no el enum de 4.
+      const engineProfile = {
+        level,
+        primaryGoal: d.primaryGoal,
+        secondaryGoal: d.secondaryGoal || null,
+        daysPerWeek: d.daysPerWeek || 3,
+        sessionMinutes: d.sessionMinutes || 60,
+        preferredStyle: d.preferredStyle || 'indiferente',
+        priorityMuscles: d.priorityMuscles || [],
+      };
+      const { entries, plan, filtered } = generateFullRoutine({
+        library: state.exercisesLib || [],
+        gymConcepts: activeGymConcepts(),
+        profile: engineProfile,
+        excludedIds: state.evalExcluded.map(x => x.exerciseId).filter(Boolean),
+        limitations: limRows,
+      });
+      // Red de seguridad: si el pool quedó vacío (gimnasio sin conceptos
+      // cargados, biblioteca sin metadatos del motor) cae al generador viejo
+      // para no dejar al cliente sin rutina.
+      const finalEntries = entries.length ? entries : buildRoutine(goal4, state.equipment.map(e => e.name));
+      await BolaAPI.routines.generateAi(state.myClient.id, goal4, finalEntries);
       const [aiRoutine, myTrainingProfile, [client]] = await Promise.all([
         BolaAPI.routines.getAi(state.myClient.id, goal4),
         BolaAPI.trainingProfile.get(state.myClient.id),
@@ -884,6 +919,7 @@ export const ACTIONS = {
       setState({
         busy: false, screen: 'clientHome', clientTab: 'rutina', routineSource: 'ia',
         aiGoal: goal4, aiRoutine, myTrainingProfile, myClient: client, myClientPlan,
+        enginePlan: entries.length ? { ...plan, rejected: filtered.rejected } : null,
       });
     } catch (err) {
       setState({ busy: false, error: friendlyError(err) });

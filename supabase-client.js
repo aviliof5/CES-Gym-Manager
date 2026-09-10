@@ -545,6 +545,10 @@
         const rows = entries.map((ex, i) => ({
           routine_id: routineId, position: i, text: ex.text, exercise_id: ex.exerciseId || null,
           sets: ex.sets ?? null, reps: ex.reps ?? null, weight_kg: ex.weightKg ?? null, rest_seconds: ex.restSeconds ?? 60,
+          // El motor de entrenamiento (Fase 7) arma rutinas SEMANALES: cada
+          // ejercicio trae su día. buildRoutine() (el generador viejo) no los
+          // manda y quedan en null — se ve como una lista sola, igual que antes.
+          day_label: ex.dayLabel || null, day_of_week: ex.dayOfWeek ?? null,
         }));
         const { error } = await client.from('routine_exercises').insert(rows);
         if (error) throw error;
