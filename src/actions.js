@@ -96,8 +96,10 @@ async function adaptRoutineNow(w) {
     const ep = engineProfileFrom(state.myTrainingProfile);
     if (ep) {
       try {
-        const excl = await BolaAPI.trainingProfile.listExcludedExercises(clientId);
-        const lims = await BolaAPI.trainingProfile.listLimitations(clientId);
+        const [excl, lims] = await Promise.all([
+          BolaAPI.trainingProfile.listExcludedExercises(clientId),
+          BolaAPI.trainingProfile.listLimitations(clientId),
+        ]);
         pool = filterExercises({
           library: state.exercisesLib || [], gymConcepts: activeGymConcepts(),
           profile: ep, excludedIds: excl.map(x => x.exerciseId).filter(Boolean), limitations: lims,
@@ -108,22 +110,23 @@ async function adaptRoutineNow(w) {
     const trainedNames = new Set((w.exercises || []).map(cleanExName));
     const rirTarget = (state.enginePlan && state.enginePlan.rirTarget) || exRirTarget(w.exercises[0] || {});
     const { weightUpdates, swaps, summary } = adaptRoutineAfterSession({
-      routineExercises: rows, cleanName: t => String(t || '').split(' · ')[0].trim(),
+      routineExercises: rows, cleanName: cleanName,
       allLogs: logs, trainedNames, pool, rirTarget,
     });
 
-    // Traduce los swaps a updates de fila (text nuevo con el mismo sufijo de
-    // RIR/precaución que usa el generador, + exercise_id nuevo).
-    const rowById = new Map(rows.map(r => [r.id, r]));
+    // Traduce los swaps a updates de fila — mismo formato de `text` que el
+    // generador (nombre + marca de precaución, sin RIR — ver Fase 13).
     const swapUpdates = swaps.map(s => {
       const caution = s.to.caution ? ` · ⚠ cuidá ${(s.to.cautionJoints || []).join(' / ')}` : '';
-      return { id: s.id, text: `${s.to.name} · RIR ${rirTarget}${caution}`, exerciseId: s.to.id || null, weightKg: null };
+      return { id: s.id, text: `${s.to.name}${caution}`, exerciseId: s.to.id || null, weightKg: null };
     });
     const allUpdates = [...weightUpdates, ...swapUpdates];
     if (!allUpdates.length) return { summary: [], updatedRoutine: aiRoutine };
 
     await BolaAPI.routines.updateExercises(allUpdates);
-    const updatedRoutine = await BolaAPI.routines.getAi(clientId, state.aiGoal);
+    // Ya se escribieron los cambios: si el refetch falla, igual mostramos el
+    // resumen (la rutina se ve actualizada al recargar).
+    const updatedRoutine = await BolaAPI.routines.getAi(clientId, state.aiGoal).catch(() => aiRoutine);
     return { summary, updatedRoutine };
   } catch (_) {
     return null; // nunca romper el "entrenamiento completado" por esto
@@ -254,11 +257,14 @@ function defaultReps(ex) {
   return /^\d+$/.test(String((ex && ex.reps) || '').trim()) ? ex.reps : '';
 }
 
-// Nombre "limpio" del ejercicio, sin el sufijo " · RIR 1-2" / " · ⚠ cuidá…"
-// que el motor agrega al texto de la rutina (ver generator.js). Se usa para
-// registrar en exercise_logs y para cruzar con el historial de progresión.
-function cleanExName(ex) {
-  return String((ex && ex.text) || '').split(' · ')[0].trim();
+// Nombre "limpio" del ejercicio, sin el sufijo " · ⚠ cuidá…" que el motor
+// agrega al texto de la rutina (ver generator.js). Se usa para registrar en
+// exercise_logs y para cruzar con el historial de progresión.
+function cleanName(text) {                 // string -> string
+  return String(text || '').split(' · ')[0].trim();
+}
+function cleanExName(ex) {                  // fila/ejercicio {text} -> string
+  return cleanName(ex && ex.text);
 }
 // RIR objetivo del ejercicio: del texto de la rutina del motor, o del plan
 // guardado, o 2 por defecto.
@@ -1023,11 +1029,12 @@ export const ACTIONS = {
       // para no dejar al cliente sin rutina.
       const finalEntries = entries.length ? entries : buildRoutine(goal4, state.equipment.map(e => e.name));
       await BolaAPI.routines.generateAi(state.myClient.id, goal4, finalEntries);
-      const [aiRoutine, myTrainingProfile, [client]] = await Promise.all([
+      const [aiRoutine, myTrainingProfile, selfRaw] = await Promise.all([
         BolaAPI.routines.getAi(state.myClient.id, goal4),
         BolaAPI.trainingProfile.get(state.myClient.id),
-        attachFaceUrls([await BolaAPI.clients.getSelf(state.myProfile.id)]),
+        BolaAPI.clients.getSelf(state.myProfile.id),
       ]);
+      const [client] = await attachFaceUrls([selfRaw]);
       const myClientPlan = state.plans.find(p => p.id === client.planId) || state.myClientPlan;
       setState({
         busy: false, screen: 'clientHome', clientTab: 'rutina', routineSource: 'ia',
@@ -1066,31 +1073,33 @@ export const ACTIONS = {
     let exercises = exercisesForToday(routine.exercises || []);
     if (!exercises.length) return;
     clearRestTimer();
-    // Fase 9 — análisis de progresión: mira lo que el cliente hizo las
-    // últimas veces (reps/peso/RIR) y sugiere, por ejercicio, subir/mantener/
-    // bajar el peso para esta sesión. Pura, determinista (progression.js).
-    try {
-      const since = new Date(Date.now() - 120 * 86400000).toISOString();
-      const logs = await BolaAPI.workouts.recentLogs(state.myClient.id, since);
-      const rows = exercises.map(e => ({ name: cleanExName(e), reps: e.reps, rirTarget: exRirTarget(e) }));
-      const prog = analyzeRoutine(rows, logs);
-      exercises = exercises.map(e => ({ ...e, prog: prog.get(cleanExName(e)) || null }));
-    } catch (_) { /* sin historial → sin sugerencias, se entrena igual */ }
     // El ID de la sesión se elige ACÁ, no lo asigna el servidor — así,
     // aunque no haya señal en este momento, se puede seguir entrenando y
     // marcando series con ESTE mismo ID; cuando vuelva la señal, se manda
     // primero la creación de la sesión y después cada serie encolada, en
     // orden (ver src/offline.js y QUEUE_HANDLERS.workoutStart más arriba).
-    // Esto funciona porque workout_sessions se inserta directo (no por
-    // RPC) y su política RLS no exige que el ID lo genere el servidor.
+    // Funciona porque workout_sessions se inserta directo (no por RPC) y su
+    // política RLS no exige que el ID lo genere el servidor.
     const sessionId = newUuid();
+    // Fase 14 — abrir la sesión y traer el historial de progresión (Fase 9)
+    // van en paralelo: son independientes y antes eran dos idas y vueltas
+    // encadenadas antes de que se abriera la pantalla.
+    const since = new Date(Date.now() - 120 * 86400000).toISOString();
+    const [logs] = await Promise.all([
+      BolaAPI.workouts.recentLogs(state.myClient.id, since).catch(() => []),
+      BolaAPI.workouts.start(state.myClient.id, state.gym.id, source, sessionId).catch(err => {
+        if (!isNetworkError(err)) throw err;
+        queueAction('workoutStart', { sessionId, clientUserId: state.myClient.id, gymId: state.gym.id, source });
+        setState({ pendingSyncCount: getQueueSize() });
+      }),
+    ]);
+    // Análisis de progresión: subir/mantener/bajar el peso por ejercicio
+    // según lo último que movió. Puro y determinista (progression.js).
     try {
-      await BolaAPI.workouts.start(state.myClient.id, state.gym.id, source, sessionId);
-    } catch (err) {
-      if (!isNetworkError(err)) throw err;
-      queueAction('workoutStart', { sessionId, clientUserId: state.myClient.id, gymId: state.gym.id, source });
-      setState({ pendingSyncCount: getQueueSize() });
-    }
+      const rows = exercises.map(e => ({ name: cleanExName(e), reps: e.reps, rirTarget: exRirTarget(e) }));
+      const prog = analyzeRoutine(rows, logs || []);
+      exercises = exercises.map(e => ({ ...e, prog: prog.get(cleanExName(e)) || null }));
+    } catch (_) { /* sin historial → sin sugerencias, se entrena igual */ }
     const first = exercises[0] || {};
     setState({
       screen: 'workout',
@@ -2117,28 +2126,27 @@ export async function enterClientHome() {
   const equipment = await attachEquipmentPhotos(equipmentRaw);
   const plan = plans.find(p => p.id === client.planId) || null;
   const trainer = client.trainerUserId ? trainersForGym.find(t => t.id === client.trainerUserId) : null;
-  const progressRaw = await BolaAPI.progress.listForClient(client.id);
+  // Fase 14 — todas estas lecturas son independientes entre sí: una sola
+  // tanda en paralelo en vez de ~9 idas y vueltas encadenadas. Incluye
+  // `myTrainingProfile` (perfil de evaluación) y los datos que la tarjeta
+  // "Cómo está armada" necesita (Fase 8).
+  const [progressRaw, trainerRoutineForMe, myPersonalRoutine, aiRoutine, checkinHistory, trainerInterest, myTrainingProfile, engExcluded, engLimitations] = await Promise.all([
+    BolaAPI.progress.listForClient(client.id),
+    trainer ? BolaAPI.routines.getTrainer(client.id) : Promise.resolve(null),
+    BolaAPI.routines.getPersonal(client.id),
+    BolaAPI.routines.getAi(client.id, client.physical.goal || 'perder_peso'),
+    BolaAPI.checkins.listForClient(client.id, 5),
+    BolaAPI.trainers.listInterestForGym(state.gym.id),
+    BolaAPI.trainingProfile.get(client.id),
+    BolaAPI.trainingProfile.listExcludedExercises(client.id).catch(() => []),
+    BolaAPI.trainingProfile.listLimitations(client.id).catch(() => []),
+  ]);
   const progressList = await attachSignedUrls(progressRaw);
-  const trainerRoutineForMe = trainer ? await BolaAPI.routines.getTrainer(client.id) : null;
-  const myPersonalRoutine = await BolaAPI.routines.getPersonal(client.id);
-  const aiRoutine = await BolaAPI.routines.getAi(client.id, client.physical.goal || 'perder_peso');
-  const checkinHistory = await BolaAPI.checkins.listForClient(client.id, 5);
-  const trainerInterest = await BolaAPI.trainers.listInterestForGym(state.gym.id);
-  // Fight Club Training Engine (Fase 3) — el perfil de evaluación ya guardado
-  // (o null). Lo lee viewClientRutina para saber si el botón abre el
-  // formulario completo o el resumen.
-  const myTrainingProfile = await BolaAPI.trainingProfile.get(client.id);
-  // Fase 8 — reconstruye la tarjeta "Cómo está armada" del perfil guardado,
-  // para que siga apareciendo tras recargar la app (no solo al recién
-  // generar). Sin perfil, o si algo falla, queda null y la pestaña muestra
-  // la rutina como lista simple.
+  // La tarjeta "Cómo está armada" reconstruida del perfil guardado (Fase 8),
+  // así sigue tras recargar. computeEnginePlan es puro y rápido.
   let enginePlan = null;
   if (myTrainingProfile) {
     try {
-      const [engExcluded, engLimitations] = await Promise.all([
-        BolaAPI.trainingProfile.listExcludedExercises(client.id),
-        BolaAPI.trainingProfile.listLimitations(client.id),
-      ]);
       enginePlan = computeEnginePlan(myTrainingProfile, {
         library: exercisesLib,
         gymConcepts: (equipment || []).filter(e => e.isActive !== false)
