@@ -593,15 +593,17 @@
     // [{ id, weightKg?, text?, exerciseId? }]. La política RLS "write
     // exercises via owned routine" ya cubre el UPDATE del propio cliente.
     async updateExercises(updates) {
-      for (const u of updates || []) {
+      // Una fila por UPDATE (no hay bulk-update por-fila en PostgREST), pero
+      // en paralelo — no encadenados.
+      await Promise.all((updates || []).map(async u => {
         const patch = {};
         if ('weightKg' in u) patch.weight_kg = u.weightKg ?? null;
         if ('text' in u) patch.text = u.text;
         if ('exerciseId' in u) patch.exercise_id = u.exerciseId || null;
-        if (!Object.keys(patch).length) continue;
+        if (!Object.keys(patch).length) return;
         const { error } = await client.from('routine_exercises').update(patch).eq('id', u.id);
         if (error) throw error;
-      }
+      }));
     },
 
     // Aplica una plantilla de programa entera a la rutina del cliente —

@@ -2,7 +2,7 @@
 
 > Motor de generación y progresión de rutinas. **Determinista, 100 % en el
 > cliente, sin IA externa ni internet para decidir ejercicios** (pedido §15,
-> §29, §34). Fases 1‑12 completas — ver `FIGHT_CLUB_TRAINING_ENGINE_AUDIT.md`
+> §29, §34). Fases 1‑14 completas — ver `FIGHT_CLUB_TRAINING_ENGINE_AUDIT.md`
 > para la auditoría inicial.
 
 ---
@@ -253,7 +253,33 @@ adaptación cambia la rutina.
 
 ---
 
-## 8. Cómo extenderlo
+## 8. Rendimiento (Fase 14)
+
+Todos los módulos del motor son puros y corren en microsegundos —
+`filterExercises` recorre los 116 ejercicios un par de veces, `generateRoutine`
+hace un scoring greedy por día. Eso no es el cuello de botella; las idas y
+vueltas a Supabase sí. Fase 14 las agrupó:
+
+- **`enterClientHome`** — `progress` · rutinas (trainer/personal/ia) ·
+  check‑ins · interés de entrenadores · `trainingProfile.get` · excluidos ·
+  limitaciones pasaron de ~9 `await` encadenados a **un solo `Promise.all`**.
+  `computeEnginePlan` (que reconstruye la tarjeta "Cómo está armada") ya no
+  dispara sus propias lecturas — usa las de esa tanda.
+- **`startWorkout`** — abrir la sesión (`workouts.start`) y traer el historial
+  de progresión (`workouts.recentLogs`) van **en paralelo**; antes eran dos
+  round‑trips antes de que se abriera la pantalla.
+- **`routines.updateExercises`** (rutina dinámica) — las filas se actualizan
+  **en paralelo** (`Promise.all`), no una por una.
+- **`saveEvaluationAndGenerate`** — `getSelf` ya no bloquea antes del
+  `Promise.all` de refresco.
+
+El motor **funciona offline** (§34): si no hay señal, la generación igual
+ocurre (es local) y el guardado en `routines`/`exercise_logs` se encola
+(`src/offline.js`); la adaptación post‑sesión es best‑effort y se reintenta.
+
+---
+
+## 9. Cómo extenderlo
 
 ### Agregar un ejercicio
 
