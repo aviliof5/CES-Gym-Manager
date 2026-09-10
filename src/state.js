@@ -105,6 +105,12 @@ export const state = {
 
   equipment: [],
   newEquipment: '',
+  // Fase 5 del Training Engine — editor de conceptos de una máquina
+  // (ver equipmentEditor() en screens/owner.js). equipmentEditingConceptsId
+  // = id de la máquina con el panel abierto; equipmentConceptsDraft = los
+  // conceptos elegidos mientras el panel está abierto.
+  equipmentEditingConceptsId: null,
+  equipmentConceptsDraft: [],
 
   plans: [],
   newPlanName: '', newPlanPrice: '', newPlanDuration: 'Mensual', editingPlanId: null,

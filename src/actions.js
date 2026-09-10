@@ -10,7 +10,7 @@
 
 import { state, setState } from './state.js';
 import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, money, exercisesForToday } from './helpers.js';
-import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum } from './data.js';
+import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum, inferEquipmentConcepts } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
 
@@ -389,16 +389,45 @@ export const ACTIONS = {
   addEquipmentFromInput: async () => {
     const v = state.newEquipment.trim();
     if (!v) return;
-    const row = await BolaAPI.equipment.add(state.gym.id, v);
+    const row = await BolaAPI.equipment.add(state.gym.id, v, inferEquipmentConcepts(v));
     setState({ equipment: state.equipment.concat(row), newEquipment: '' });
   },
   addEquipment: async v => {
-    const row = await BolaAPI.equipment.add(state.gym.id, v);
+    const row = await BolaAPI.equipment.add(state.gym.id, v, inferEquipmentConcepts(v));
     setState({ equipment: state.equipment.concat(row) });
   },
   removeEquipment: async id => {
     await BolaAPI.equipment.remove(id);
     setState({ equipment: state.equipment.filter(e => e.id !== id) });
+  },
+  // Fase 5 del Training Engine — activo/inactivo + conceptos por máquina.
+  toggleEquipmentActive: async id => {
+    const e = state.equipment.find(x => x.id === id);
+    if (!e) return;
+    const next = !(e.isActive !== false);
+    setState({ equipment: state.equipment.map(x => x.id === id ? { ...x, isActive: next } : x) });
+    try { await BolaAPI.equipment.setActive(id, next); }
+    catch (err) { setState({ equipment: state.equipment.map(x => x.id === id ? { ...x, isActive: !next } : x), error: friendlyError(err) }); }
+  },
+  openEquipmentConcepts: id => {
+    const e = state.equipment.find(x => x.id === id);
+    if (!e) return;
+    const start = (e.concepts && e.concepts.length) ? e.concepts : inferEquipmentConcepts(e.name);
+    setState({ equipmentEditingConceptsId: id, equipmentConceptsDraft: [...start] });
+  },
+  closeEquipmentConcepts: () => setState({ equipmentEditingConceptsId: null, equipmentConceptsDraft: [] }),
+  toggleEquipmentConcept: token => {
+    const cur = state.equipmentConceptsDraft;
+    setState({ equipmentConceptsDraft: cur.includes(token) ? cur.filter(t => t !== token) : [...cur, token] });
+  },
+  saveEquipmentConcepts: async id => {
+    const concepts = [...state.equipmentConceptsDraft];
+    setState({
+      equipment: state.equipment.map(x => x.id === id ? { ...x, concepts } : x),
+      equipmentEditingConceptsId: null, equipmentConceptsDraft: [],
+    });
+    try { await BolaAPI.equipment.setConcepts(id, concepts); }
+    catch (err) { setState({ error: friendlyError(err) }); }
   },
 
   setPlanDuration: v => setState({ newPlanDuration: v }),

@@ -168,8 +168,17 @@
     db.plans.push({ id: 'plan-basico', gym_id: gymId, name: 'Plan Básico', price: 25, duration: 'mensual' });
     db.plans.push({ id: 'plan-premium', gym_id: gymId, name: 'Plan Premium', price: 60, duration: 'mensual' });
 
-    ['Caminadora', 'Bicicleta estática', 'Rack de sentadillas', 'Banco de press', 'Mancuernas', 'Máquina de poleas', 'Remo']
-      .forEach(name => db.equipment.push({ id: uid('eq'), gym_id: gymId, name }));
+    // concepts (Fase 5) — espeja lo que produce inferEquipmentConcepts() de
+    // src/data.js para estos mismos nombres.
+    [
+      ['Caminadora', ['cinta']],
+      ['Bicicleta estática', ['bicicleta']],
+      ['Rack de sentadillas', ['barra', 'barra_fija']],
+      ['Banco de press', ['banco', 'barra']],
+      ['Mancuernas', ['mancuernas']],
+      ['Máquina de poleas', ['polea', 'maquina']],
+      ['Remo', ['remo_ergometro']],
+    ].forEach(([name, concepts]) => db.equipment.push({ id: uid('eq'), gym_id: gymId, name, is_active: true, concepts }));
 
     const today = new Date();
     const plus = d => new Date(today.getTime() + d * 86400000).toISOString().slice(0, 10);
@@ -1878,11 +1887,14 @@
 
   /* ---------------- equipo ---------------- */
 
+  const shapeEquip = e => ({ id: e.id, name: e.name, photoKey: e.photo_key || null, isActive: e.is_active !== false, concepts: e.concepts || [] });
   const equipment = {
-    async list(gymId) { await wait(); return db.equipment.filter(e => e.gym_id === gymId).map(e => ({ id: e.id, name: e.name, photoKey: e.photo_key || null })); },
-    async add(gymId, name) { await wait(); const row = { id: uid('eq'), gym_id: gymId, name, photo_key: null }; db.equipment.push(row); return { id: row.id, name: row.name, photoKey: null }; },
+    async list(gymId) { await wait(); return db.equipment.filter(e => e.gym_id === gymId).map(shapeEquip); },
+    async add(gymId, name, concepts) { await wait(); const row = { id: uid('eq'), gym_id: gymId, name, photo_key: null, is_active: true, concepts: (concepts && concepts.length) ? concepts : null }; db.equipment.push(row); return shapeEquip(row); },
     async remove(id) { await wait(); db.equipment = db.equipment.filter(e => e.id !== id); },
     async setPhotoKey(id, key) { await wait(); const row = db.equipment.find(e => e.id === id); if (row) row.photo_key = key; },
+    async setActive(id, active) { await wait(); const row = db.equipment.find(e => e.id === id); if (row) row.is_active = !!active; },
+    async setConcepts(id, concepts) { await wait(); const row = db.equipment.find(e => e.id === id); if (row) row.concepts = (concepts && concepts.length) ? concepts : null; },
   };
 
   /* ---------------- planes ---------------- */
