@@ -6,7 +6,7 @@
 'use strict';
 
 import { state } from '../state.js';
-import { GOALS, MESES, DAY_LABELS, WEEKDAY_NAMES, iconSpan, brandMark } from '../data.js';
+import { GOALS, MESES, DAY_LABELS, WEEKDAY_NAMES, iconSpan, brandMark, trainingProfileSummary } from '../data.js';
 import { esc, act, textField, errorBanner, sectionTitle, tabsMarkup, devCredit, initials, statusMeta, money, avatar } from '../helpers.js';
 
 // Una fila de la rutina del cliente, con su botón de "Quitar". Si vienen de
@@ -24,6 +24,37 @@ function routineExerciseRow(ex) {
   </div>`;
 }
 
+// Fase 11 — el entrenador VE (solo lectura) la evaluación del cliente y la
+// rutina que le armó el motor, y puede adoptarla como suya para editarla.
+function trainerEngineSection(detail) {
+  const p = detail.trainingProfile;
+  const engineEx = (detail.engineRoutine && detail.engineRoutine.exercises) || [];
+  if (!p && !engineEx.length) return '';
+
+  const rows = trainingProfileSummary(p);
+  const lims = (detail.limitations || []).filter(l => l.joint && l.joint !== 'ninguna');
+  const evalCard = rows.length ? `<div class="card" style="margin-bottom:12px">
+    <div class="eyebrow" style="margin-bottom:8px">Evaluación del cliente</div>
+    ${rows.map(r => `<div style="display:flex;justify-content:space-between;gap:12px;font-size:var(--fs-xs);padding:3px 0;line-height:1.5">
+      <span style="color:var(--muted)">${esc(r.label)}</span><span style="font-weight:600;text-align:right">${esc(r.value)}</span>
+    </div>`).join('')}
+    ${lims.length ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);font-size:var(--fs-xs);color:var(--warn);line-height:1.6">
+      Molestias declaradas: ${esc(lims.map(l => l.joint + (l.painfulMovement ? ' (dolor al mover)' : '')).join(', '))}${lims.some(l => l.note) ? ` — "${esc(lims.find(l => l.note).note)}"` : ''}
+    </div>` : ''}
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">Solo lectura. El cliente edita su evaluación desde su app.</div>
+  </div>` : `<div class="hint" style="margin-bottom:12px">El cliente todavía no completó la evaluación de "Generar rutina con IA".</div>`;
+
+  const engineCard = engineEx.length ? `<div class="card" style="margin-bottom:12px;border-color:var(--brand)">
+    <div class="eyebrow" style="color:var(--brand);margin-bottom:6px">Rutina generada por el motor</div>
+    <div style="font-size:var(--fs-xs);color:var(--muted);margin-bottom:8px">${engineEx.length} ejercicios${engineEx.some(e => e.dayOfWeek != null) ? ' · semanal' : ''}. La ve el cliente en "Con IA".</div>
+    ${readonlyRoutineRows(engineEx)}
+    <button class="btn btn--brand" style="width:100%;padding:11px;font-size:13px;margin-top:10px" ${act('adoptAiRoutine')} ${state.busy ? 'disabled' : ''}>${state.busy ? 'Copiando…' : 'Adoptar como mi rutina'}</button>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;text-align:center">Copia estos ejercicios a tu rutina y reemplaza la actual. Después la editás libremente acá abajo.</div>
+  </div>` : '';
+
+  return `${sectionTitle('Fight Club Training Engine', 'zap', 'margin-bottom:8px')}${evalCard}${engineCard}`;
+}
+
 function routineRows(routine) {
   if (!routine.some(e => e.dayLabel)) return routine.map(routineExerciseRow).join('');
   const days = [];
@@ -34,6 +65,28 @@ function routineRows(routine) {
     d.items.push(ex);
   }
   return days.map(d => `${sectionTitle(d.label, 'dumbbell', 'margin:14px 0 6px')}${d.items.map(routineExerciseRow).join('')}`).join('');
+}
+
+// Igual que routineRows pero SIN el botón "Quitar" — para la rutina del
+// motor, que el entrenador solo mira (Fase 11). Ojo: ex.id acá es de la
+// rutina 'ia' del cliente, no de la del entrenador.
+function readonlyRoutineRow(ex) {
+  const info = [ex.sets ? `${ex.sets} series` : null, ex.reps ? `${esc(String(ex.reps))} reps` : null, ex.weightKg != null ? `${ex.weightKg} kg` : null, ex.restSeconds ? `${ex.restSeconds}s descanso` : null].filter(Boolean).join(' · ');
+  return `<div class="row"><div class="row__body">
+    <div class="row__title">${esc(ex.text)}</div>
+    ${info ? `<div class="row__meta">${info}</div>` : ''}
+  </div></div>`;
+}
+function readonlyRoutineRows(routine) {
+  if (!routine.some(e => e.dayLabel)) return routine.map(readonlyRoutineRow).join('');
+  const days = [];
+  for (const ex of routine) {
+    const label = ex.dayLabel || '—';
+    let d = days.find(d => d.label === label);
+    if (!d) { d = { label, items: [] }; days.push(d); }
+    d.items.push(ex);
+  }
+  return days.map(d => `${sectionTitle(d.label, 'dumbbell', 'margin:12px 0 4px')}${d.items.map(readonlyRoutineRow).join('')}`).join('');
 }
 
 export function viewTrainerPending() {
@@ -144,6 +197,8 @@ export function viewTrainerClientes() {
             </div>`).join('')}
           </div>`
         : `<div class="empty" style="margin-bottom:16px"><div class="empty__title">Sin fotos</div>Este cliente aún no subió fotos de progreso</div>`}
+
+      ${trainerEngineSection(detail)}
 
       ${sectionTitle('Crear rutina', 'zap')}
       <div class="hint" style="margin-bottom:10px">Estos ejercicios se muestran al cliente si elige "De tu entrenador"</div>
