@@ -587,6 +587,23 @@
       if (error) throw error;
     },
 
+    // Fase 10 (rutina dinámica) — ajusta filas YA EXISTENTES de la rutina
+    // después de una sesión: sube/baja weight_kg, o rota un ejercicio
+    // estancado (text + exercise_id nuevos). `updates` es
+    // [{ id, weightKg?, text?, exerciseId? }]. La política RLS "write
+    // exercises via owned routine" ya cubre el UPDATE del propio cliente.
+    async updateExercises(updates) {
+      for (const u of updates || []) {
+        const patch = {};
+        if ('weightKg' in u) patch.weight_kg = u.weightKg ?? null;
+        if ('text' in u) patch.text = u.text;
+        if ('exerciseId' in u) patch.exercise_id = u.exerciseId || null;
+        if (!Object.keys(patch).length) continue;
+        const { error } = await client.from('routine_exercises').update(patch).eq('id', u.id);
+        if (error) throw error;
+      }
+    },
+
     // Aplica una plantilla de programa entera a la rutina del cliente —
     // reemplaza los ejercicios existentes de "De tu entrenador" (igual que
     // generateAi reemplaza los de la rutina con IA), pero conservando

@@ -13,6 +13,7 @@ export { buildPlanSpec } from './rules.js';
 export { generateRoutine } from './generator.js';
 export { findSubstitute, listSubstitutes } from './substitution.js';
 export { analyzeExercise, analyzeRoutine, repRange, parseRirTarget, roundLoad } from './progression.js';
+export { adaptRoutineAfterSession } from './dynamic.js';
 export { contribution, weeklySetTargets, normMuscle, MUSCLE_GROUPS, MINOR_GROUPS, SEC_WEIGHT } from './muscles.js';
 
 import { filterExercises } from './exercise-filter.js';

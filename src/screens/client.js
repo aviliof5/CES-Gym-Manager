@@ -606,10 +606,17 @@ export function viewWorkout() {
 
   if (w.finished) {
     const totalSets = Object.values(w.doneSets).reduce((sum, v) => sum + (v instanceof Set ? v.size : (v === true ? 1 : 0)), 0);
+    // Fase 10 — qué ajustó el motor en la rutina con lo que se acaba de entrenar.
+    const adapt = (w.adaptSummary || []);
+    const adaptBlock = adapt.length ? `<div style="margin-top:22px;width:100%;max-width:340px;text-align:left;padding:12px 14px;border-radius:12px;background:var(--ok-dim);border:1px solid rgba(var(--ok-rgb,74,163,110),.25)">
+      <div style="font-size:var(--fs-xs);font-weight:800;color:var(--ok);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Ajustamos tu rutina para la próxima</div>
+      <ul style="margin:0;padding-left:16px;font-size:var(--fs-xs);color:var(--text);line-height:1.7">${adapt.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
+    </div>` : '';
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px 28px">
       <div style="width:64px;height:64px;border-radius:50%;background:var(--ok-dim);display:flex;align-items:center;justify-content:center;color:var(--ok);margin-bottom:20px">${iconSpan('check', 28)}</div>
       <div class="title" style="margin-bottom:0">Entrenamiento completado</div>
       <div style="font-size:13px;color:var(--muted);margin-top:8px;line-height:1.6">${w.exercises.length} ${w.exercises.length === 1 ? 'ejercicio' : 'ejercicios'} · ${totalSets} ${totalSets === 1 ? 'serie marcada' : 'series marcadas'}</div>
+      ${adaptBlock}
       <button class="btn btn--action" style="margin-top:28px" ${act('exitWorkout')}>Volver</button>
     </div>`;
   }

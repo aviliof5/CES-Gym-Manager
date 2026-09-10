@@ -2171,6 +2171,18 @@
       });
     },
     async removeExercise(exerciseId) { await wait(); db.routineExercises = db.routineExercises.filter(e => e.id !== exerciseId); },
+    // Fase 10 — ajusta filas existentes tras una sesión (weight_kg, o rota
+    // ejercicio: text + exercise_id). updates: [{id, weightKg?, text?, exerciseId?}]
+    async updateExercises(updates) {
+      await wait();
+      for (const u of updates || []) {
+        const row = db.routineExercises.find(e => e.id === u.id);
+        if (!row) continue;
+        if ('weightKg' in u) row.weight_kg = u.weightKg ?? null;
+        if ('text' in u) row.text = u.text;
+        if ('exerciseId' in u) row.exercise_id = u.exerciseId || null;
+      }
+    },
     // Aplica una plantilla de programa entera a la rutina del cliente —
     // reemplaza los ejercicios existentes de "De tu entrenador" (igual que
     // generateAi reemplaza los de la rutina con IA), pero conservando

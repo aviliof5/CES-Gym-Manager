@@ -13,7 +13,7 @@ import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, mone
 import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum, inferEquipmentConcepts } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
-import { generateFullRoutine, buildPlanSpec, filterExercises, analyzeRoutine } from './training-engine/index.js';
+import { generateFullRoutine, buildPlanSpec, filterExercises, analyzeRoutine, adaptRoutineAfterSession } from './training-engine/index.js';
 
 // Conceptos de equipamiento que ofrece el gimnasio HOY: unión de
 // equipment.concepts sobre las máquinas ACTIVAS (más 'peso_corporal', que el
@@ -57,6 +57,77 @@ function computeEnginePlan(p, { library = [], gymConcepts = [], excludedIds = []
     hasMobility: filtered.hasMobility,
   });
   return { ...spec, rejected: filtered.rejected };
+}
+
+// El perfil "de motor" (nivel derivado, objetivo de 9 valores, etc.) a
+// partir del training_profile guardado. null si no completó la evaluación.
+function engineProfileFrom(p) {
+  if (!p || !p.primaryGoal) return null;
+  return {
+    level: deriveLevel(p.trainingTimeBucket, p.machineComfort),
+    primaryGoal: p.primaryGoal,
+    secondaryGoal: p.secondaryGoal || null,
+    daysPerWeek: p.daysPerWeek || 3,
+    sessionMinutes: p.sessionMinutes || 60,
+    preferredStyle: p.preferredStyle || 'indiferente',
+    priorityMuscles: p.priorityMuscles || [],
+  };
+}
+
+/* Fase 10 — rutina dinámica. Se llama al TERMINAR un entrenamiento con la
+   rutina del motor ('ia'): mira lo que el cliente movió y ajusta la rutina
+   para la próxima (sube/baja pesos objetivo, rota ejercicios estancados).
+   Best-effort: si algo falla, la rutina queda como estaba y se reintenta la
+   próxima sesión. Devuelve { summary:[str], updatedRoutine } o null. */
+async function adaptRoutineNow(w) {
+  if (!w || w.source !== 'ia') return null;
+  try {
+    const clientId = state.myClient.id;
+    const since = new Date(Date.now() - 120 * 86400000).toISOString();
+    const [logs, aiRoutine] = await Promise.all([
+      BolaAPI.workouts.recentLogs(clientId, since),
+      BolaAPI.routines.getAi(clientId, state.aiGoal),
+    ]);
+    const rows = (aiRoutine.exercises || []);
+    if (!rows.length) return null;
+
+    // Pool para las rotaciones (solo si completó la evaluación).
+    let pool = [];
+    const ep = engineProfileFrom(state.myTrainingProfile);
+    if (ep) {
+      try {
+        const excl = await BolaAPI.trainingProfile.listExcludedExercises(clientId);
+        const lims = await BolaAPI.trainingProfile.listLimitations(clientId);
+        pool = filterExercises({
+          library: state.exercisesLib || [], gymConcepts: activeGymConcepts(),
+          profile: ep, excludedIds: excl.map(x => x.exerciseId).filter(Boolean), limitations: lims,
+        }).pool;
+      } catch (_) { pool = []; }
+    }
+
+    const trainedNames = new Set((w.exercises || []).map(cleanExName));
+    const rirTarget = (state.enginePlan && state.enginePlan.rirTarget) || exRirTarget(w.exercises[0] || {});
+    const { weightUpdates, swaps, summary } = adaptRoutineAfterSession({
+      routineExercises: rows, cleanName: t => String(t || '').split(' · ')[0].trim(),
+      allLogs: logs, trainedNames, pool, rirTarget,
+    });
+
+    // Traduce los swaps a updates de fila (text nuevo con el mismo sufijo de
+    // RIR/precaución que usa el generador, + exercise_id nuevo).
+    const rowById = new Map(rows.map(r => [r.id, r]));
+    const swapUpdates = swaps.map(s => {
+      const caution = s.to.caution ? ` · ⚠ cuidá ${(s.to.cautionJoints || []).join(' / ')}` : '';
+      return { id: s.id, text: `${s.to.name} · RIR ${rirTarget}${caution}`, exerciseId: s.to.id || null, weightKg: null };
+    });
+    const allUpdates = [...weightUpdates, ...swapUpdates];
+    if (!allUpdates.length) return { summary: [], updatedRoutine: aiRoutine };
+
+    await BolaAPI.routines.updateExercises(allUpdates);
+    const updatedRoutine = await BolaAPI.routines.getAi(clientId, state.aiGoal);
+    return { summary, updatedRoutine };
+  } catch (_) {
+    return null; // nunca romper el "entrenamiento completado" por esto
+  }
 }
 
 // Handle del setInterval del descanso entre series — módulo-scoped porque
@@ -1139,7 +1210,14 @@ export const ACTIONS = {
       } catch (err) {
         if (!isNetworkError(err)) throw err;
       }
-      setState({ workout: { ...w, finished: true, restSecondsLeft: 0 }, personalRecords, workoutsThisMonth, myAchievements });
+      // Fase 10 — la rutina del motor se adapta sola con lo que se acaba de
+      // entrenar (pesos objetivo, rotar estancados). Best-effort.
+      const adapt = await adaptRoutineNow(w);
+      setState({
+        workout: { ...w, finished: true, restSecondsLeft: 0, adaptSummary: (adapt && adapt.summary) || [] },
+        personalRecords, workoutsThisMonth, myAchievements,
+        aiRoutine: (adapt && adapt.updatedRoutine) || state.aiRoutine,
+      });
     } else {
       const next = w.exercises[w.index + 1] || {};
       setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0, weightInput: precargaWeight(next), repsInput: defaultReps(next), rirInput: '' } });
