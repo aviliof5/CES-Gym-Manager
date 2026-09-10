@@ -908,9 +908,19 @@
       const row = unwrap(await client.from('workout_sessions').insert(payload).select('id').single());
       return row.id;
     },
-    async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg) {
-      const { error } = await client.from('exercise_logs').insert({ workout_session_id: sessionId, client_user_id: clientUserId, exercise_name: exerciseName, set_number: setNumber, reps: reps ?? null, weight_kg: weightKg ?? null });
+    async logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg, rir) {
+      const { error } = await client.from('exercise_logs').insert({ workout_session_id: sessionId, client_user_id: clientUserId, exercise_name: exerciseName, set_number: setNumber, reps: reps ?? null, weight_kg: weightKg ?? null, rir: rir ?? null });
       if (error) throw error;
+    },
+    // Series registradas desde `sinceIso` (para el análisis de progresión —
+    // ver src/training-engine/progression.js). Se agrupan por ejercicio del
+    // lado del motor.
+    async recentLogs(clientUserId, sinceIso) {
+      const rows = unwrap(await client.from('exercise_logs')
+        .select('exercise_name, set_number, reps, weight_kg, rir, created_at, workout_session_id')
+        .eq('client_user_id', clientUserId).gte('created_at', sinceIso)
+        .order('created_at', { ascending: true }));
+      return rows.map(r => ({ exerciseName: r.exercise_name, setNumber: r.set_number, reps: r.reps, weightKg: r.weight_kg, rir: r.rir, createdAt: r.created_at, sessionId: r.workout_session_id }));
     },
     // clientUserId no lo usa el RPC (resuelve auth.uid() del lado del
     // servidor) — se acepta igual para que el call site sea idéntico al del

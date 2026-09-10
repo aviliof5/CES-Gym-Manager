@@ -13,7 +13,7 @@ import { friendlyError, splitPhone, enrichClient, buildRoutine, formatDate, mone
 import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalToEnum, inferEquipmentConcepts } from './data.js';
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
-import { generateFullRoutine, buildPlanSpec, filterExercises } from './training-engine/index.js';
+import { generateFullRoutine, buildPlanSpec, filterExercises, analyzeRoutine } from './training-engine/index.js';
 
 // Conceptos de equipamiento que ofrece el gimnasio HOY: unión de
 // equipment.concepts sobre las máquinas ACTIVAS (más 'peso_corporal', que el
@@ -183,6 +183,26 @@ function defaultReps(ex) {
   return /^\d+$/.test(String((ex && ex.reps) || '').trim()) ? ex.reps : '';
 }
 
+// Nombre "limpio" del ejercicio, sin el sufijo " · RIR 1-2" / " · ⚠ cuidá…"
+// que el motor agrega al texto de la rutina (ver generator.js). Se usa para
+// registrar en exercise_logs y para cruzar con el historial de progresión.
+function cleanExName(ex) {
+  return String((ex && ex.text) || '').split(' · ')[0].trim();
+}
+// RIR objetivo del ejercicio: del texto de la rutina del motor, o del plan
+// guardado, o 2 por defecto.
+function exRirTarget(ex) {
+  const m = String((ex && ex.text) || '').match(/RIR\s+([\d.\-]+)/);
+  return m ? m[1] : ((state.enginePlan && state.enginePlan.rirTarget) || '2');
+}
+// Peso a precargar en "Modo entrenamiento" para un ejercicio: la sugerencia
+// del análisis de progresión si la hay, si no el último peso conocido.
+function precargaWeight(ex) {
+  const p = ex && ex.prog;
+  if (p && p.suggestedWeightKg != null) return String(p.suggestedWeightKg);
+  return ex && ex.weightKg != null ? String(ex.weightKg) : '';
+}
+
 // El campo de correo de la UI solo captura la parte local (ver emailField()
 // en helpers.js) — acá se completa con el mismo criterio que
 // normalizeEmail() en supabase-client.js, para reconstruir el correo
@@ -220,7 +240,7 @@ function goToConfirmCode(email, role) {
 // llamada a BolaAPI tal cual se hubiera hecho con señal en el momento.
 const QUEUE_HANDLERS = {
   workoutStart: ({ sessionId, clientUserId, gymId, source }) => BolaAPI.workouts.start(clientUserId, gymId, source, sessionId),
-  workoutLogSet: ({ sessionId, clientUserId, exerciseName, setNumber, reps, weightKg }) => BolaAPI.workouts.logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg),
+  workoutLogSet: ({ sessionId, clientUserId, exerciseName, setNumber, reps, weightKg, rir }) => BolaAPI.workouts.logSet(sessionId, clientUserId, exerciseName, setNumber, reps, weightKg, rir),
   workoutFinish: ({ sessionId, clientUserId }) => BolaAPI.workouts.finish(sessionId, clientUserId),
   checkin: ({ clientUserId }) => BolaAPI.checkins.checkIn(clientUserId),
   // Solo CONFIRMAR un cobro que ya existe — generar uno nuevo necesita
@@ -970,9 +990,19 @@ export const ACTIONS = {
     // solo lo que le toca a HOY — "lo que te toca el día" — no la semana
     // entera de una sola vez. Una rutina sin días asignados (con IA, o
     // armada sin elegir día) sigue funcionando exactamente igual que antes.
-    const exercises = exercisesForToday(routine.exercises || []);
+    let exercises = exercisesForToday(routine.exercises || []);
     if (!exercises.length) return;
     clearRestTimer();
+    // Fase 9 — análisis de progresión: mira lo que el cliente hizo las
+    // últimas veces (reps/peso/RIR) y sugiere, por ejercicio, subir/mantener/
+    // bajar el peso para esta sesión. Pura, determinista (progression.js).
+    try {
+      const since = new Date(Date.now() - 120 * 86400000).toISOString();
+      const logs = await BolaAPI.workouts.recentLogs(state.myClient.id, since);
+      const rows = exercises.map(e => ({ name: cleanExName(e), reps: e.reps, rirTarget: exRirTarget(e) }));
+      const prog = analyzeRoutine(rows, logs);
+      exercises = exercises.map(e => ({ ...e, prog: prog.get(cleanExName(e)) || null }));
+    } catch (_) { /* sin historial → sin sugerencias, se entrena igual */ }
     // El ID de la sesión se elige ACÁ, no lo asigna el servidor — así,
     // aunque no haya señal en este momento, se puede seguir entrenando y
     // marcando series con ESTE mismo ID; cuando vuelva la señal, se manda
@@ -993,9 +1023,15 @@ export const ACTIONS = {
       screen: 'workout',
       workout: {
         sessionId, exercises, source, index: 0, doneSets: {}, restSecondsLeft: 0, finished: false,
-        weightInput: first.weightKg != null ? String(first.weightKg) : '', repsInput: defaultReps(first),
+        weightInput: precargaWeight(first), repsInput: defaultReps(first), rirInput: '',
       },
     });
+  },
+  setWorkoutRir: v => {
+    const w = state.workout;
+    if (!w) return;
+    // toca de nuevo el mismo valor -> lo borra (queda sin registrar)
+    setState({ workout: { ...w, rirInput: String(w.rirInput) === String(v) ? '' : String(v) } });
   },
   // El campo de peso/reps es UNO por ejercicio (no por serie): se precarga
   // con el último peso conocido y se puede ajustar antes de marcar cada
@@ -1018,11 +1054,13 @@ export const ACTIONS = {
       const ex = w.exercises[key] || {};
       const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
       const repsNum = w.repsInput !== '' && w.repsInput != null ? Number(w.repsInput) : null;
+      const rir = w.rirInput !== '' && w.rirInput != null ? Number(w.rirInput) : null;
+      const logName = cleanExName(ex);
       try {
-        await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, num, repsNum, weightKg);
+        await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, logName, num, repsNum, weightKg, rir);
       } catch (err) {
         if (!isNetworkError(err)) throw err;
-        queueAction('workoutLogSet', { sessionId: w.sessionId, clientUserId: state.myClient.id, exerciseName: ex.text, setNumber: num, reps: repsNum, weightKg });
+        queueAction('workoutLogSet', { sessionId: w.sessionId, clientUserId: state.myClient.id, exerciseName: logName, setNumber: num, reps: repsNum, weightKg, rir });
         setState({ pendingSyncCount: getQueueSize() });
       }
       ACTIONS.startRest(ex.restSeconds);
@@ -1037,11 +1075,13 @@ export const ACTIONS = {
     if (!wasDone) {
       const ex = w.exercises[key] || {};
       const weightKg = w.weightInput !== '' && w.weightInput != null ? Number(w.weightInput) : null;
+      const rir = w.rirInput !== '' && w.rirInput != null ? Number(w.rirInput) : null;
+      const logName = cleanExName(ex);
       try {
-        await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, ex.text, 1, null, weightKg);
+        await BolaAPI.workouts.logSet(w.sessionId, state.myClient.id, logName, 1, null, weightKg, rir);
       } catch (err) {
         if (!isNetworkError(err)) throw err;
-        queueAction('workoutLogSet', { sessionId: w.sessionId, clientUserId: state.myClient.id, exerciseName: ex.text, setNumber: 1, reps: null, weightKg });
+        queueAction('workoutLogSet', { sessionId: w.sessionId, clientUserId: state.myClient.id, exerciseName: logName, setNumber: 1, reps: null, weightKg, rir });
         setState({ pendingSyncCount: getQueueSize() });
       }
     }
@@ -1102,7 +1142,7 @@ export const ACTIONS = {
       setState({ workout: { ...w, finished: true, restSecondsLeft: 0 }, personalRecords, workoutsThisMonth, myAchievements });
     } else {
       const next = w.exercises[w.index + 1] || {};
-      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0, weightInput: next.weightKg != null ? String(next.weightKg) : '', repsInput: defaultReps(next) } });
+      setState({ workout: { ...w, index: w.index + 1, restSecondsLeft: 0, weightInput: precargaWeight(next), repsInput: defaultReps(next), rirInput: '' } });
     }
   },
   prevExercise: () => {
@@ -1110,7 +1150,7 @@ export const ACTIONS = {
     if (!w || w.index === 0) return;
     clearRestTimer();
     const prev = w.exercises[w.index - 1] || {};
-    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0, weightInput: prev.weightKg != null ? String(prev.weightKg) : '', repsInput: defaultReps(prev) } });
+    setState({ workout: { ...w, index: w.index - 1, restSecondsLeft: 0, weightInput: precargaWeight(prev), repsInput: defaultReps(prev), rirInput: '' } });
   },
   exitWorkout: () => {
     clearRestTimer();
