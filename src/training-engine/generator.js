@@ -146,12 +146,14 @@ export function generateRoutine({ spec, filtered, profile = {} }) {
       const reps = compound ? spec.repsCompound : spec.repsIsolation;
       const rest = compound ? spec.restCompound : spec.restIsolation;
       const cautionTxt = ex.caution ? ` · ⚠ cuidá ${ex.cautionJoints.join(' / ')}` : '';
-      // El texto es el respaldo (lo que ve quien no lee sets/reps
-      // estructurados). Las series/reps van en sus columnas y las muestra
-      // exerciseRow(); acá solo el nombre + el RIR objetivo + la marca de
-      // precaución, para no repetir "4×6-10" dos veces en la misma fila.
+      // El texto es el respaldo (lo que ve quien no lee las columnas
+      // estructuradas). Solo el nombre + la marca de precaución: las
+      // series/reps las muestra exerciseRow() y el RIR objetivo la tarjeta
+      // "Cómo está armada" y el modo entrenamiento — no hace falta repetirlo
+      // en cada fila. El separador ' · ' se mantiene: cleanExName() (actions.js)
+      // parte por ahí para cruzar con el historial.
       const entry = {
-        text: `${ex.name} · RIR ${spec.rirTarget}${cautionTxt}`,
+        text: `${ex.name}${cautionTxt}`,
         exerciseId: ex.id || null,
         sets, reps, weightKg: null, restSeconds: rest,
         dayLabel: day.label,

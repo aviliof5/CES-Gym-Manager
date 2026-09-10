@@ -61,17 +61,28 @@ function stepTitle(t, sub) {
     ${sub ? `<div class="subtitle" style="margin-bottom:18px">${esc(sub)}</div>` : '<div style="height:14px"></div>'}`;
 }
 
+// Campo con etiqueta chica arriba — así se sabe qué es aunque ya tenga valor
+// (el placeholder solo se ve vacío). Se usa en el paso 1 y el motor no
+// necesita estos datos para generar, pero cuando están cargados hay que
+// poder leerlos.
+function labeledField(field, label, value, extraStyle = '') {
+  return `<div style="flex:1;${extraStyle}">
+    ${value ? `<div style="font-size:11px;color:var(--muted);margin:0 0 4px 2px">${esc(label)}</div>` : ''}
+    ${textField(field, label, value, {})}
+  </div>`;
+}
+
 function eyebrow(t) { return `<div class="eyebrow" style="margin:16px 0 8px">${esc(t)}</div>`; }
 
 function renderStep(d) {
   switch (state.evalStep) {
     case 1:
-      return `${stepTitle('Tus datos', 'Todo opcional menos que sepas tu peso y altura — nos ayuda a calibrar la rutina.')}
+      return `${stepTitle('Tus datos', 'Todo esto es opcional. El peso y la altura nos sirven para seguir tu progreso — la rutina se arma igual sin ellos.')}
         <div style="display:flex;gap:10px;margin-bottom:14px">
-          ${textField('evalDraft.weight', 'Peso (kg)', d.weight, { style: 'flex:1' })}
-          ${textField('evalDraft.height', 'Altura (cm)', d.height, { style: 'flex:1' })}
+          ${labeledField('evalDraft.weight', 'Peso (kg)', d.weight)}
+          ${labeledField('evalDraft.height', 'Altura (cm)', d.height)}
         </div>
-        ${textField('evalDraft.age', 'Edad', d.age, { style: 'margin-bottom:8px' })}
+        ${labeledField('evalDraft.age', 'Edad', d.age, 'margin-bottom:8px')}
         ${eyebrow('Sexo')}
         ${chipRow(EVAL_SEX, d.sex, 'sex')}
         ${eyebrow('Tipo de cuerpo (opcional — solo de referencia)')}
@@ -119,23 +130,27 @@ function renderStep(d) {
       const q = state.evalExerciseQuery.trim().toLowerCase();
       const lib = (state.exercisesLib || []).filter(e => e.isActive !== false);
       const excludedIds = new Set(state.evalExcluded.map(x => x.exerciseId));
-      const shown = (q ? lib.filter(e => e.name.toLowerCase().includes(q)) : lib).slice(0, 40);
-      return `${stepTitle('¿Hay ejercicios que no querés hacer?', 'Buscá y marcá los que preferís evitar. El motor los reemplaza por una alternativa que trabaje lo mismo.')}
+      const chosen = state.evalExcluded;
+      // Sin búsqueda: solo mostramos lo ya marcado + un prompt para buscar
+      // (la lista completa son 100+ ejercicios, no tiene sentido volcarla).
+      const shown = q ? lib.filter(e => e.name.toLowerCase().includes(q)).slice(0, 40)
+        : lib.filter(e => excludedIds.has(e.id));
+      const exRow = e => {
+        const on = excludedIds.has(e.id);
+        return `<div ${act('evalToggleExcluded', e.id)} class="row" style="cursor:pointer;margin-bottom:0;${on ? 'border-color:var(--danger);background:var(--danger-dim)' : ''}">
+          <div style="width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${on ? 'var(--danger)' : 'transparent'};border:1px solid ${on ? 'transparent' : 'var(--line-strong)'};color:#fff">${on ? iconSpan('x', 12) : ''}</div>
+          <div class="row__body"><div class="row__title" style="font-size:13.5px">${esc(e.name)}</div><div class="row__meta">${esc(e.muscleGroup)}</div></div>
+        </div>`;
+      };
+      return `${stepTitle('¿Hay ejercicios que no querés hacer?', 'Opcional. Si no querés evitar ninguno, tocá Siguiente. Los que marques, el motor los reemplaza por una alternativa que trabaje lo mismo.')}
         <div class="search" style="margin-bottom:10px">
           <span class="search__icon">${iconSpan('dumbbell', 16)}</span>
-          <input class="field" data-f="evalExerciseQuery" placeholder="Buscar ejercicio…" value="${esc(state.evalExerciseQuery)}"/>
+          <input class="field" data-f="evalExerciseQuery" placeholder="Buscar ejercicio por nombre…" value="${esc(state.evalExerciseQuery)}"/>
         </div>
-        ${state.evalExcluded.length ? `<div class="hint" style="margin-bottom:8px">${state.evalExcluded.length} marcado${state.evalExcluded.length === 1 ? '' : 's'} para evitar</div>` : ''}
-        <div style="display:flex;flex-direction:column;gap:6px">
-          ${shown.map(e => {
-            const on = excludedIds.has(e.id);
-            return `<div ${act('evalToggleExcluded', e.id)} class="row" style="cursor:pointer;margin-bottom:0;${on ? 'border-color:var(--danger);background:var(--danger-dim)' : ''}">
-              <div style="width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:${on ? 'var(--danger)' : 'transparent'};border:1px solid ${on ? 'transparent' : 'var(--line-strong)'};color:#fff">${on ? iconSpan('x', 12) : ''}</div>
-              <div class="row__body"><div class="row__title" style="font-size:13.5px">${esc(e.name)}</div><div class="row__meta">${esc(e.muscleGroup)}</div></div>
-            </div>`;
-          }).join('')}
-        </div>
-        ${!shown.length ? `<div class="empty"><div class="empty__title">Sin resultados</div>Probá con otro nombre</div>` : ''}`;
+        ${chosen.length ? `<div class="eyebrow" style="margin-bottom:6px">${chosen.length} para evitar</div>` : ''}
+        <div style="display:flex;flex-direction:column;gap:6px">${shown.map(exRow).join('')}</div>
+        ${q && !shown.length ? `<div class="empty"><div class="empty__title">Sin resultados</div>Probá con otro nombre</div>` : ''}
+        ${!q && !chosen.length ? `<div class="hint" style="margin-top:4px">Escribí arriba el nombre de un ejercicio para buscarlo.</div>` : ''}`;
     }
 
     case 7: {
@@ -158,8 +173,10 @@ function renderStep(d) {
         <span style="color:var(--muted)">${esc(k)}</span><span style="text-align:right;font-weight:600">${esc(v || '—')}</span></div>`;
       const muscles = d.priorityMuscles.map(m => (EVAL_PRIORITY_MUSCLES.find(x => x.id === m) || {}).label).filter(Boolean).join(', ');
       const jointLabels = d.limitationJoints.map(j => (EVAL_JOINTS.find(x => x.id === j) || {}).label).filter(Boolean).join(', ');
-      return `${stepTitle('Revisá tu evaluación', 'Si algo no está bien, tocá "Ajustar" y volvé al paso que quieras.')}
-        <div class="card" style="margin-bottom:16px">
+      const jump = (label, step) => `<div ${act('evalGoStep', step)} class="chip chip--action" style="font-size:11.5px">${esc(label)}</div>`;
+      const painNote = d.hasPain === true && state.evalPainfulNote.trim() ? ` — "${state.evalPainfulNote.trim()}"` : '';
+      return `${stepTitle('Revisá tu evaluación', 'Tocá cualquier apartado de abajo para volver a ese paso y cambiarlo.')}
+        <div class="card" style="margin-bottom:12px">
           ${row('Objetivo principal', goalLabel(d.primaryGoal))}
           ${d.secondaryGoal ? row('Objetivo secundario', goalLabel(d.secondaryGoal)) : ''}
           ${row('Experiencia', (EVAL_TIME_BUCKETS.find(t => t.id === d.trainingTimeBucket) || {}).label)}
@@ -169,7 +186,11 @@ function renderStep(d) {
           ${row('Estilo preferido', (EVAL_STYLES.find(s => s.id === d.preferredStyle) || {}).label)}
           ${muscles ? row('Priorizar', muscles) : ''}
           ${state.evalExcluded.length ? row('Ejercicios a evitar', `${state.evalExcluded.length}`) : ''}
-          ${jointLabels ? row('Cuidar', jointLabels) : ''}
+          ${jointLabels || painNote ? row('Cuidar', (jointLabels || 'molestia') + painNote) : ''}
+        </div>
+        <div class="eyebrow" style="margin-bottom:8px">Ajustar</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+          ${jump('Datos', 1)}${jump('Objetivo', 2)}${jump('Experiencia', 3)}${jump('Disponibilidad', 4)}${jump('Preferencias', 5)}${jump('Ejercicios a evitar', 6)}${jump('Lesiones', 7)}
         </div>
         <div class="hint" style="margin-bottom:4px">Al generar, guardamos tu evaluación y armamos tu rutina con lo que tiene tu gimnasio.</div>`;
     }
