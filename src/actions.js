@@ -1391,16 +1391,38 @@ export const ACTIONS = {
   openClientDetail: async clientId => {
     const emptyDraft = { exerciseId: '', text: '', sets: '', reps: '', weightKg: '', restSeconds: '60' };
     setState({ trainerSelectedClientId: clientId, trainerRoutineDraft: emptyDraft });
-    const [progressRaw, routine, measurements, prs] = await Promise.all([
+    const selected = (state.trainerClients || []).find(c => c.id === clientId);
+    const goal = (selected && selected.physical && selected.physical.goal) || 'perder_peso';
+    const [progressRaw, routine, measurements, prs, trainingProfile, engineRoutine, limitations] = await Promise.all([
       BolaAPI.progress.listForClient(clientId),
       BolaAPI.routines.getTrainer(clientId),
       BolaAPI.measurements.listForClient(clientId),
       BolaAPI.workouts.getPersonalRecords(clientId),
+      // Fase 11 — perfil de evaluación (solo lectura, RLS "trainer read-only")
+      BolaAPI.trainingProfile.get(clientId).catch(() => null),
+      BolaAPI.routines.getAi(clientId, goal).catch(() => ({ id: null, exercises: [] })),
+      BolaAPI.trainingProfile.listLimitations(clientId).catch(() => []),
     ]);
     const progress = await attachSignedUrls(progressRaw);
-    setState({ trainerSelectedClientDetail: { progress, routine, measurements, prs } });
+    setState({ trainerSelectedClientDetail: { progress, routine, measurements, prs, trainingProfile, engineRoutine, limitations } });
   },
   closeClientDetail: () => setState({ trainerSelectedClientId: null, trainerSelectedClientDetail: null }),
+
+  // Fase 11 — el entrenador copia la rutina que el motor le generó al
+  // cliente a SU rutina ('trainer'), para editarla como propia. Reemplaza la
+  // rutina de entrenador actual (mismo criterio que aplicar un programa).
+  adoptAiRoutine: async () => {
+    const clientId = state.trainerSelectedClientId;
+    if (!clientId) return;
+    setState({ busy: true, error: '' });
+    try {
+      await BolaAPI.routines.adoptAiIntoTrainer(clientId, state.myTrainer.id);
+      const routine = await BolaAPI.routines.getTrainer(clientId);
+      setState({ busy: false, trainerSelectedClientDetail: { ...state.trainerSelectedClientDetail, routine } });
+    } catch (err) {
+      setState({ busy: false, error: friendlyError(err) });
+    }
+  },
   // Elegir un ejercicio de la biblioteca precarga su nombre en `text` (el
   // resumen de respaldo) — el entrenador puede seguir editando sets/reps/
   // peso/descanso libremente antes de agregarlo.

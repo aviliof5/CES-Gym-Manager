@@ -199,6 +199,31 @@ export function mapGoalToEnum(primaryGoal) {
     default: return 'tonificar';
   }
 }
+// Resumen legible de un training_profile guardado (shapeTrainingProfile) —
+// para que el entrenador lo VEA (Fase 11, solo lectura). Devuelve
+// [{label, value}] salteando lo que no completó.
+export function trainingProfileSummary(p) {
+  if (!p) return [];
+  const lbl = (arr, id) => (arr.find(x => x.id === id) || {}).label || id || '—';
+  const out = [];
+  if (p.primaryGoal) out.push({ label: 'Objetivo principal', value: lbl(EVAL_GOALS, p.primaryGoal) });
+  if (p.secondaryGoal) out.push({ label: 'Objetivo secundario', value: lbl(EVAL_GOALS, p.secondaryGoal) });
+  if (p.trainingTimeBucket || p.machineComfort) {
+    out.push({ label: 'Nivel estimado', value: deriveLevel(p.trainingTimeBucket, p.machineComfort) });
+  }
+  if (p.trainingTimeBucket) out.push({ label: 'Experiencia', value: lbl(EVAL_TIME_BUCKETS, p.trainingTimeBucket) });
+  if (p.machineComfort) out.push({ label: 'Comodidad con las máquinas', value: lbl(EVAL_COMFORT, p.machineComfort) });
+  if (p.daysPerWeek) out.push({ label: 'Días por semana', value: `${p.daysPerWeek}` });
+  if (p.sessionMinutes) out.push({ label: 'Minutos por sesión', value: `${p.sessionMinutes}` });
+  if (p.preferredStyle) out.push({ label: 'Estilo preferido', value: lbl(EVAL_STYLES, p.preferredStyle) });
+  if (p.priorityMuscles && p.priorityMuscles.length) {
+    out.push({ label: 'Músculos a priorizar', value: p.priorityMuscles.map(m => lbl(EVAL_PRIORITY_MUSCLES, m)).join(', ') });
+  }
+  if (p.somatotype) out.push({ label: 'Tipo de cuerpo', value: lbl(EVAL_SOMATOTYPES, p.somatotype) });
+  if (p.sex) out.push({ label: 'Sexo', value: lbl(EVAL_SEX, p.sex) });
+  return out;
+}
+
 // Etapa 2 — cada entrada trae ya sets/reps/restSeconds estructurados (no solo
 // el texto libre de antes) para que el modo entrenamiento pueda mostrar y
 // registrar series reales. `reps` es texto (no número): admite "20 min" o

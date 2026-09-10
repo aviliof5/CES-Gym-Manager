@@ -2199,6 +2199,24 @@
         rest_seconds: it.restSeconds ?? 60, day_label: it.dayLabel || null,
       }));
     },
+    // Fase 11 — el entrenador adopta la rutina del motor del cliente.
+    async adoptAiIntoTrainer(clientUserId, trainerUserId) {
+      await wait();
+      const aiIds = db.routines.filter(r => r.client_user_id === clientUserId && r.source === 'ia').map(r => r.id);
+      let src = [];
+      for (const id of aiIds) {
+        const ex = db.routineExercises.filter(e => e.routine_id === id).sort((a, b) => a.position - b.position);
+        if (ex.length) { src = ex; break; }
+      }
+      if (!src.length) throw new Error('El cliente todavía no tiene una rutina generada por el motor.');
+      const routineId = ensureRoutine(clientUserId, 'trainer', null, trainerUserId);
+      db.routineExercises = db.routineExercises.filter(e => e.routine_id !== routineId);
+      src.forEach((e, i) => db.routineExercises.push({
+        id: uid('rex'), routine_id: routineId, position: i, exercise_id: e.exercise_id || null,
+        text: e.text, sets: e.sets ?? null, reps: e.reps ?? null, weight_kg: e.weight_kg ?? null,
+        rest_seconds: e.rest_seconds ?? 60, day_label: e.day_label || null, day_of_week: e.day_of_week ?? null,
+      }));
+    },
   };
 
   /* ---------------- programas de entrenamiento (plantillas) ---------------- */

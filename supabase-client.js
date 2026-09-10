@@ -623,6 +623,33 @@
         if (error) throw error;
       }
     },
+
+    // Fase 11 — el entrenador "adopta" la rutina que el motor le generó al
+    // cliente: copia sus ejercicios a la rutina 'trainer' (reemplaza la que
+    // haya, igual que applyProgramTemplate) para poder editarla como suya.
+    // Lee la rutina 'ia' del cliente (RLS "trainer reads assigned client
+    // routines" ya lo permite) y conserva sets/reps/peso/descanso/día.
+    async adoptAiIntoTrainer(clientUserId, trainerUserId) {
+      const aiRows = unwrap(await client.from('routines').select('id').eq('client_user_id', clientUserId).eq('source', 'ia'));
+      let src = [];
+      for (const r of aiRows) {
+        const ex = unwrap(await client.from('routine_exercises')
+          .select('text, exercise_id, sets, reps, weight_kg, rest_seconds, day_label, day_of_week')
+          .eq('routine_id', r.id).order('position'));
+        if (ex.length) { src = ex; break; }
+      }
+      if (!src.length) throw new Error('El cliente todavía no tiene una rutina generada por el motor.');
+      const routineId = await ensureRoutine(clientUserId, 'trainer', null, trainerUserId);
+      const { error: delErr } = await client.from('routine_exercises').delete().eq('routine_id', routineId);
+      if (delErr) throw delErr;
+      const rows = src.map((e, i) => ({
+        routine_id: routineId, position: i, text: e.text, exercise_id: e.exercise_id || null,
+        sets: e.sets ?? null, reps: e.reps ?? null, weight_kg: e.weight_kg ?? null, rest_seconds: e.rest_seconds ?? 60,
+        day_label: e.day_label || null, day_of_week: e.day_of_week ?? null,
+      }));
+      const { error } = await client.from('routine_exercises').insert(rows);
+      if (error) throw error;
+    },
   };
 
   /* ---------------- programas de entrenamiento (plantillas) ---------------- */
