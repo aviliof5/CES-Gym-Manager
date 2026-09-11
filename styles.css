@@ -77,6 +77,15 @@
 
 *{box-sizing:border-box}
 html,body{height:100%}
+/* App estática: sin pinch-zoom ni doble-tap-para-agrandar — el layout ya
+   está pensado como el de una app nativa (barra inferior, tarjetas a medida
+   de la pantalla), no como una página que se pueda escalar. El viewport
+   meta de index.html (maximum-scale=1, user-scalable=no) ya lo bloquea en
+   la mayoría de los navegadores; esto es el refuerzo a nivel CSS que hace
+   falta en Chrome/Android y dentro del WebView de Capacitor, y de paso saca
+   el delay de ~300ms que algunos navegadores móviles le ponen al toque
+   mientras esperan a ver si es un doble-tap. */
+html{touch-action:manipulation}
 body{
   margin:0;
   background:radial-gradient(circle at 30% 20%,#131316,var(--bg) 60%);
