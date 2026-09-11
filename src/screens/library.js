@@ -128,7 +128,7 @@ export function viewExerciseLibrary() {
       ${errorBanner()}
       <div class="search">
         <span class="search__icon">${iconSpan('dumbbell', 16)}</span>
-        <input class="field" data-f="libraryQuery" placeholder="Buscar ejercicio…" value="${esc(state.libraryQuery)}"/>
+        <input class="field" data-f="libraryQuery" data-live="true" placeholder="Buscar ejercicio…" value="${esc(state.libraryQuery)}"/>
       </div>
       ${levels.length > 2 ? `<div class="seg">${levels.map(l => `<div ${act('setLibraryLevelFilter', l)} class="seg__item${levelFilter === l ? ' is-active' : ''}">${esc(l === 'todos' ? 'Todos los niveles' : l)}</div>`).join('')}</div>` : ''}
       <div class="seg">${muscles.map(m => `<div ${act('setLibraryMuscleFilter', m)} class="seg__item${muscleFilter === m ? ' is-active' : ''}">${esc(m === 'todos' ? 'Todos' : m)}</div>`).join('')}</div>

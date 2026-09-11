@@ -282,7 +282,15 @@ export const state = {
   trainerReviewsList: [],
 };
 
-export function setState(patch) {
+export function setState(patch, opts) {
   Object.assign(state, patch);
-  render();
+  // opts.silent: actualiza el estado SIN re-renderizar. Lo usa el handler de
+  // `input` de campos de texto (router.js): re-armar todo el DOM en cada
+  // tecla destruye el <input> con foco y en varios teclados de Android eso
+  // cierra el teclado. El valor ya está en el <input>; el estado solo tiene
+  // que quedar sincronizado para cuando una acción lo lea. El re-render que
+  // falte (medidor de contraseña, botón habilitado, resultados de búsqueda)
+  // llega al salir del campo (evento `change`) o, en las búsquedas, con un
+  // render debounced.
+  if (!opts || !opts.silent) render();
 }
