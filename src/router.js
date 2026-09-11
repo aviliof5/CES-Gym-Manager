@@ -15,9 +15,9 @@
 
 import { state, setState } from './state.js';
 import { offlineBanner, pendingSyncBanner, staleDataBanner, friendlyError } from './helpers.js';
-import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan, flushPendingQueue } from './actions.js';
+import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan, flushPendingQueue, loadWithFallback } from './actions.js';
 import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
-import { getQueueSize } from './offline.js';
+import { getQueueSize, isNetworkError, loadSnapshot } from './offline.js';
 
 import {
   viewBoot, viewLanding, viewLogin, viewConfirmCode, viewInviteWelcome, viewTrainerReg, viewGymPicker,
@@ -387,9 +387,20 @@ async function boot() {
   try {
     session = await BolaAPI.auth.getSession();
   } catch (err) {
-    console.error(err);
-    setState({ screen: entryScreen(), error: friendlyError(err) });
-    return;
+    // getSession() normalmente solo lee localStorage, pero si el token
+    // guardado está por vencer intenta renovarlo contra el servidor — sin
+    // señal justo en ese momento, esto puede fallar. Si ya hay un perfil
+    // guardado de un login anterior en este dispositivo, se sigue con la
+    // sesión "por confirmar" (loadWithFallback más abajo, con getMyProfile,
+    // resuelve el resto con esa copia) en vez de cortar acá — sin nada
+    // guardado no hay con qué resumir y ahí sí no queda otra que mostrar el
+    // error real.
+    if (!isNetworkError(err) || !loadSnapshot('myProfile')) {
+      console.error(err);
+      setState({ screen: entryScreen(), error: friendlyError(err) });
+      return;
+    }
+    session = { offlinePending: true };
   }
   if (!session) {
     setState({ screen: entryScreen() });
@@ -397,17 +408,32 @@ async function boot() {
   }
 
   try {
-    const profile = await BolaAPI.auth.getMyProfile();
+    // Pedido: que la sesión no se cierre sola al abrir la app sin señal.
+    // getSession() ya leyó localmente que HAY una sesión guardada — el
+    // problema real estaba acá: getMyProfile() valida contra el servidor, y
+    // si esa validación fallaba por mala señal (no por sesión inválida), el
+    // catch de abajo mandaba igual a la portada/login, donde encima no se
+    // puede hacer nada sin conexión. loadWithFallback() cae a la última
+    // copia del perfil guardada en este dispositivo cuando el fallo es de
+    // RED — si nunca se guardó ninguna (primera vez en este dispositivo sin
+    // señal), no hay de dónde resumir y ahí sí no queda otra que mostrar el
+    // error real.
+    const profileRes = await loadWithFallback('myProfile', () => BolaAPI.auth.getMyProfile());
+    const profile = profileRes.data;
     if (!profile) {
       // getSession() lee la sesión guardada localmente sin validarla;
       // getMyProfile() sí valida contra el servidor y puede devolver null
       // si el token quedó vencido/inválido — ahí no hay nada que resumir.
+      // (Esto solo pasa cuando la validación SÍ tuvo señal y contestó "no
+      // hay usuario" — si hubiera sido un fallo de red, loadWithFallback ya
+      // habría usado la copia guardada en vez de llegar hasta acá con null.)
       await BolaAPI.auth.signOut();
       setState({ screen: entryScreen() });
       return;
     }
     state.session = session;
     state.myProfile = profile;
+    if (profileRes.stale) setState({ dataStale: true });
 
     if (profile.role === 'owner') {
       await resumeOwnerSession(profile);
@@ -422,8 +448,13 @@ async function boot() {
         setState({ screen: entryScreen() });
         return;
       }
-      const gym = await BolaAPI.gyms.get(profile.gym_id);
+      const gym = (await loadWithFallback(`gym:${profile.gym_id}`, () => BolaAPI.gyms.get(profile.gym_id))).data;
       state.gym = gym;
+      // El estado de aprobación SÍ tiene que ser en vivo a propósito (mismo
+      // criterio que continueAdminSignIn en actions.js): una copia vieja acá
+      // podría dejar entrar a alguien pendiente/rechazado, o al revés, trabar
+      // a alguien ya aprobado — sin señal, un entrenador se queda en esta
+      // pantalla con el error real en vez de en trainerPending/el panel.
       const trainersForGym = await BolaAPI.trainers.listForGym(gym.id);
       const myTrainer = trainersForGym.find(t => t.id === profile.id);
       if (!myTrainer || myTrainer.status !== 'approved') {

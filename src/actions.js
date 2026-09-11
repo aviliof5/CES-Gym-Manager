@@ -341,7 +341,9 @@ export async function flushPendingQueue() {
 // reintentar con datos viejos no lo arregla y ocultarlo sería engañoso.
 // `key` tiene que ser única por gimnasio/cliente (ver los call sites) para
 // que dos gimnasios/cuentas no compartan la copia guardada del otro.
-async function loadWithFallback(key, fetcher) {
+// Exportada: router.js la reusa en boot() (arranque de un entrenador ya
+// logueado) en vez de reinventar el mismo patrón ahí.
+export async function loadWithFallback(key, fetcher) {
   try {
     const data = await fetcher();
     saveSnapshot(key, data);
@@ -394,7 +396,13 @@ export const ACTIONS = {
       setState({ busy: false, loginError: friendlyError(err) });
       return;
     }
-    const profile = await BolaAPI.auth.getMyProfile();
+    // loadWithFallback acá no es por si ESTA llamada falla (recién se logueó
+    // con señal, no tendría sentido que getMyProfile() fallara ahora mismo) —
+    // es para que quede guardada una copia YA desde el primer login, y no
+    // recién en el próximo boot() con sesión guardada. Sin esto, alguien que
+    // se loguea una vez y abre la app de nuevo sin señal ANTES de que boot()
+    // llegue a guardar su propia copia, se quedaba sin nada de dónde resumir.
+    const profile = (await loadWithFallback('myProfile', () => BolaAPI.auth.getMyProfile())).data;
     setState({ loginEmail: '', loginPassword: '' });
     await routeAfterLogin(profile);
   },
@@ -421,7 +429,7 @@ export const ACTIONS = {
     const role = state.confirmRole;
     setState({ confirmEmail: '', confirmCode: '', confirmRole: null, confirmCodeResent: false });
     if (role) { await continueAfterEmailConfirmed(role); return; }
-    const profile = await BolaAPI.auth.getMyProfile();
+    const profile = (await loadWithFallback('myProfile', () => BolaAPI.auth.getMyProfile())).data;
     await routeAfterLogin(profile);
   },
   resendConfirmCode: async () => {
@@ -1732,7 +1740,12 @@ export async function resumeClientSession(profile) {
 
 export async function continueClientResume(profile) {
   state.gym = (await loadWithFallback(`gym:${profile.gym_id}`, () => BolaAPI.gyms.get(profile.gym_id))).data;
-  const client = await BolaAPI.clients.getSelf(profile.id);
+  // loadWithFallback y no un fetch directo: alguien que ya se registró del
+  // todo (el caso normal de "abrir la app de nuevo") casi nunca cambia
+  // facePhotoKey/planId, así que una copia de la última vez alcanza para
+  // decidir el mismo "seguí a Inicio" sin depender de que haya señal justo
+  // en este primer instante de abrir la app.
+  const client = (await loadWithFallback(`clientSelf:${profile.id}`, () => BolaAPI.clients.getSelf(profile.id))).data;
   if (!client.facePhotoKey) {
     // El alta original quedó interrumpida antes de subir la foto (ver
     // ACTIONS.confirmRequiredFacePhoto) — es obligatoria, así que se pide
@@ -2103,7 +2116,11 @@ export async function enterOwnerDash() {
   render();
 }
 
-export async function enterClientHome() {
+// Junta TODO lo que necesita Inicio del cliente — separado de
+// enterClientHome() para poder envolver la tanda entera en un fallback a la
+// última copia guardada (ver más abajo) sin desarmar esta parte, que
+// prácticamente no cambió desde antes de que existiera ese fallback.
+async function buildClientHomeBundle() {
   const clientRaw = await BolaAPI.clients.getSelf(state.myProfile.id);
   // Su propia foto de rostro (ver attachFaceUrls) — Perfil la muestra en
   // vez del círculo de iniciales cuando existe.
@@ -2180,7 +2197,7 @@ export async function enterClientHome() {
   // derecho a Pago apenas entra, cargarlo acá es obligatorio, no cosmético.
   const pendingPayment = await BolaAPI.payments.getPendingForClient(client.id);
 
-  Object.assign(state, {
+  return {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
     plans, trainersForGym, reviews, equipment, exercisesLib, programTemplates, programTemplateItems, progressList, trainerRoutineForMe, myPersonalRoutine, checkinHistory, trainerInterest,
@@ -2188,14 +2205,48 @@ export async function enterClientHome() {
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
     conversationId: null, messages: [], messageDraft: '',
-    pendingPayment, busy: false,
-  });
+    pendingPayment,
+  };
+}
+
+// Pedido: que la sesión "se quede abierta" sin conexión — antes, si CUALQUIERA
+// de las ~25 lecturas de buildClientHomeBundle() fallaba por mala señal (el
+// caso típico: abrir la app en el gym con wifi débil), enterClientHome()
+// entero fallaba, eso subía hasta boot()/resumeClientSession() y terminaba
+// mandando al cliente a la pantalla de login — con la que además no puede
+// hacer nada sin señal. Ahora, si falla por RED, se muestra la última copia
+// completa guardada (mismo patrón que loadWithFallback, pero para todo el
+// paquete de una vez: son ~25 lecturas relacionadas entre sí, separarlas una
+// por una en loadWithFallback individuales no vale la complejidad extra) —
+// con el aviso de "puede no estar al día" (staleDataBanner, ya usado en el
+// panel de dueño). Si nunca se guardó nada en este dispositivo (primera vez
+// que entra y ya sin señal), no hay de dónde sacar una copia — ahí sí no
+// queda otra que mostrar el error real más arriba, en boot().
+export async function enterClientHome() {
+  const cacheKey = `clientHomeBundle:${state.myProfile.id}`;
+  let bundle, dataStale;
+  try {
+    bundle = await buildClientHomeBundle();
+    saveSnapshot(cacheKey, bundle);
+    dataStale = false;
+  } catch (err) {
+    if (!isNetworkError(err)) throw err;
+    const cached = loadSnapshot(cacheKey);
+    if (!cached) throw err;
+    bundle = cached.data;
+    dataStale = true;
+  }
+
+  Object.assign(state, bundle, { busy: false, dataStale });
+  const client = state.myClient;
   if (window.CesAds) window.CesAds.showBanner();
   // Se entera solo, sin recargar la página, de todo lo que le puede cambiar
   // mientras está adentro sin que él haga nada: le confirman el pago (o lo
   // suspenden/reactivan), le llega una notificación de un evento nuevo, o
   // se crea/reserva/cancela algo del calendario. stopSessionRealtime()
-  // primero por si entra dos veces seguidas a Inicio.
+  // primero por si entra dos veces seguidas a Inicio. Sin señal esto no
+  // logra conectar — no hace falta protegerlo especialmente: reintenta solo
+  // cuando vuelva (ver BolaAPI.realtime del lado del cliente real).
   stopSessionRealtime();
   watchRealtime('payments', `client_user_id=eq.${client.id}`, refreshMyPaymentState);
   watchRealtime('client_profiles', `user_id=eq.${client.id}`, refreshMyPaymentState);
