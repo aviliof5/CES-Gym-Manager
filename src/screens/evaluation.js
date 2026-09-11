@@ -145,7 +145,7 @@ function renderStep(d) {
       return `${stepTitle('¿Hay ejercicios que no querés hacer?', 'Opcional. Si no querés evitar ninguno, tocá Siguiente. Los que marques, el motor los reemplaza por una alternativa que trabaje lo mismo.')}
         <div class="search" style="margin-bottom:10px">
           <span class="search__icon">${iconSpan('dumbbell', 16)}</span>
-          <input class="field" data-f="evalExerciseQuery" placeholder="Buscar ejercicio por nombre…" value="${esc(state.evalExerciseQuery)}"/>
+          <input class="field" data-f="evalExerciseQuery" data-live="true" placeholder="Buscar ejercicio por nombre…" value="${esc(state.evalExerciseQuery)}"/>
         </div>
         ${chosen.length ? `<div class="eyebrow" style="margin-bottom:6px">${chosen.length} para evitar</div>` : ''}
         <div style="display:flex;flex-direction:column;gap:6px">${shown.map(exRow).join('')}</div>

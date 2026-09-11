@@ -272,7 +272,7 @@ export function viewOwnerSocios() {
     ${errorBanner()}
     <div class="search">
       <span class="search__icon">${iconSpan('users', 16)}</span>
-      <input class="field" data-f="ownerClientQuery" placeholder="Buscar socio por nombre…" value="${esc(state.ownerClientQuery)}"/>
+      <input class="field" data-f="ownerClientQuery" data-live="true" placeholder="Buscar socio por nombre…" value="${esc(state.ownerClientQuery)}"/>
     </div>
     <div class="seg">${STATUS_FILTERS.map(([k, label]) => `<div ${act('setOwnerClientStatusFilter', k)} class="seg__item${filter === k ? ' is-active' : ''}">${label}</div>`).join('')}</div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">

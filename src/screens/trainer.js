@@ -237,7 +237,7 @@ export function viewTrainerClientes() {
     ${errorBanner()}
     <div class="search">
       <span class="search__icon">${iconSpan('users', 16)}</span>
-      <input class="field" data-f="trainerClientQuery" placeholder="Buscar cliente por nombre…" value="${esc(state.trainerClientQuery)}"/>
+      <input class="field" data-f="trainerClientQuery" data-live="true" placeholder="Buscar cliente por nombre…" value="${esc(state.trainerClientQuery)}"/>
     </div>
     <div class="hint" style="margin-bottom:10px">${filtered.length} de ${myClients.length} ${myClients.length === 1 ? 'cliente asignado' : 'clientes asignados'}</div>
     ${filtered.length ? filtered.map(c => {

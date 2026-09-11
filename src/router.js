@@ -99,18 +99,27 @@ const QR_SCAN_SCREENS = {
 };
 
 /** Write a possibly-dotted state path, cloning the parent object. */
-function setPath(path, value) {
+function setPath(path, value, opts) {
   const parts = path.split('.');
-  if (parts.length === 1) return setState({ [path]: value });
+  if (parts.length === 1) return setState({ [path]: value }, opts);
   const [head, key] = parts;
-  setState({ [head]: { ...state[head], [key]: value } });
+  setState({ [head]: { ...state[head], [key]: value } }, opts);
 }
 
-root.addEventListener('click', async e => {
-  const el = e.target.closest('[data-a]');
+// Re-render debounced que dispara SOLO el tipeo en campos marcados
+// `data-live` (las búsquedas): así los resultados se filtran solos sin
+// re-armar el DOM en cada tecla. Cualquier render() lo cancela.
+let liveInputTimer = null;
+function scheduleLiveRender() {
+  clearTimeout(liveInputTimer);
+  liveInputTimer = setTimeout(() => { liveInputTimer = null; render(); }, 200);
+}
+
+// Corre la acción de un elemento [data-a] — compartido entre el click
+// normal y el "tap de segunda oportunidad" de más abajo.
+async function dispatch(el) {
   if (!el || !root.contains(el)) return;
   if (el.disabled || state.busy) return;
-
   // `data-a="goto:adminReg1"` is shorthand for the goto action with an argument.
   let name = el.dataset.a;
   let value = el.dataset.v;
@@ -128,6 +137,62 @@ root.addEventListener('click', async e => {
     console.error(err);
     setState({ busy: false, error: friendlyError(err) });
   }
+}
+
+// El input de texto ahora actualiza el estado EN SILENCIO (sin render) —
+// eso significa que un botón habilitado según ese valor (ej. "Ingresar",
+// "Continuar", que se calculan con `disabled` en base a state.xxx) puede
+// quedar viendo un valor viejo (vacío) si el usuario tipea el último
+// caracter y toca el botón de una sola vez, sin pasar por otro campo antes
+// (que sí disparaba `change`/blur). Comprobado en este mismo dispositivo:
+// un <button disabled> SÍ recibe `pointerdown`, pero el navegador nunca le
+// manda `mousedown`/`focusout`/`change`/`click` para ese toque — así que
+// aunque acá se sincronice y el botón quede habilitado, ESE mismo toque no
+// genera `click` (el navegador ya decidió, al llegar el pointerdown, que
+// el gesto no es "clickeable"). Por eso además de sincronizar en
+// `pointerdown`, se recuerda qué botón estaba disabled en ese momento y, si
+// el navegador no lo termina disparando solo, el `pointerup` de acá abajo
+// completa la acción a mano — el resultado es que ese primer toque
+// funciona, en vez de necesitar un segundo toque después de "despertar" el
+// botón.
+let pendingTapEl = null;
+root.addEventListener('pointerdown', e => {
+  // OJO con el orden: hay que leer `btn` y si estaba disabled ANTES de
+  // sincronizar/renderizar más abajo — ese render reemplaza todo el DOM, así
+  // que `e.target` (y cualquier `.closest()` hecho después) queda huérfano,
+  // desconectado de `root`, y todo lo que dependa de "sigue en el documento"
+  // (como root.contains) da falso aunque el botón siga ahí, solo que es un
+  // nodo nuevo.
+  const btn = e.target.closest('[data-a]');
+  const wasDisabled = !!(btn && btn.disabled);
+  const rawA = btn && btn.dataset.a;
+  const rawV = btn && btn.dataset.v;
+
+  const focused = document.activeElement;
+  if (focused && root.contains(focused) && focused.dataset && focused.dataset.f && focused !== e.target) {
+    setPath(focused.dataset.f, focused.value);
+  }
+
+  pendingTapEl = wasDisabled ? { rawA, rawV, x: e.clientX, y: e.clientY } : null;
+}, true);
+
+root.addEventListener('click', e => {
+  pendingTapEl = null; // el navegador SÍ generó el click: nada que completar a mano
+  const el = e.target.closest('[data-a]');
+  dispatch(el);
+});
+
+root.addEventListener('pointerup', e => {
+  if (!pendingTapEl) return;
+  const pending = pendingTapEl;
+  pendingTapEl = null;
+  // El dedo/mouse tiene que soltarse sobre (más o menos) el mismo lugar
+  // donde empezó — si arrastró y soltó en otro lado, no es un tap.
+  if (Math.hypot(e.clientX - pending.x, e.clientY - pending.y) > 24) return;
+  const hit = document.elementFromPoint(e.clientX, e.clientY);
+  const el = hit && hit.closest && hit.closest('[data-a]');
+  if (!el || el.dataset.a !== pending.rawA || (el.dataset.v || undefined) !== pending.rawV) return;
+  dispatch(el);
 });
 
 root.addEventListener('input', e => {
@@ -135,13 +200,23 @@ root.addEventListener('input', e => {
   // <select> is driven by its own change handler below; an `input` event here
   // would re-render first and swallow it.
   if (el.tagName === 'SELECT' || !el.dataset || !el.dataset.f) return;
+  // Campos de texto: se actualiza el estado SIN re-render (ver setState/
+  // opts.silent en state.js) para no destruir el <input> con foco en cada
+  // tecla — eso cierra el teclado en varios Android.
   if (el.dataset.numeric === 'true') {
     const digits = el.value.replace(/\D/g, '');
-    if (digits !== el.value) el.value = digits; // no re-render acá, solo corrige lo tipeado
-    setPath(el.dataset.f, digits);
-    return;
+    if (digits !== el.value) {
+      const caret = el.selectionStart - (el.value.length - digits.length);
+      el.value = digits; // corrige lo tipeado, sin re-render
+      try { el.setSelectionRange(caret, caret); } catch (_) {}
+    }
+    setPath(el.dataset.f, digits, { silent: true });
+  } else {
+    setPath(el.dataset.f, el.value, { silent: true });
   }
-  setPath(el.dataset.f, el.value);
+  // Solo las búsquedas (data-live) piden un re-render, y debounced, para que
+  // la lista de resultados se filtre sin re-armar el DOM tecla a tecla.
+  if (el.dataset.live) scheduleLiveRender();
 });
 
 root.addEventListener('change', e => {
@@ -160,7 +235,11 @@ root.addEventListener('change', e => {
     ACTIONS.selectPersonalRoutineExercise(el.value);
     return;
   }
-  if (el.tagName === 'SELECT') setPath(el.dataset.f, el.value);
+  if (el.tagName === 'SELECT') { setPath(el.dataset.f, el.value); return; }
+  // Campo de texto: al salir del campo (blur) SÍ se re-renderiza, para que
+  // el estado y el DOM se pongan al día con lo que se venía actualizando en
+  // silencio (medidor de contraseña, botón de "Continuar" habilitado, etc.).
+  setPath(el.dataset.f, el.value);
 });
 
 /* Re-rendering replaces the DOM, so restore focus and caret on the field the
@@ -240,6 +319,7 @@ function cameraErrorMessage(err) {
 }
 
 export function render() {
+  clearTimeout(liveInputTimer); liveInputTimer = null; // este render ya cubre lo pendiente
   const snapshot = captureFocus();
   captureScroll();
   root.innerHTML = (state.offline ? offlineBanner() : '') + pendingSyncBanner() + staleDataBanner() + (SCREENS[state.screen] || viewLanding)();
