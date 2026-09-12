@@ -103,6 +103,18 @@ export const state = {
   scanError: '',
   trainerInterest: [],      // [{candidate_user_id, client_user_id}] de este gimnasio — "10 clientes interesados" (owner/admin y cliente lo leen distinto)
 
+  // Presencia en el gym (pantalla nueva, compartida owner/admin/entrenador
+  // — ver src/screens/presence.js). gymActiveSessions es la lista en vivo
+  // del encargado ([{id, clientUserId, startedAt, expiresAt, status}]);
+  // myGymSession es la sesión propia del cliente (o null); *SecondsLeft es
+  // el contador puramente cosmético (la autoridad real es expiresAt, ver
+  // startGymSessionCountdown en actions.js). presenceReturn/
+  // presenceScanReturn son el mismo patrón que libraryReturn — a qué
+  // pantalla volver.
+  gymActiveSessions: [], myGymSession: null, myGymSessionSecondsLeft: null,
+  presenceReturn: null, presenceScanReturn: null,
+  gymQrExpanded: false,   // mismo patrón que chargeQrExpanded — el QR del gym a pantalla completa
+
   equipment: [],
   newEquipment: '',
   // Fase 5 del Training Engine — editor de conceptos de una máquina

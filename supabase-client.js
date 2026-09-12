@@ -177,7 +177,7 @@
     },
 
     async get(gymId) {
-      return unwrap(await client.from('gyms').select('id, name, address, hours, invite_code, currency, brand_name, brand_color').eq('id', gymId).single());
+      return unwrap(await client.from('gyms').select('id, name, address, hours, invite_code, currency, brand_name, brand_color, current_encargado_user_id, current_encargado_since').eq('id', gymId).single());
     },
 
     // Resolución del link/código de invitación (sección 10 del pedido
@@ -761,6 +761,40 @@
     },
   };
 
+  /* ---------------- presencia en el gym ---------------- */
+  // scan_gym_qr() es el único punto de escritura — un solo RPC, ramifica
+  // server-side según el rol de quien llama (owner/admin/entrenador
+  // aprobado queda de encargado; cliente arranca su sesión de 2h). Ver
+  // supabase/migrations/20260920000000_gym_presence_sessions.sql y
+  // docs/SECURITY_AUDIT.md Fase 17 para la decisión de seguridad detrás de
+  // esto (a diferencia de checkins.checkIn(), acá el cliente SÍ se
+  // autoacredita a propósito).
+
+  const gymPresence = {
+    async scan() {
+      const row = unwrap(await client.rpc('scan_gym_qr'));
+      return row.kind === 'encargado'
+        ? { kind: 'encargado' }
+        : { kind: 'session', sessionId: row.sessionId, expiresAt: row.expiresAt };
+    },
+    async endShift() {
+      const { error } = await client.rpc('end_encargado_shift');
+      if (error) throw error;
+    },
+    // sync_gym_sessions() primero (recomputo perezoso del vencimiento, no
+    // hay cron en este proyecto) y recién después el select — así cada
+    // lectura se "autocura" sola, sin necesitar un call site aparte para
+    // el sync. RLS ya devuelve "todas las del gym" a staff/entrenador
+    // aprobado y "solo la propia" a un cliente — mismo select para los dos.
+    async listActiveForGym(gymId) {
+      const { error } = await client.rpc('sync_gym_sessions');
+      if (error) throw error;
+      const rows = unwrap(await client.from('gym_sessions').select('id, client_user_id, started_at, expires_at, status')
+        .eq('gym_id', gymId).eq('status', 'active').order('expires_at'));
+      return rows.map(r => ({ id: r.id, clientUserId: r.client_user_id, startedAt: r.started_at, expiresAt: r.expires_at, status: r.status }));
+    },
+  };
+
   /* ---------------- plataforma (Fase 16 — alta de dueño interna) ---------------- */
 
   const platform = {
@@ -1118,5 +1152,6 @@
     exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
     trainingProfile: trainingProfileApi,
     realtime: realtimeApi,
+    gymPresence,
   };
 })();

@@ -15,7 +15,7 @@
 
 import { state, setState } from './state.js';
 import { offlineBanner, pendingSyncBanner, staleDataBanner, friendlyError } from './helpers.js';
-import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan, flushPendingQueue, loadWithFallback } from './actions.js';
+import { ACTIONS, resumeOwnerSession, resumeAdminSession, resumeClientSession, enterTrainerDash, handleCheckinScan, handlePaymentScan, handleGymPresenceScan, flushPendingQueue, loadWithFallback } from './actions.js';
 import { paintQrCodes, ensureQrScanner, stopQrScanner } from './qr.js';
 import { getQueueSize, isNetworkError, loadSnapshot } from './offline.js';
 
@@ -34,6 +34,7 @@ import {
 } from './screens/client.js';
 import { viewTrainerPending, viewTrainerDash } from './screens/trainer.js';
 import { viewExerciseLibrary } from './screens/library.js';
+import { viewGymPresence, viewScanGymPresence } from './screens/presence.js';
 import { viewProgramTemplates } from './screens/programs.js';
 import { viewPlatformDash } from './screens/platform.js';
 import { viewClientEvaluation } from './screens/evaluation.js';
@@ -88,6 +89,8 @@ const SCREENS = {
   clientPhotoRequired: viewClientPhotoRequired,
   platformDash: viewPlatformDash,
   scanPayment: viewClientScanPayment,
+  gymPresence: viewGymPresence,
+  scanGymPresence: viewScanGymPresence,
 };
 
 // Pantallas de lectura de QR con cámara y qué handler decodifica cada una
@@ -96,6 +99,7 @@ const SCREENS = {
 const QR_SCAN_SCREENS = {
   scanCheckin: handleCheckinScan,
   scanPayment: handlePaymentScan,
+  scanGymPresence: handleGymPresenceScan,
 };
 
 /** Write a possibly-dotted state path, cloning the parent object. */

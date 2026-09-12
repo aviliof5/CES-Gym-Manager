@@ -142,6 +142,30 @@ function clearRestTimer() {
   if (restTimerId) { clearInterval(restTimerId); restTimerId = null; }
 }
 
+// Presencia en el gym (ver src/screens/presence.js) — contador de 2 horas
+// del cliente. A diferencia del descanso entre series de arriba, acá no
+// hace falta precisión al segundo (se muestra en horas/minutos), así que
+// tiquetea cada 30s en vez de cada 1s — mismo patrón, intervalo más largo
+// porque la escala de tiempo es mucho mayor. Puramente cosmético: la
+// autoridad real es gym_sessions.expires_at + sync_gym_sessions() del
+// servidor (no hay cron en este proyecto, ver esa migración) — al llegar a
+// 0 acá simplemente se vuelve a pedir la propia sesión, que es cuando de
+// verdad se marca vencida y dispara el aviso.
+let gymSessionTimerId = null;
+function clearGymSessionTimer() {
+  if (gymSessionTimerId) { clearInterval(gymSessionTimerId); gymSessionTimerId = null; }
+}
+function startGymSessionCountdown(expiresAtIso) {
+  clearGymSessionTimer();
+  const tick = () => {
+    const secondsLeft = Math.max(0, Math.round((new Date(expiresAtIso).getTime() - Date.now()) / 1000));
+    setState({ myGymSessionSecondsLeft: secondsLeft });
+    if (secondsLeft <= 0) { clearGymSessionTimer(); refreshMyGymSession(); }
+  };
+  tick();
+  gymSessionTimerId = setInterval(tick, 30000);
+}
+
 // Canales de Realtime (o su equivalente en el mock) abiertos para la
 // sesión actual — mismo patrón que restTimerId: recursos vivos, no estado
 // serializable. `sessionRealtimeUnsubs` son los que duran todo el panel
@@ -221,6 +245,39 @@ async function refreshOwnerCheckins() {
   if (!state.gym) return;
   const todayCheckins = await BolaAPI.checkins.listTodayForGym(state.gym.id);
   setState({ todayCheckins });
+}
+
+// Presencia en el gym (ver src/screens/presence.js) — lista en vivo del
+// encargado: un cliente escaneó, o una sesión venció (sync_gym_sessions()
+// corre igual, listActiveForGym siempre sincroniza antes de leer). Solo
+// pega al servidor si la pantalla está realmente abierta — el canal de
+// tiempo real queda suscrito todo el rato que dura el panel (ver
+// enterOwnerDash/enterTrainerDash), no solo mientras se mira esta pantalla.
+async function refreshGymActiveSessions() {
+  if (!state.gym || state.screen !== 'gymPresence') return;
+  const gymActiveSessions = await BolaAPI.gymPresence.listActiveForGym(state.gym.id);
+  setState({ gymActiveSessions });
+}
+
+// El gimnasio cambió (alguien tomó/cerró el turno de encargado) — mismo
+// canal de arriba, pero sobre `gyms` en vez de `gym_sessions`.
+async function refreshGymRow() {
+  if (!state.gym) return;
+  const gym = await BolaAPI.gyms.get(state.gym.id);
+  setState({ gym });
+}
+
+// Sesión propia del cliente — venció (dispara sola, ver
+// startGymSessionCountdown) o cambió desde otro dispositivo con la misma
+// cuenta. listActiveForGym ya viene filtrado por RLS a "las mías" cuando
+// quien llama es un cliente, así que alcanza con buscar la propia.
+async function refreshMyGymSession() {
+  if (!state.myClient || !state.gym) return;
+  const rows = await BolaAPI.gymPresence.listActiveForGym(state.gym.id);
+  const mine = rows.find(r => r.clientUserId === state.myClient.id) || null;
+  clearGymSessionTimer();
+  setState({ myGymSession: mine });
+  if (mine) startGymSessionCountdown(mine.expiresAt);
 }
 
 // Calendario del dueño/admin — un cliente reservó/canceló, o se creó/
@@ -363,6 +420,7 @@ export const ACTIONS = {
   signOut: async () => {
     stopSessionRealtime();
     stopWatchingChat();
+    clearGymSessionTimer();
     await BolaAPI.auth.signOut();
     // Ver OWNER_INVITE_KEY/GYM_INVITE_KEY en router.js — no dejar una
     // invitación pegada al navegador para la próxima cuenta que se loguee ahí.
@@ -717,6 +775,28 @@ export const ACTIONS = {
   // Mismo patrón, del lado del cliente — ver ACTIONS.handlePaymentScan y
   // viewClientScanPayment en screens/client.js.
   goToScanPayment: () => setState({ screen: 'scanPayment', scanError: '', scanStatus: null, error: '' }),
+
+  /* ---- Presencia en el gym (pantalla nueva, ver src/screens/presence.js) ----
+     Compartida por owner/admin/entrenador. Un solo QR físico del gimnasio:
+     el staff lo escanea para quedar de encargado, el cliente lo escanea
+     para arrancar su sesión de 2h — ver scan_gym_qr() en la migración y
+     handleGymPresenceScan más abajo, que es el mismo handler para ambos
+     casos (el servidor decide qué rama corre según el rol de quien llama). */
+  openGymPresence: async () => {
+    const gymActiveSessions = await BolaAPI.gymPresence.listActiveForGym(state.gym.id);
+    setState({ presenceReturn: state.screen, screen: 'gymPresence', gymActiveSessions, gymQrExpanded: false });
+  },
+  closeGymPresence: () => setState({ screen: state.presenceReturn || 'ownerDash', presenceReturn: null }),
+  toggleGymQrExpanded: () => setState({ gymQrExpanded: !state.gymQrExpanded }),
+  goToScanGymPresence: () => setState({ screen: 'scanGymPresence', presenceScanReturn: state.screen, scanError: '', scanStatus: null, error: '' }),
+  exitScanGymPresence: () => setState({ screen: state.presenceScanReturn || 'clientHome', presenceScanReturn: null, scanError: '', scanStatus: null }),
+  // Solo el propio encargado (o el dueño, que puede forzarlo) — ver
+  // end_encargado_shift() en el servidor.
+  endEncargadoShift: async () => {
+    await BolaAPI.gymPresence.endShift();
+    const gym = await BolaAPI.gyms.get(state.gym.id);
+    setState({ gym });
+  },
 
   generateCharge: async clientId => {
     const c = state.clientsForGym.map(enrichClient).find(x => x.id === clientId);
@@ -2008,6 +2088,45 @@ export async function handlePaymentScan(payload) {
   }
 }
 
+// Callback de src/qr.js para la pantalla "Escanear QR" de Presencia en el
+// gym (ver src/screens/presence.js) — MISMO handler tanto si escanea un
+// cliente (arranca su sesión de 2h) como si escanea el staff/un entrenador
+// (queda de encargado de turno): es un solo QR físico del gimnasio, y
+// scan_gym_qr() en el servidor decide qué rama corre según app_role() de
+// quien llama, nunca según lo que vino en el texto del QR (mismo criterio
+// que handleCheckinScan/handlePaymentScan arriba). Las validaciones de acá
+// (JSON bien formado, mismo gimnasio) son solo para un mensaje claro en
+// pantalla — el gimnasio real que usa el RPC es siempre app_gym_id() del
+// que escanea, nunca el `gym` del payload.
+export async function handleGymPresenceScan(payload) {
+  let data;
+  try { data = JSON.parse(payload); } catch (_) { data = null; }
+  if (!data || data.t !== 'gym_presence' || !data.gym) {
+    setState({ scanStatus: { ok: false, text: 'Ese código no es el QR de acceso de este gimnasio.' } });
+    return;
+  }
+  if (data.gym !== state.gym.id) {
+    setState({ scanStatus: { ok: false, text: 'Ese código es de otro gimnasio.' } });
+    return;
+  }
+  try {
+    const result = await BolaAPI.gymPresence.scan();
+    if (navigator.vibrate) { try { navigator.vibrate(80); } catch (_) { /* no disponible, no es crítico */ } }
+    if (result.kind === 'encargado') {
+      const gym = await BolaAPI.gyms.get(state.gym.id);
+      setState({ gym, scanStatus: { ok: true, text: 'Listo — ahora sos el encargado de turno.' } });
+    } else {
+      setState({
+        myGymSession: { id: result.sessionId, clientUserId: state.myClient.id, startedAt: new Date().toISOString(), expiresAt: result.expiresAt, status: 'active' },
+        scanStatus: { ok: true, text: '✓ Check-in registrado — tenés 2 horas.' },
+      });
+      startGymSessionCountdown(result.expiresAt);
+    }
+  } catch (err) {
+    setState({ scanStatus: { ok: false, text: friendlyError(err) } });
+  }
+}
+
 // Entrada compartida por el dueño y por un administrador ya aprobado —
 // paridad total (ver docs/ROLES_AND_PERMISSIONS.md). viewOwnerDash decide
 // internamente si muestra la tab de aprobar administradores según el rol.
@@ -2113,6 +2232,10 @@ export async function enterOwnerDash() {
   watchRealtime('classes', `gym_id=eq.${gymId}`, refreshOwnerClasses);
   watchRealtime('class_sessions', `gym_id=eq.${gymId}`, refreshOwnerClasses);
   watchRealtime('class_bookings', `gym_id=eq.${gymId}`, refreshOwnerClasses);
+  // Presencia en el gym (ver src/screens/presence.js) — un cliente escaneó,
+  // una sesión venció, o cambió quién es el encargado de turno.
+  watchRealtime('gym_sessions', `gym_id=eq.${gymId}`, refreshGymActiveSessions);
+  watchRealtime('gyms', `id=eq.${gymId}`, refreshGymRow);
   render();
 }
 
@@ -2197,6 +2320,13 @@ async function buildClientHomeBundle() {
   // derecho a Pago apenas entra, cargarlo acá es obligatorio, no cosmético.
   const pendingPayment = await BolaAPI.payments.getPendingForClient(client.id);
 
+  // Presencia en el gym (ver src/screens/presence.js) — si ya tenía una
+  // sesión activa (por ejemplo, escaneó y cerró la app), sigue mostrando el
+  // contador al volver a entrar. listActiveForGym ya viene filtrado por RLS
+  // a "las mías" cuando quien llama es un cliente.
+  const gymSessionsForMe = await BolaAPI.gymPresence.listActiveForGym(state.gym.id).catch(() => []);
+  const myGymSession = gymSessionsForMe.find(s => s.clientUserId === client.id) || null;
+
   return {
     screen: 'clientHome', clientTab: 'inicio',
     myClient: client, myClientPlan: plan, myClientTrainer: trainer,
@@ -2205,7 +2335,7 @@ async function buildClientHomeBundle() {
     classesForGym, classSessions, myBookings, achievementsCatalog, myAchievements, bodyMeasurements, personalRecords, workoutsThisMonth, notifications,
     myTrainerRating, trainerRatingDraft: { rating: myTrainerRating ? myTrainerRating.rating : 0, text: myTrainerRating ? (myTrainerRating.text || '') : '' },
     conversationId: null, messages: [], messageDraft: '',
-    pendingPayment,
+    pendingPayment, myGymSession,
   };
 }
 
@@ -2264,6 +2394,10 @@ export async function enterClientHome() {
   // la práctica, pero se deja por las dudas (ej. si algún día el staff
   // cancela una reserva puntual sin borrar la sesión entera).
   watchRealtime('class_bookings', `client_user_id=eq.${client.id}`, refreshMyClasses);
+  // Presencia en el gym (ver src/screens/presence.js) — la propia sesión
+  // venció, o cambió desde otro dispositivo con la misma cuenta.
+  watchRealtime('gym_sessions', `client_user_id=eq.${client.id}`, refreshMyGymSession);
+  if (state.myGymSession) startGymSessionCountdown(state.myGymSession.expiresAt); else clearGymSessionTimer();
   render();
 }
 
@@ -2304,6 +2438,13 @@ export async function enterTrainerDash(profile, gym, myTrainer) {
     trainerActiveConversationId: null, trainerMessages: [], trainerMessageDraft: '',
   });
   if (window.CesAds) window.CesAds.hideBanner();
+  // Presencia en el gym (ver src/screens/presence.js) — un entrenador
+  // aprobado puede ser encargado de turno, así que necesita lo mismo que
+  // owner/admin en enterOwnerDash: el panel de entrenador no tenía ningún
+  // canal de tiempo real hasta ahora.
+  stopSessionRealtime();
+  watchRealtime('gym_sessions', `gym_id=eq.${gym.id}`, refreshGymActiveSessions);
+  watchRealtime('gyms', `id=eq.${gym.id}`, refreshGymRow);
   render();
 }
 

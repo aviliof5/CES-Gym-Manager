@@ -222,6 +222,42 @@ function qrCard() {
   </div>`;
 }
 
+// Presencia en el gym (ver src/screens/presence.js) — mismo QR físico que
+// escanea el staff para quedar de encargado; el cliente lo escanea para
+// marcar que llegó y arrancar su temporizador de 2 horas. Solo se llega
+// hasta esta tarjeta si la app no está bloqueada — viewClientHome ya manda
+// a Pago antes que nada si el plan no está al día (ver `locked` ahí y
+// docs/SECURITY_AUDIT.md Fase 17 sobre por qué acá SÍ se deja que el
+// cliente se autoacredite, a diferencia del check-in de siempre).
+function formatGymSessionDuration(totalSeconds) {
+  const totalMin = Math.round(totalSeconds / 60);
+  const h = Math.floor(totalMin / 60), m = totalMin % 60;
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function gymPresenceCard() {
+  const sess = state.myGymSession;
+  if (sess && sess.status === 'active') {
+    const secondsLeft = state.myGymSessionSecondsLeft;
+    const label = secondsLeft == null ? '—' : formatGymSessionDuration(secondsLeft);
+    return `<div class="card" style="margin-bottom:12px;border-color:var(--ok)">
+      <div class="eyebrow" style="color:var(--ok)">En el gimnasio</div>
+      <div style="font-size:22px;font-weight:800;font-family:var(--font-display);margin-top:4px">${esc(label)}</div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Tiempo restante de tu sesión</div>
+    </div>`;
+  }
+  return `<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:40px;height:40px;border-radius:10px;background:var(--brand-dim);display:flex;align-items:center;justify-content:center;color:var(--brand);flex-shrink:0">${iconSpan('camera', 18)}</div>
+      <div style="flex:1">
+        <div style="font-size:var(--fs-sm);font-weight:800">¿Llegaste al gym?</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Escaneá el código de la entrada para marcar tu llegada</div>
+      </div>
+      <button class="btn btn--brand" style="flex:0 0 auto;width:auto;padding:9px 16px;font-size:12px" ${act('goToScanGymPresence')}>Escanear</button>
+    </div>
+  </div>`;
+}
+
 // "Próxima clase" (pantalla #1 del plan) — la reserva más próxima entre las
 // activas de este cliente, cruzada con las sesiones ya cargadas en
 // enterClientHome(). Vacío cuando no reservó nada: manda directo a Reservas.
@@ -324,6 +360,7 @@ export function viewClientInicio() {
         <div class="stat__hint">${state.workoutsThisMonth} ${state.workoutsThisMonth === 1 ? 'entreno' : 'entrenos'} este mes</div>
       </div>
     </div>
+    ${gymPresenceCard()}
     ${qrCard()}
     ${sectionTitle('Máquinas disponibles en tu gym', 'dumbbell')}
     ${equipmentGrid(state.equipment)}
