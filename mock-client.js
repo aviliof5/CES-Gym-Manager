@@ -25,6 +25,11 @@
     payments: [],           // {id, client_user_id, gym_id, amount, status, created_by, confirmed_by, confirmed_at}
     reviews: [],
     checkinEvents: [],       // {id, gym_id, client_user_id, checked_in_by, created_at}
+    // Presencia en el gym (ver src/screens/presence.js) — sesión de 2h de
+    // un cliente. gyms también gana current_encargado_user_id/
+    // current_encargado_since (seteados directo sobre la fila de db.gyms,
+    // sin columna propia acá porque ya existen como campos sueltos).
+    gymSessions: [],          // {id, gym_id, client_user_id, started_at, expires_at, status: 'active'|'expired', notified_expired}
     trainerInterest: [],      // {candidate_user_id, client_user_id, gym_id}
     storage: new Map(),      // path -> File
     // Fase 16 — invitaciones. gymInvites reemplaza gyms.invite_code como
@@ -2831,6 +2836,118 @@
     },
   };
 
+  /* ---------------- presencia en el gym ---------------- */
+  // Espejo de scan_gym_qr()/end_encargado_shift()/sync_gym_sessions() (ver
+  // supabase/migrations/20260920000000_gym_presence_sessions.sql). Un solo
+  // QR físico del gimnasio: scan() ramifica según el rol de quien llama —
+  // owner/admin/entrenador aprobado queda de encargado, cliente arranca su
+  // sesión de 2h (solo si su plan está al día — a diferencia de
+  // checkins.checkIn(), acá el cliente SÍ se autoacredita a propósito, ver
+  // docs/SECURITY_AUDIT.md Fase 17).
+
+  function isApprovedTrainerOfGym(userId, gymId) {
+    return db.trainers.some(t => t.user_id === userId && t.gym_id === gymId && t.status === 'approved');
+  }
+
+  // Recomputo perezoso del vencimiento — no hay cron acá tampoco (mismo
+  // criterio que syncExpiredStatus arriba). Se llama SIEMPRE antes de leer
+  // (ver gymPresence.listActiveForGym), nunca aparte, para que ninguna
+  // lectura pueda mostrar una sesión "activa" que ya venció.
+  function syncGymSessionsFor(gymId, caller) {
+    const isStaffish = isStaff(caller) || isApprovedTrainerOfGym(caller.id, gymId);
+    const gym = db.gyms.find(g => g.id === gymId);
+    const now = new Date().toISOString();
+    db.gymSessions
+      .filter(r => r.gym_id === gymId && r.status === 'active' && r.expires_at < now && !r.notified_expired
+        && (isStaffish || r.client_user_id === caller.id))
+      .forEach(r => {
+        r.status = 'expired';
+        r.notified_expired = true;
+        const clientProfile = profileOf(r.client_user_id);
+        db.notifications.push({
+          id: uid('ntf'), gym_id: r.gym_id, client_user_id: r.client_user_id,
+          title: 'Tu tiempo en el gimnasio terminó',
+          body: 'Tu sesión de 2 horas venció — si seguís en el gimnasio, avisale al encargado.',
+          type: 'gym_session_expired', related_id: r.id, created_at: new Date().toISOString(), read_at: null,
+        });
+        rtEmit('notifications', `client_user_id=eq.${r.client_user_id}`);
+        if (gym && gym.current_encargado_user_id) {
+          db.staffNotifications.push({
+            id: uid('sntf'), gym_id: r.gym_id, recipient_user_id: gym.current_encargado_user_id,
+            title: `${(clientProfile && clientProfile.name) || 'Un socio'} — se le acabó el tiempo`,
+            body: 'Su sesión de 2 horas venció.',
+            type: 'gym_session_expired', related_id: r.id, created_at: new Date().toISOString(), read_at: null,
+          });
+          rtEmit('staff_notifications', `recipient_user_id=eq.${gym.current_encargado_user_id}`);
+        }
+        rtEmit('gym_sessions', `gym_id=eq.${r.gym_id}`);
+      });
+  }
+
+  const gymPresence = {
+    async scan() {
+      await wait();
+      const s = requireAuth();
+      const me = profileOf(s.id);
+      if (!me.gym_id) throw new Error('Tu cuenta no está asociada a ningún gimnasio.');
+      const gym = db.gyms.find(g => g.id === me.gym_id);
+
+      if (s.role === 'owner' || s.role === 'admin') {
+        gym.current_encargado_user_id = s.id;
+        gym.current_encargado_since = new Date().toISOString();
+        rtEmit('gyms', `id=eq.${gym.id}`);
+        return { kind: 'encargado' };
+      }
+      if (s.role === 'trainer') {
+        if (!isApprovedTrainerOfGym(s.id, me.gym_id)) throw new Error('Solo un entrenador aprobado de este gimnasio puede ser encargado.');
+        gym.current_encargado_user_id = s.id;
+        gym.current_encargado_since = new Date().toISOString();
+        rtEmit('gyms', `id=eq.${gym.id}`);
+        return { kind: 'encargado' };
+      }
+      if (s.role === 'client') {
+        const c = db.clientProfiles.find(x => x.user_id === s.id && x.gym_id === me.gym_id);
+        if (!c) throw new Error('Tu cuenta no pertenece a este gimnasio.');
+        syncExpiredStatus(c);
+        if (c.membership_status !== 'al_dia') throw new Error('Tu membresía no está al día — pagá para poder ingresar.');
+        const row = {
+          id: uid('gses'), gym_id: me.gym_id, client_user_id: s.id,
+          started_at: new Date().toISOString(), expires_at: new Date(Date.now() + 2 * 3600000).toISOString(),
+          status: 'active', notified_expired: false,
+        };
+        db.gymSessions.push(row);
+        db.checkinEvents.push({ id: uid('chk'), gym_id: me.gym_id, client_user_id: s.id, checked_in_by: (gym && gym.current_encargado_user_id) || s.id, created_at: row.started_at });
+        await achievementsApi.evaluate(s.id);
+        rtEmit('gym_sessions', `gym_id=eq.${me.gym_id}`);
+        rtEmit('checkin_events', `gym_id=eq.${me.gym_id}`);
+        return { kind: 'session', sessionId: row.id, expiresAt: row.expires_at };
+      }
+      throw new Error('Tu rol no puede escanear este código.');
+    },
+    async endShift() {
+      await wait();
+      const s = requireAuth();
+      const me = profileOf(s.id);
+      const gym = db.gyms.find(g => g.id === me.gym_id);
+      if (!gym) throw new Error('Ese gimnasio no existe.');
+      if (!(s.role === 'owner' || gym.current_encargado_user_id === s.id)) {
+        throw new Error('Solo el encargado actual o el dueño del gimnasio pueden cerrar el turno.');
+      }
+      gym.current_encargado_user_id = null;
+      gym.current_encargado_since = null;
+      rtEmit('gyms', `id=eq.${gym.id}`);
+    },
+    async listActiveForGym(gymId) {
+      await wait();
+      const s = requireAuth();
+      syncGymSessionsFor(gymId, s);
+      const isStaffish = isStaff(s) || isApprovedTrainerOfGym(s.id, gymId);
+      return db.gymSessions.filter(r => r.gym_id === gymId && r.status === 'active' && (isStaffish || r.client_user_id === s.id))
+        .sort((a, b) => a.expires_at.localeCompare(b.expires_at))
+        .map(r => ({ id: r.id, clientUserId: r.client_user_id, startedAt: r.started_at, expiresAt: r.expires_at, status: r.status }));
+    },
+  };
+
   /* ---------------- plataforma (Fase 16 — alta de dueño interna) ---------------- */
 
   const platform = {
@@ -2877,6 +2994,7 @@
     exercisesLib, programTemplates, classes: classesApi, achievements: achievementsApi, measurements, workouts: workoutsApi, trainerReviews: trainerReviewsApi, messages: messagesApi, notifications: notificationsApi,
     trainingProfile: trainingProfileApi,
     realtime: realtimeApi,
+    gymPresence,
   };
   window.__mockDb = db; // solo para inspección desde la consola durante las pruebas
 })();

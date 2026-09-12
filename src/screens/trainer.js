@@ -145,6 +145,10 @@ export function viewTrainerPanel() {
       <div class="row__body"><div class="row__title">Mis clientes</div><div class="row__meta">Ver progreso, armar rutinas</div></div>
       <div class="row__action">${iconSpan('chevronRight', 16)}</div>
     </div>
+    <div class="row" ${act('openGymPresence')}>
+      <div class="row__body"><div class="row__title">Presencia en el gym</div><div class="row__meta">Quién está adentro ahora, en vivo</div></div>
+      <div class="row__action">${iconSpan('chevronRight', 16)}</div>
+    </div>
     <div class="row" ${act('trainerTab', 'mensajes')}>
       <div class="row__body"><div class="row__title">Mensajes</div><div class="row__meta">Hablar con tus clientes</div></div>
       <div class="row__action">${iconSpan('chevronRight', 16)}</div>
