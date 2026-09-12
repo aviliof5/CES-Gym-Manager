@@ -80,6 +80,10 @@ function gymQrCard() {
         <div style="font-size:var(--fs-sm);color:var(--muted);margin-top:2px">Mostralo en la entrada — el staff lo escanea para quedar de encargado, y cada socio lo escanea al llegar</div>
       </div>
     </div>
+    <div style="display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+      <div ${act('toggleGymQrExpanded')} style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--info);cursor:pointer;font-weight:700">${iconSpan('eye', 14)} Ver en grande</div>
+      <div ${act('downloadGymQr')} style="display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--brand);cursor:pointer;font-weight:700">${iconSpan('download', 14)} Descargar para imprimir</div>
+    </div>
   </div>`;
 }
 
@@ -119,6 +123,7 @@ export function viewGymPresence() {
           <div style="font-size:16px;font-weight:800;color:#fff">${esc(state.gym.name)}</div>
           <div style="font-size:13px;color:rgba(255,255,255,0.65);margin-top:4px">Código de acceso — encargado y socios escanean acá</div>
         </div>
+        <button ${act('downloadGymQr')} class="btn btn--brand" style="width:auto;padding:12px 22px;font-size:13px">${iconSpan('download', 15)} Descargar para imprimir</button>
         <div style="font-size:12px;color:rgba(255,255,255,0.55);text-decoration:underline;cursor:pointer">Cerrar</div>
       </div>` : ''}
   </div>`;

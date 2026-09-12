@@ -320,6 +320,8 @@ export const ICON_PATHS = {
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   // "Errores comunes" en la biblioteca de ejercicios (ver screens/library.js).
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  // Descargar el QR del gimnasio para imprimir (ver src/screens/presence.js).
+  download: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/>',
 };
 
 // Prefijos de país para el campo de teléfono (nombre en español + código de

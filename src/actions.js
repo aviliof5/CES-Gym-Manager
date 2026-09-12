@@ -14,6 +14,7 @@ import { DURATION_LABELS, WEEKDAY_NAMES, EVAL_TOTAL_STEPS, deriveLevel, mapGoalT
 import { render, OWNER_INVITE_KEY, GYM_INVITE_KEY } from './router.js';
 import { newUuid, isNetworkError, queueAction, getQueueSize, flushQueue, saveSnapshot, loadSnapshot } from './offline.js';
 import { generateFullRoutine, buildPlanSpec, filterExercises, analyzeRoutine, adaptRoutineAfterSession } from './training-engine/index.js';
+import { downloadQrCode } from './qr.js';
 
 // Conceptos de equipamiento que ofrece el gimnasio HOY: unión de
 // equipment.concepts sobre las máquinas ACTIVAS (más 'peso_corporal', que el
@@ -788,6 +789,16 @@ export const ACTIONS = {
   },
   closeGymPresence: () => setState({ screen: state.presenceReturn || 'ownerDash', presenceReturn: null }),
   toggleGymQrExpanded: () => setState({ gymQrExpanded: !state.gymQrExpanded }),
+  // Pedido: poder imprimir el QR de acceso — lo baja como PNG a resolución
+  // de impresión (ver downloadQrCode en src/qr.js), mismo payload exacto
+  // que el que se muestra/escanea en esta pantalla.
+  downloadGymQr: () => {
+    const payload = JSON.stringify({ t: 'gym_presence', gym: state.gym.id });
+    const safeName = (state.gym.name || 'gimnasio').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '') // saca acentos
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    downloadQrCode(payload, `codigo-acceso-${safeName || 'gimnasio'}.png`);
+  },
   goToScanGymPresence: () => setState({ screen: 'scanGymPresence', presenceScanReturn: state.screen, scanError: '', scanStatus: null, error: '' }),
   exitScanGymPresence: () => setState({ screen: state.presenceScanReturn || 'clientHome', presenceScanReturn: null, scanError: '', scanStatus: null }),
   // Solo el propio encargado (o el dueño, que puede forzarlo) — ver

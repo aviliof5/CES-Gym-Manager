@@ -54,6 +54,22 @@ export function drawQrCode(canvas, text, boxPx = 64) {
   }
 }
 
+// Descarga el QR como imagen PNG (ver ACTIONS.downloadGymQr, pantalla
+// "Presencia en el gym") — el dueño lo pidió para poder imprimirlo y
+// pegarlo en la entrada. Se dibuja en un canvas aparte (no el que ya está
+// en pantalla, que es chico) a una resolución fija bien por encima de lo
+// que se ve en el teléfono — imprimir necesita más nitidez que una pantalla.
+export function downloadQrCode(text, filename, boxPx = 1000) {
+  const canvas = document.createElement('canvas');
+  drawQrCode(canvas, text, boxPx);
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 // Se llama después de cada render() (ver router.js) — busca todo
 // `<canvas data-qr="...">` recién insertado por el innerHTML nuevo y lo
 // dibuja. `data-qr-painted` evita redibujar si el texto no cambió (evita
